@@ -7,6 +7,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.view.MotionEvent
+import io.github.hatake716.pixelcity.audio.Audio
+import io.github.hatake716.pixelcity.audio.Bgm
+import io.github.hatake716.pixelcity.audio.Sfx
+import io.github.hatake716.pixelcity.data.Settings
 import android.view.View
 import io.github.hatake716.pixelcity.game.BuildCost
 import io.github.hatake716.pixelcity.game.City
@@ -70,6 +74,18 @@ class GameView(
         private val ZOOM_STEPS = arrayOf(1 to 16, 1 to 8, 1 to 4, 1 to 2, 1 to 1)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
+        /**
+         * つまんで1段動かすのに必要な、指の開きの倍率。
+         *
+         * 拡大率の段は2倍ずつなので、本来は 2.0 が素直。
+         * ただしそれだと指をいっぱいに広げないと変わらないので、
+         * 少し手前で反応するようにしてある。
+         */
+        private const val PINCH_RATIO = 1.5f
+
+        /** 人口の節目。越えるたびに短い音が鳴る。 */
+        private val MILESTONES = intArrayOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
+
         private const val SPEED_X = 150
         private const val ZOOM_X = 196
         private const val INFO_X = 316
@@ -115,6 +131,9 @@ class GameView(
     private var pixels = PixelCanvas(LOGICAL_W, LOGICAL_H)
     private val renderer = CityRenderer()
     private val info = InfoPanel(GbText(context))
+
+    /** 音。鳴らせないときも遊びは止めないよう、失敗は握りつぶす作り。 */
+    val audio = Audio()
     private val styleEditor = StyleEditor(GbText(context))
     private val text = GbText(context)
 
@@ -142,7 +161,8 @@ class GameView(
      * 地図の拡大率の段。[ZOOM_STEPS] の索引。
      * 引いた画（街全体）から、寄った画（建物の細部）まで選べる。
      */
-    private var zoomStep = 3
+    var zoomStep = 3
+        private set
 
     /** いまの拡大率。分数を使わずに済むよう、分子と分母で持つ。 */
     private val zoomNum: Int get() = ZOOM_STEPS[zoomStep].first
@@ -155,6 +175,31 @@ class GameView(
         invalidate()
     }
 
+    /**
+     * 拡大率を1段変える。[lx]/[ly] を動かさないように地図を送る。
+     *
+     * ただ段を変えるだけだと、画面の中心を軸に伸び縮みする。
+     * 指で広げたところが動かないほうが、拡げている感じになる。
+     *
+     * @return 実際に段が変わったか
+     */
+    private fun zoomAround(step: Int, lx: Int, ly: Int): Boolean {
+        val next = step.coerceIn(0, ZOOM_STEPS.size - 1)
+        if (next == zoomStep) return false
+        // 変える前に、その点が指しているタイルを覚えておく
+        val before = mapCoordsFree(lx, ly)
+        zoomStep = next
+        val after = mapCoordsFree(lx, ly)
+        if (before != null && after != null) {
+            // 同じ点が同じタイルを指すように、地図をずらす
+            camX += before.first - after.first
+            camY += before.second - after.second
+        }
+        clampCamera()
+        invalidate()
+        return true
+    }
+
     // --- 入力 ---
     private var lastTouchX = 0f
     private var lastTouchY = 0f
@@ -162,6 +207,13 @@ class GameView(
     private var pointerDown = false
     /** 2本指で地図を動かしている最中か。 */
     private var panning = false
+    /**
+     * つまむ操作の基準になる、2本指の間隔。
+     * ここから何倍に開いた/縮めたかで、拡大率の段を決める。
+     */
+    private var pinchBase = 0f
+    /** つまんで拡大率を変えたか。指を離したときに「置く」動作を起こさないために使う。 */
+    private var pinched = false
     /** 道具が切り替わったので、指を離すまで置くのをやめる。 */
     private var strokeCancelled = false
     private var toolScroll = 0
@@ -203,6 +255,13 @@ class GameView(
         isFocusable = true
         keepScreenOn = true
         info.custom = city.customStyle
+        // 前に遊んだときの設定を引き継ぐ
+        audio.sfxEnabled = Settings.sfxEnabled(context)
+        audio.bgmEnabled = Settings.bgmEnabled(context)
+        info.sfxOn = audio.sfxEnabled
+        info.bgmOn = audio.bgmEnabled
+        // 街の様子にあう曲から始める
+        updateBgm()
         showTutorialMessageIfNeeded()
     }
 
@@ -234,15 +293,61 @@ class GameView(
         postInvalidateOnAnimation()
     }
 
+    /** 前の月の災害。同じ災害で何度も鳴らさないために覚えておく。 */
+    private var lastDisasterSeen: String? = null
+    /** 越えた人口の節目。 */
+    private var milestoneSeen = 0
+
     private fun advanceMonth() {
+        val before = city.population
         city.step()
         tutorial.onMonthPassed()
         showTutorialMessageIfNeeded()
+
+        // 災害。新しく起きたときだけ鳴らす。
+        if (city.lastDisaster != null && city.lastDisaster != lastDisasterSeen) {
+            audio.play(Sfx.DISASTER)
+        }
+        lastDisasterSeen = city.lastDisaster
+
+        // 人口の節目。早送り中に何度も鳴らないよう、越えた段を覚えておく。
+        val step = milestoneFor(city.population)
+        if (step > milestoneSeen && city.population > before) {
+            audio.play(Sfx.MILESTONE)
+        }
+        milestoneSeen = step
+
         if (city.gameOver) {
             screen = Screen.GAME_OVER
+            audio.play(Sfx.BANKRUPT)
             speedIndex = 0
         }
+        updateBgm()
         onStateChanged?.invoke()
+    }
+
+    /**
+     * 人口が、どの節目まで来ているか。
+     * 1,000 / 5,000 / 10,000 / 25,000 / 50,000 / 100,000。
+     */
+    private fun milestoneFor(population: Int): Int =
+        MILESTONES.count { population >= it }
+
+    /**
+     * 街の様子にあわせて曲を選ぶ。
+     *
+     * 同じ曲を何時間も聞かせないための仕組みで、
+     * 苦しいときは曲でも分かるようにしてある。
+     */
+    private fun updateBgm() {
+        val bgm = when {
+            // 資金が尽きかけ、または借金が続いている
+            city.funds < 0 || city.monthsInDebt > 0 -> Bgm.TROUBLE
+            // 育ってきた街
+            city.population >= 2_000 -> Bgm.CITY
+            else -> Bgm.DAWN
+        }
+        audio.setBgm(bgm)
     }
 
     fun setSpeed(index: Int) {
@@ -761,6 +866,14 @@ class GameView(
     // ------------------------------------------------------------------
 
     /** 画面座標を論理座標へ。 */
+    /** 2本指の間隔。つまむ操作の判定に使う。 */
+    private fun pinchSpan(event: MotionEvent): Float {
+        if (event.pointerCount < 2) return 0f
+        val dx = event.getX(0) - event.getX(1)
+        val dy = event.getY(0) - event.getY(1)
+        return kotlin.math.hypot(dx, dy)
+    }
+
     private fun toLogicalX(x: Float): Int = ((x - offsetX) / scale).toInt()
     private fun toLogicalY(y: Float): Int = ((y - offsetY) / scale).toInt()
 
@@ -794,11 +907,16 @@ class GameView(
                 panning = true
                 lastTouchX = event.x
                 lastTouchY = event.y
+                pinchBase = pinchSpan(event)
+                pinched = false
                 return true
             }
 
             MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount <= 2) panning = false
+                if (event.pointerCount <= 2) {
+                    panning = false
+                    pinchBase = 0f
+                }
                 return true
             }
 
@@ -824,6 +942,33 @@ class GameView(
                     lastTouchY = event.y
                     invalidate()
                     return true
+                }
+
+                // つまんで拡大・縮小。地図送りより先に見る。
+                if (panning && event.pointerCount >= 2 && pinchBase > 0f) {
+                    val span = pinchSpan(event)
+                    val ratio = span / pinchBase
+                    // 段は飛び飛びなので、一定以上開いた/縮めたときに1段動かす。
+                    // 半分/2倍を目安にすると、段の刻み（2倍ずつ）と合う。
+                    val dir = when {
+                        ratio > PINCH_RATIO -> 1
+                        ratio < 1f / PINCH_RATIO -> -1
+                        else -> 0
+                    }
+                    if (dir != 0) {
+                        // 2本指の中点を軸にする
+                        val mx = toLogicalX((event.getX(0) + event.getX(1)) / 2f)
+                        val my = toLogicalY((event.getY(0) + event.getY(1)) / 2f)
+                        if (zoomAround(zoomStep + dir, mx, my)) {
+                            pinched = true
+                            dragged = true
+                        }
+                        // 段を変えたら、そこを新しい基準にする
+                        pinchBase = span
+                    }
+                    // つまんでいるあいだも、中点の移動ぶんだけ地図を送る
+                    lastTouchX = event.x
+                    lastTouchY = event.y
                 }
 
                 if (panning) {
@@ -853,16 +998,32 @@ class GameView(
 
             MotionEvent.ACTION_UP -> {
                 pointerDown = false
-                if (!dragged && !panning) handleTap(lx, ly)
+                if (!dragged && !panning && !pinched) handleTap(lx, ly)
                 draggingToolbar = false
                 draggingCategories = false
                 panning = false
+                pinchBase = 0f
+                pinched = false
                 strokeCancelled = false
                 invalidate()
                 return true
             }
         }
         return super.onTouchEvent(event)
+    }
+
+    /**
+     * 置いたものに合う音。
+     *
+     * 区分は用途で高さを変えてあるので、見ていなくても
+     * 住宅・商業・工業のどれを敷いているか分かる。
+     */
+    private fun sfxForTool(tool: TileKind): Sfx = when {
+        tool == TileKind.ROAD -> Sfx.ROAD
+        tool == TileKind.ZONE_R -> Sfx.ZONE_R
+        tool == TileKind.ZONE_C -> Sfx.ZONE_C
+        tool == TileKind.ZONE_I -> Sfx.ZONE_I
+        else -> Sfx.BUILD
     }
 
     private fun isOnMap(ly: Int): Boolean =
@@ -884,11 +1045,18 @@ class GameView(
                         city.taxRate = (city.taxRate + 1).coerceAtMost(20); onStateChanged?.invoke()
                     }
                 }
-                if (isCloseTapped(lx, ly)) { screen = Screen.PLAYING }
+                if (isCloseTapped(lx, ly)) {
+                    screen = Screen.PLAYING
+                    audio.play(Sfx.CLOSE)
+                }
                 return
             }
             Screen.MONUMENTS -> {
-                if (isCloseTapped(lx, ly)) { screen = Screen.PLAYING; return }
+                if (isCloseTapped(lx, ly)) {
+                    screen = Screen.PLAYING
+                    audio.play(Sfx.CLOSE)
+                    return
+                }
                 // 一覧から選ぶ。行の位置は描画と同じ式で求める。
                 val idx = (ly - monumentListTop()) / MONUMENT_ROW_H
                 val m = Monument.entries.getOrNull(idx)
@@ -898,6 +1066,7 @@ class GameView(
             Screen.MESSAGE -> {
                 if (isCloseTapped(lx, ly)) {
                     screen = Screen.PLAYING
+                    audio.play(Sfx.CLOSE)
                     message = null
                 }
                 return
@@ -937,6 +1106,7 @@ class GameView(
             if (lx in infoButtonX.first..infoButtonX.second) {
                 if (!tutorial.allowsInfo()) { showToast("いまは ステップの とおりに"); return }
                 screen = Screen.INFO
+                audio.play(Sfx.OPEN)
                 tutorial.onInfoOpened()
                 showTutorialMessageIfNeeded()
                 return
@@ -944,6 +1114,7 @@ class GameView(
             if (lx in budgetButtonX.first..budgetButtonX.second) {
                 if (!tutorial.allowsBudget()) { showToast("いまは ステップの とおりに"); return }
                 screen = Screen.BUDGET
+                audio.play(Sfx.OPEN)
                 tutorial.onBudgetOpened()
                 showTutorialMessageIfNeeded()
                 return
@@ -951,6 +1122,7 @@ class GameView(
             if (lx >= monumentButtonX.first) {
                 if (tutorial.active) { showToast("チュートリアルの あとで"); return }
                 screen = Screen.MONUMENTS
+                audio.play(Sfx.OPEN)
                 return
             }
         }
@@ -1002,6 +1174,7 @@ class GameView(
         val cy = info.closeButtonY(logicalH)
         if (ly >= cy && ly < cy + 28) {
             screen = Screen.PLAYING
+            audio.play(Sfx.CLOSE)
             onStateChanged?.invoke()
             return
         }
@@ -1029,11 +1202,30 @@ class GameView(
             invalidate()
             return
         }
+        // 音のオン・オフ
+        info.soundToggleAt(lx, ly)?.let { which ->
+            if (which == 0) {
+                audio.sfxEnabled = !audio.sfxEnabled
+                info.sfxOn = audio.sfxEnabled
+                Settings.setSfxEnabled(context, audio.sfxEnabled)
+                // 切り替えた手ごたえを、その場で返す
+                if (audio.sfxEnabled) audio.play(Sfx.TAP)
+            } else {
+                audio.bgmEnabled = !audio.bgmEnabled
+                info.bgmOn = audio.bgmEnabled
+                Settings.setBgmEnabled(context, audio.bgmEnabled)
+                if (audio.bgmEnabled) updateBgm()
+            }
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
         // 自分の様式の色を決める
         if (info.customEditTapped(lx, ly)) {
             city.style = City.Style.CUSTOM
             info.custom = city.customStyle
             screen = Screen.STYLE_EDIT
+            audio.play(Sfx.OPEN)
             onStateChanged?.invoke()
             invalidate()
             return
@@ -1058,6 +1250,7 @@ class GameView(
         val by = styleEditor.backButtonY(logicalH)
         if (ly >= by && ly < by + 28) {
             screen = Screen.INFO
+            audio.play(Sfx.CLOSE)
             onStateChanged?.invoke()
             invalidate()
             return
@@ -1098,6 +1291,7 @@ class GameView(
         if (blocker != null) { showToast(blocker); return }
         pendingMonument = m
         screen = Screen.PLAYING
+        audio.play(Sfx.TAP)
         showToast("ばしょを タップ")
     }
 
@@ -1110,6 +1304,7 @@ class GameView(
             messageTitle = m.label
             message = m.blurb
             screen = Screen.MESSAGE
+            audio.play(Sfx.MONUMENT)
             onStateChanged?.invoke()
         }
     }
@@ -1133,18 +1328,40 @@ class GameView(
         return tx to ty
     }
 
+    /**
+     * 画面の点が指すタイル座標。[mapCoords] と違い、
+     * 盤の外でも切り捨てずに実数で返す。拡大の軸を求めるのに使う。
+     */
+    private fun mapCoordsFree(lx: Int, ly: Int): Pair<Float, Float>? {
+        val mapTop = Hud.STATUS_HEIGHT
+        val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
+        val originX = LOGICAL_W / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
+        val originY = mapTop + mapHeight / 2 - Iso.screenY2(camX, camY).toInt() * zoomNum / zoomDen
+        val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
+        val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
+        // Iso.tileAt と同じ式。切り捨てずに実数のまま返す。
+        val a = sx / (Iso.TILE_W / 2f)
+        val b = sy / (Iso.TILE_H / 2f)
+        return ((a + b) / 2f) to ((b - a) / 2f)
+    }
+
     private fun applyToolAt(lx: Int, ly: Int) {
         if (city.gameOver) return
         val (tx, ty) = mapCoords(lx, ly) ?: return
 
         if (selectedTool == TileKind.EMPTY) {
-            if (tutorial.active) { showToast("いまは こわせません"); return }
-            if (city.bulldoze(tx, ty)) { onStateChanged?.invoke(); invalidate() }
+            if (tutorial.active) { showToast("いまは こわせません"); audio.play(Sfx.DENIED); return }
+            if (city.bulldoze(tx, ty)) {
+                audio.play(Sfx.BULLDOZE)
+                onStateChanged?.invoke()
+                invalidate()
+            }
             return
         }
 
         if (!tutorial.allowsBuild(selectedTool)) {
             showToast("いまは ちがう どうぐです")
+            audio.play(Sfx.DENIED)
             return
         }
 
@@ -1153,7 +1370,7 @@ class GameView(
         if (existing.kind == selectedTool) return
 
         val blocker = city.buildBlocker(tx, ty, selectedTool)
-        if (blocker != null) { showToast(blocker); return }
+        if (blocker != null) { showToast(blocker); audio.play(Sfx.DENIED); return }
 
         // 求められた数を超えて置かせない。余分な設置は資金と土地の無駄になり、
         // 「あと N」の意味も分からなくなる。
@@ -1173,6 +1390,7 @@ class GameView(
         }
 
         if (city.build(tx, ty, selectedTool)) {
+            audio.play(sfxForTool(selectedTool))
             tutorial.onBuilt(selectedTool)
             showTutorialMessageIfNeeded()
             if (tutorial.finished) onTutorialFinished?.invoke()
@@ -1236,5 +1454,38 @@ class GameView(
         camY = camY.coerceIn(-2f, city.height + 2f)
     }
 
-    fun pause() { speedIndex = 0 }
+    fun pause() {
+        speedIndex = 0
+        audio.pause()
+    }
+
+    /** 画面に戻ってきた。曲を鳴らし直す。 */
+    fun resume() {
+        audio.resume()
+        updateBgm()
+    }
+
+    /**
+     * 画面に付いた。ここで曲を始める。
+     *
+     * [MainActivity] は画面を差し替えて組み立てるので、
+     * onResume より後に view ができることがある。
+     * その場合 onResume の resume() は届かないため、
+     * 付いた時点でも鳴らし直す。
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        audio.resume()
+        updateBgm()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        audio.pause()
+    }
+
+    /** 画面から離れる。音を止めて、機械の資源を返す。 */
+    fun releaseAudio() {
+        audio.release()
+    }
 }

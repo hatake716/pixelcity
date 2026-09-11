@@ -393,6 +393,27 @@ class InfoPanel(private val text: GbText) {
      */
     private fun drawSettings(pixels: PixelCanvas, city: City, logicalH: Int) {
         var y = rowY(0)
+
+        // --- 音 ---
+        text.textSize = 14
+        text.draw(pixels, "おと", MARGIN + 6, y, Palette.UI_ACCENT)
+        y += ROW
+        soundRowY = y
+        val half = (GameView.LOGICAL_W - MARGIN * 2) / 2
+        for ((i, on) in booleanArrayOf(sfxOn, bgmOn).withIndex()) {
+            val x = MARGIN + i * half
+            pixels.fillRect(x, y, half - 3, 24, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+            pixels.drawRect(x, y, half - 3, 24, Palette.UI_LINE)
+            text.textSize = 12
+            val label = if (i == 0) "こうかおん" else "おんがく"
+            text.drawCentered(
+                pixels, "$label ${if (on) "オン" else "オフ"}",
+                x + (half - 3) / 2, y + 6,
+                if (on) Palette.UI_BG else Palette.UI_DIM,
+            )
+        }
+        y += 32
+
         text.textSize = 14
         text.draw(pixels, "まちなみの ようしき", MARGIN + 6, y, Palette.UI_ACCENT)
         y += ROW
@@ -472,6 +493,22 @@ class InfoPanel(private val text: GbText) {
 
     /** いま編集中のカスタム様式。見本を出すために持つ。 */
     var custom: CustomStyle? = null
+
+    /** 音の設定。表示のために持つだけで、実際に鳴らすのは GameView。 */
+    var sfxOn: Boolean = true
+    var bgmOn: Boolean = true
+    private var soundRowY = -1
+
+    /**
+     * 音の釦のどちらを押したか。
+     * 0 = 効果音、1 = 音楽、押していなければ null。
+     */
+    fun soundToggleAt(lx: Int, ly: Int): Int? {
+        if (tab != Tab.SETTINGS || soundRowY < 0) return null
+        if (ly < soundRowY || ly >= soundRowY + 24) return null
+        val half = (GameView.LOGICAL_W - MARGIN * 2) / 2
+        return if (lx < MARGIN + half) 0 else 1
+    }
 
     private fun customSwatch(slot: CustomStyle.Slot): Int =
         custom?.get(slot) ?: slot.default

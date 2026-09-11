@@ -232,4 +232,14 @@ class MainActivity : Activity() {
         gameView?.pause()
         save()
     }
+
+    override fun onResume() {
+        super.onResume()
+        gameView?.resume()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        gameView?.releaseAudio()
+    }
 }
