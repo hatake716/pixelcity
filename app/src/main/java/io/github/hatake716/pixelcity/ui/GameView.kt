@@ -289,12 +289,21 @@ class GameView(
 
         // 警告は1行にまとめる
         val warning = when {
-            city.powerSupply < city.powerDemand -> "でんりょくが たりません"
+            city.powerSupply < city.powerDemand -> {
+                // どれだけ足りないのかを出す。「たりません」だけでは
+                // 発電所を何基 建てればよいのか分からない。
+                val short = city.powerDemand - city.powerSupply
+                val plants = (short + 1_999) / 2_000
+                "はつでんしょ あと${plants}"
+            }
             else -> city.bankruptcyWarning()?.let { "はさんまで ${it}かげつ" }
         }
         if (warning != null) {
+            // 需要バーに かぶらない幅で切る。
             text.textSize = 14
-            text.draw(pixels, warning, 4, 37, 3)
+            var w: String = warning
+            while (w.isNotEmpty() && text.measure(w) > 248) w = w.dropLast(1)
+            text.draw(pixels, w, 4, 37, 3)
         }
     }
 
@@ -482,7 +491,12 @@ class GameView(
         text.draw(pixels, "ししゅつ    $${city.lastUpkeep}", 30, y, 3); y += 20
         val balance = city.lastIncome - city.lastUpkeep
         text.draw(pixels, "さしひき    $${balance}", 30, y, 3); y += 24
-        text.draw(pixels, "でんりょく  ${city.powerSupply}/${city.powerDemand}", 30, y, 3); y += 20
+        val powerLabel = if (city.powerSupply < city.powerDemand) {
+            "でんりょく  ${city.powerSupply}/${city.powerDemand} ふそく"
+        } else {
+            "でんりょく  ${city.powerSupply}/${city.powerDemand}"
+        }
+        text.draw(pixels, powerLabel, 30, y, 3); y += 20
         text.draw(pixels, "しごと     ${city.jobs}", 30, y, 3); y += 20
         if (city.tourismIncome > 0) {
             text.draw(pixels, "かんこう    $${city.tourismIncome}", 30, y, 3); y += 20
