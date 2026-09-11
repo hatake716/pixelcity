@@ -19,6 +19,9 @@ class PixelCanvas(val width: Int, val height: Int) {
     fun get(x: Int, y: Int): Int =
         if (x < 0 || y < 0 || x >= width || y >= height) 0 else pixels[y * width + x].toInt()
 
+    /** 透明（-1）を含めて塗りつぶす。デバッグ用。 */
+    fun clearTo(value: Int) = pixels.fill(value.toByte())
+
     fun fillRect(x: Int, y: Int, w: Int, h: Int, value: Int) {
         val v = value.toByte()
         val x0 = maxOf(0, x)

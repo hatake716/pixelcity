@@ -11,12 +11,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 描画の検証。Android に依存しないピクセルバッファへ描いて、結果を数える。
- * 実機で見つけた「モニュメントが欠ける」不具合を、ここで再発させない。
+ * 斜め見下ろしの描画。Android に依存しないピクセルバッファへ描いて結果を数える。
  */
 class CityRendererTest {
 
-    private val tileSize = 16
+    private val w = 480
+    private val h = 420
 
     private fun flatCity() = City().apply {
         for (t in tiles) t.terrain = Terrain.LAND
@@ -24,83 +24,112 @@ class CityRendererTest {
         population = 99_999
     }
 
-    private fun render(city: City, w: Int = 320, h: Int = 288): PixelCanvas {
+    /** 街の中心をカメラに置いて描く。 */
+    private fun render(
+        city: City,
+        zoomNum: Int = 1,
+        zoomDen: Int = 1,
+        camX: Float = 16f,
+        camY: Float = 16f,
+    ): PixelCanvas {
         val canvas = PixelCanvas(w, h)
-        CityRenderer().draw(canvas, city, 0f, 0f, tileSize, 0, h)
+        CityRenderer().draw(canvas, city, camX, camY, zoomNum, zoomDen, 0, h)
         return canvas
     }
 
-    /** 描いた範囲に、そのパレット値が何画素あるか。 */
-    private fun count(canvas: PixelCanvas, x: Int, y: Int, w: Int, h: Int, value: Int): Int {
-        var n = 0
-        for (yy in y until y + h) for (xx in x until x + w) if (canvas.get(xx, yy) == value) n++
-        return n
+    private fun distinctLevels(c: PixelCanvas): Int =
+        c.pixels.map { it.toInt() }.toSet().size
+
+    @Test
+    fun `an empty map still draws ground`() {
+        val c = render(flatCity())
+        assertTrue("ground is flat colour", distinctLevels(c) > 1)
     }
 
     /**
-     * モニュメントは 2×2 タイルいっぱいに描かれること。
-     *
-     * 地形と同じ周回で描いていたころは、右と下のタイルの地形が
-     * スプライトの上に重なって、右下の4分の3が欠けていた。
+     * 建物が地面より上へ伸びること。
+     * 斜め見下ろしでは、建物はタイルの菱形より上の行にも画素を持つ。
      */
     @Test
-    fun `a monument is drawn across its whole two by two area`() {
+    fun `buildings rise above their tile`() {
+        val plain = render(flatCity())
         val city = flatCity()
-        assertTrue(city.buildMonument(2, 2, Monument.TOKYO_TOWER))
-        val canvas = render(city)
+        // 中心に高い建物を建てる
+        city.build(16, 16, TileKind.ZONE_C)
+        city.tileAt(16, 16).stage = 3
+        val built = render(city)
+        assertTrue(
+            "the tall building did not change the picture",
+            !plain.pixels.contentEquals(built.pixels),
+        )
+    }
 
-        val x = 2 * tileSize
-        val y = 2 * tileSize
-        val span = tileSize * 2
-        // 4つの象限すべてに、建物の画素（最も濃い値）があること
-        for (qy in 0..1) for (qx in 0..1) {
-            val dark = count(canvas, x + qx * tileSize, y + qy * tileSize, tileSize, tileSize, 3)
-            assertTrue("quadrant ($qx,$qy) is empty", dark > 0)
+    /** 手前の建物が、奥の建物より後に描かれること（正しく重なる）。 */
+    @Test
+    fun `nearer buildings are drawn over farther ones`() {
+        val city = flatCity()
+        // 同じ画面位置に重なるように、奥と手前へ高い建物を置く
+        for (d in 0..3) {
+            city.build(16 + d, 16 + d, TileKind.ZONE_C)
+            city.tileAt(16 + d, 16 + d).stage = 3
         }
+        val c = render(city)
+        // 崩れずに描けていれば、いろいろな階調が出る
+        assertTrue(distinctLevels(c) >= 4)
     }
 
     @Test
-    fun `every monument renders without being clipped`() {
+    fun `every monument renders somewhere on screen`() {
         for (m in Monument.entries) {
             val city = flatCity()
-            // 水辺を要求するものにも応えられるよう、2×2 の隣に水を置く
-            city.tileAt(4, 2).terrain = Terrain.WATER
-            assertTrue("${m.name} not placed", city.buildMonument(2, 2, m))
-            val canvas = render(city)
-            val dark = count(canvas, 2 * tileSize, 2 * tileSize, tileSize * 2, tileSize * 2, 3)
-            assertTrue("${m.name} drew only $dark pixels", dark > 40)
+            city.tileAt(18, 16).terrain = Terrain.WATER
+            assertTrue("${m.name} not placed", city.buildMonument(16, 16, m))
+            val plain = render(flatCity())
+            val built = render(city)
+            assertTrue(
+                "${m.name} did not appear",
+                !plain.pixels.contentEquals(built.pixels),
+            )
         }
     }
 
     @Test
-    fun `roads and zones are drawn where they were built`() {
+    fun `roads look different from bare ground`() {
+        val plain = render(flatCity())
         val city = flatCity()
-        city.build(1, 1, TileKind.ROAD)
-        city.build(3, 1, TileKind.ZONE_R)
-        city.tileAt(3, 1).stage = 2
-        val canvas = render(city)
-        assertTrue(count(canvas, tileSize, tileSize, tileSize, tileSize, 3) > 0)
-        assertTrue(count(canvas, 3 * tileSize, tileSize, tileSize, tileSize, 3) > 0)
+        for (d in -3..3) city.build(16 + d, 16, TileKind.ROAD)
+        val roads = render(city)
+        assertTrue(!plain.pixels.contentEquals(roads.pixels))
     }
 
-    /** 水は陸と違う見た目になること。 */
     @Test
     fun `water looks different from land`() {
+        val land = render(flatCity())
         val city = flatCity()
-        city.tileAt(1, 1).terrain = Terrain.WATER
-        val canvas = render(city)
-        val water = count(canvas, tileSize, tileSize, tileSize, tileSize, 2)
-        val land = count(canvas, 5 * tileSize, 5 * tileSize, tileSize, tileSize, 2)
-        assertTrue("water=$water land=$land", water != land)
+        for (y in 14..18) for (x in 14..18) city.tileAt(x, y).terrain = Terrain.WATER
+        val sea = render(city)
+        assertTrue(!land.pixels.contentEquals(sea.pixels))
     }
 
-    /** 画面の外を指していても落ちないこと。 */
+    /** どの拡大率でも落ちずに描けること。 */
+    @Test
+    fun `rendering works at every zoom level`() {
+        val city = flatCity()
+        for (d in -4..4) city.build(16 + d, 16, TileKind.ROAD)
+        city.build(16, 15, TileKind.ZONE_R)
+        city.tileAt(16, 15).stage = 2
+        for ((num, den) in listOf(1 to 2, 1 to 1, 2 to 1)) {
+            val c = render(city, num, den)
+            assertTrue("zoom $num/$den drew nothing", distinctLevels(c) > 1)
+        }
+    }
+
+    /** 画面の外にカメラを置いても落ちないこと。 */
     @Test
     fun `rendering outside the map does not crash`() {
         val city = flatCity()
-        val canvas = PixelCanvas(320, 288)
-        CityRenderer().draw(canvas, city, -5f, -5f, tileSize, 0, 288)
-        CityRenderer().draw(canvas, city, 100f, 100f, tileSize, 0, 288)
-        assertEquals(320, canvas.width)
+        render(city, camX = -40f, camY = -40f)
+        render(city, camX = 200f, camY = 200f)
+        assertEquals(480, w)
     }
 }

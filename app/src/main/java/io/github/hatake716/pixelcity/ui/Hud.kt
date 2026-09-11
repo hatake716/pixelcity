@@ -53,16 +53,16 @@ object Hud {
             val bx = x + i * 12
             val mid = y + height / 2
             // 目盛りの中心線
-            canvas.fillRect(bx, mid, 10, 1, 2)
+            canvas.fillRect(bx, mid, 10, 1, 9)
             val v = values[i].coerceIn(-100, 100)
             val span = v * (height / 2 - 1) / 100
             when {
-                span > 0 -> canvas.fillRect(bx + 1, mid - span, 8, span, 3)
-                span < 0 -> canvas.ditherRect(bx + 1, mid + 1, 8, -span, 3)
+                span > 0 -> canvas.fillRect(bx + 1, mid - span, 8, span, 15)
+                span < 0 -> canvas.ditherRect(bx + 1, mid + 1, 8, -span, 13)
             }
             // 枠は上下だけ引いて、棒を見やすくする
-            canvas.fillRect(bx, y, 10, 1, 2)
-            canvas.fillRect(bx, y + height - 1, 10, 1, 2)
+            canvas.fillRect(bx, y, 10, 1, 9)
+            canvas.fillRect(bx, y + height - 1, 10, 1, 9)
         }
     }
 }

@@ -1,61 +1,99 @@
 package io.github.hatake716.pixelcity
 
 import io.github.hatake716.pixelcity.game.Monument
-import io.github.hatake716.pixelcity.game.Terrain
-import io.github.hatake716.pixelcity.game.TileKind
+import io.github.hatake716.pixelcity.ui.Iso
+import io.github.hatake716.pixelcity.ui.IsoBuildings
 import io.github.hatake716.pixelcity.ui.MonumentSprites
-import io.github.hatake716.pixelcity.ui.Sprites
+import io.github.hatake716.pixelcity.ui.Pix
+import io.github.hatake716.pixelcity.ui.Sprite
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** ドット絵は文字列で書いているので、寸法と値の範囲を機械的に確かめる。 */
+/**
+ * ドット絵は生成しているので、寸法・階調・中身の有無を機械的に確かめる。
+ * 立体に見えるかどうかは、面ごとの明るさが分かれているかで見る。
+ */
 class SpritesTest {
 
+    private fun buildings(): List<Pair<String, Sprite>> = listOf(
+        "HOUSE_1" to IsoBuildings.HOUSE_1,
+        "HOUSE_2" to IsoBuildings.HOUSE_2,
+        "HOUSE_3" to IsoBuildings.HOUSE_3,
+        "SHOP_1" to IsoBuildings.SHOP_1,
+        "SHOP_2" to IsoBuildings.SHOP_2,
+        "SHOP_3" to IsoBuildings.SHOP_3,
+        "FACTORY_1" to IsoBuildings.FACTORY_1,
+        "FACTORY_2" to IsoBuildings.FACTORY_2,
+        "FACTORY_3" to IsoBuildings.FACTORY_3,
+        "POWER_COAL" to IsoBuildings.POWER_COAL,
+        "POWER_SOLAR" to IsoBuildings.POWER_SOLAR,
+        "PARK" to IsoBuildings.PARK,
+        "POLICE" to IsoBuildings.POLICE,
+        "FIRE" to IsoBuildings.FIRE,
+        "SCHOOL" to IsoBuildings.SCHOOL,
+        "HOSPITAL" to IsoBuildings.HOSPITAL,
+    )
+
     @Test
-    fun `every monument has a well formed sprite`() {
+    fun `buildings are one tile wide and taller than the ground`() {
+        for ((name, s) in buildings()) {
+            assertEquals("$name width", Iso.TILE_W, s.width)
+            assertTrue("$name is not taller than a tile", s.height > Iso.TILE_H)
+        }
+    }
+
+    @Test
+    fun `every sprite uses only valid palette levels`() {
+        val all = buildings() + Monument.entries.map { it.name to MonumentSprites.of(it) }
+        for ((name, s) in all) {
+            for (v in s.data) {
+                assertTrue("$name has level $v", v == Pix.TRANSPARENT || v in 0..15)
+            }
+            assertTrue("$name is blank", s.inkCount > 30)
+        }
+    }
+
+    /**
+     * 立体に見えるには、面ごとに明るさが違う必要がある。
+     * 使われている階調が1〜2種類しかないと、のっぺりした板になる。
+     */
+    @Test
+    fun `buildings are shaded with several levels`() {
+        for ((name, s) in buildings()) {
+            val levels = s.data.filter { it != Pix.TRANSPARENT }.toSet()
+            assertTrue("$name uses only ${levels.size} levels", levels.size >= 3)
+        }
+    }
+
+    @Test
+    fun `monuments occupy two tiles across and stand tall`() {
         for (m in Monument.entries) {
             val s = MonumentSprites.of(m)
-            assertEquals("${m.name} size", MonumentSprites.SIZE * MonumentSprites.SIZE, s.size)
-            assertTrue("${m.name} palette", s.all { it in 0..3 })
-            // 真っ白（全0）では建物が見えない
-            assertTrue("${m.name} is blank", s.any { it > 0 })
+            assertEquals("${m.name} width", MonumentSprites.W, s.width)
+            assertTrue("${m.name} is too short (${s.height})", s.height >= Iso.TILE_H * 2)
+            val levels = s.data.filter { it != Pix.TRANSPARENT }.toSet()
+            assertTrue("${m.name} uses only ${levels.size} levels", levels.size >= 3)
         }
     }
 
+    /** 同じモニュメントを2回取っても同じ絵（生成結果を使い回している）。 */
     @Test
-    fun `zone sprites exist for every stage`() {
-        for (kind in listOf(TileKind.ZONE_R, TileKind.ZONE_C, TileKind.ZONE_I)) {
-            for (stage in 0..3) {
-                val s = Sprites.forZone(kind, stage)
-                assertEquals("$kind stage$stage", Sprites.SIZE * Sprites.SIZE, s.size)
-                assertTrue("$kind stage$stage palette", s.all { it in 0..3 })
-            }
+    fun `monument sprites are cached`() {
+        for (m in Monument.entries) {
+            assertTrue(MonumentSprites.of(m) === MonumentSprites.of(m))
         }
     }
 
+    /** 建物どうしが見分けられること（同じ絵を使い回していない）。 */
     @Test
-    fun `terrain and building sprites are well formed`() {
-        for (t in Terrain.entries) {
-            assertEquals(Sprites.SIZE * Sprites.SIZE, Sprites.forTerrain(t).size)
+    fun `each building looks different`() {
+        val seen = mutableMapOf<String, String>()
+        for ((name, s) in buildings()) {
+            val key = s.data.joinToString("") { it.toString() }
+            val dup = seen[key]
+            assertTrue("$name looks identical to $dup", dup == null)
+            seen[key] = name
         }
-        for (kind in listOf(
-            TileKind.POWER_COAL, TileKind.POWER_SOLAR, TileKind.PARK,
-            TileKind.POLICE, TileKind.FIRE, TileKind.SCHOOL, TileKind.HOSPITAL,
-        )) {
-            val s = Sprites.forBuilding(kind)
-            assertNotNull("$kind missing", s)
-            assertEquals("$kind", Sprites.SIZE * Sprites.SIZE, s!!.size)
-        }
-    }
-
-    @Test
-    fun `road sprite varies with its connections`() {
-        val cross = Sprites.roadFor(left = true, right = true, up = true, down = true)
-        val vertical = Sprites.roadFor(left = false, right = false, up = true, down = true)
-        val horizontal = Sprites.roadFor(left = true, right = true, up = false, down = false)
-        assertTrue(!cross.contentEquals(vertical))
-        assertTrue(!vertical.contentEquals(horizontal))
     }
 }

@@ -38,17 +38,30 @@ class GameView(
          * 2倍にして文字を 16px で描くほうが読みやすく、情報量も足りる。
          * タイルは 8×8 のドット絵を2倍に拡大して使うので、見た目の粒は変わらない。
          */
-        const val LOGICAL_W = 320
-        /** 縦の既定値。実際の高さは端末の縦横比にあわせて [logicalHeight] で決まる。 */
-        const val LOGICAL_H = 288
-        /** 縦に取りうる範囲。これ以上細長くしても情報が薄くなるだけ。 */
-        const val LOGICAL_H_MAX = 640
+        /**
+         * 論理解像度の横幅。
+         *
+         * ドット絵を細かくしたぶん、1画面に入る情報量を確保するために広くとる。
+         * 1080px の端末なら 2倍、1440px なら 2〜3倍で表示される。
+         */
+        const val LOGICAL_W = 480
+        /** 縦の既定値。実際の高さは端末の縦横比にあわせて決まる。 */
+        const val LOGICAL_H = 420
+        /** 縦に取りうる範囲。 */
+        const val LOGICAL_H_MAX = 1000
         /** 1か月の実時間（ミリ秒）。速度倍率で割る。 */
         const val MONTH_MILLIS = 8_000L
         private val SPEEDS = intArrayOf(0, 1, 2, 4)
 
+        /**
+         * 拡大率の段（分子, 分母）。
+         * 1/2 = 街全体を見渡す、1/1 = 標準、2/1 = 建物の細部まで寄る。
+         */
+        private val ZOOM_STEPS = arrayOf(1 to 2, 1 to 1, 2 to 1)
+
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
-        private const val SPEED_X = 212
+        private const val SPEED_X = 150
+        private const val ZOOM_X = 196
         private const val BUDGET_X = 168
         private const val MONUMENT_X = 236
         private const val BANNER_H = 104
@@ -57,6 +70,16 @@ class GameView(
         private const val TAX_PLUS_X = 240
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
         private const val BODY_SIZE = 15
+
+        // 画面まわりの色。16階調のどこを使うかをここにまとめる。
+        /** パネルや帯の下地。 */
+        private const val C_BG = 1
+        /** 罫線・枠。 */
+        private const val C_LINE = 11
+        /** 本文の文字。 */
+        private const val C_TEXT = 15
+        /** 補助的な文字。 */
+        private const val C_DIM = 9
         /** モニュメント一覧の行の高さ。 */
         private const val MONUMENT_ROW_H = 20
         private const val CLOSE_X = LOGICAL_W - 84
@@ -89,10 +112,27 @@ class GameView(
     private var offsetY = 0
 
     // --- カメラ ---
-    private var camX = 8f
-    private var camY = 8f
+    // カメラは「画面の中央に来るタイル座標」。斜め見下ろしなので、
+    // 縦横のタイル数ではなく中心を持つほうが素直になる。
+    private var camX = 16f
+    private var camY = 16f
     private var cameraInitialised = false
-    private var tileSize = 16
+    /**
+     * 地図の拡大率の段。[ZOOM_STEPS] の索引。
+     * 引いた画（街全体）から、寄った画（建物の細部）まで選べる。
+     */
+    private var zoomStep = 1
+
+    /** いまの拡大率。分数を使わずに済むよう、分子と分母で持つ。 */
+    private val zoomNum: Int get() = ZOOM_STEPS[zoomStep].first
+    private val zoomDen: Int get() = ZOOM_STEPS[zoomStep].second
+
+    /** 拡大率を切り替える。 */
+    fun cycleZoom() {
+        zoomStep = (zoomStep + 1) % ZOOM_STEPS.size
+        clampCamera()
+        invalidate()
+    }
 
     // --- 入力 ---
     private var lastTouchX = 0f
@@ -183,8 +223,11 @@ class GameView(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        // 横幅にあわせた整数倍で拡大し、画面の横いっぱいを使う。
+        // 横幅にあわせた整数倍で拡大する。ただし、その倍率で縦に最低限の
+        // 高さ（LOGICAL_H）が入らない画面（横向きなど）では、縦に合わせて縮める。
+        // 横だけで決めると、横向きで文字が巨大になり画面からあふれる。
         scale = max(1, w / LOGICAL_W)
+        while (scale > 1 && h / scale < LOGICAL_H) scale--
         // 縦は端末にあわせて論理解像度そのものを伸ばす。
         // こうしないと、細長い端末で上下に大きな余白ができ、マップが潰れる。
         logicalH = (h / scale).coerceIn(LOGICAL_H, LOGICAL_H_MAX)
@@ -227,7 +270,7 @@ class GameView(
         val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
 
         renderer.draw(
-            pixels, city, camX, camY, tileSize, mapTop, mapHeight, overlay,
+            pixels, city, camX, camY, zoomNum, zoomDen, mapTop, mapHeight, overlay,
             highlightForSelection(),
             suggest = placementHint(),
             suggestOn = blinkOn(),
@@ -269,24 +312,31 @@ class GameView(
     }
 
     private fun drawStatusBar() {
-        pixels.fillRect(0, 0, LOGICAL_W, Hud.STATUS_HEIGHT, 0)
-        pixels.fillRect(0, Hud.STATUS_HEIGHT - 1, LOGICAL_W, 1, 3)
+        pixels.fillRect(0, 0, LOGICAL_W, Hud.STATUS_HEIGHT, C_BG)
+        pixels.fillRect(0, Hud.STATUS_HEIGHT - 2, LOGICAL_W, 2, C_LINE)
 
         text.textSize = 16
-        text.draw(pixels, "$" + city.funds.toString(), 4, 1, 3)
+        text.draw(pixels, "$" + city.funds.toString(), 4, 1, C_TEXT)
 
         val year = 1900 + city.month / 12
         val mon = city.month % 12 + 1
-        text.draw(pixels, "${year}ねん${mon}がつ", 186, 1, 3)
+        text.draw(pixels, "${year}ねん${mon}がつ", LOGICAL_W - 150, 1, C_TEXT)
 
-        text.draw(pixels, "じんこう " + city.population, 4, 20, 3)
+        text.draw(pixels, "じんこう " + city.population, 4, 20, C_TEXT)
 
         // 需要バー R/C/I
         Hud.drawDemandBars(pixels, city, 258, 19, 28)
 
         // 速度
         val speedLabel = when (speedIndex) { 0 -> "‖"; 1 -> "▶"; 2 -> "▶▶"; else -> "▶▶▶" }
-        text.draw(pixels, speedLabel, SPEED_X, 20, 3)
+        text.draw(pixels, speedLabel, SPEED_X, 20, C_TEXT)
+
+        // 拡大率の切り替え
+        val zoomLabel = when (zoomStep) { 0 -> "ひろい"; 1 -> "ふつう"; else -> "よせる" }
+        pixels.drawRect(ZOOM_X, 18, 64, 24, C_LINE)
+        text.textSize = 14
+        text.draw(pixels, zoomLabel, ZOOM_X + 5, 21, C_TEXT)
+        text.textSize = 16
 
         // 警告は1行にまとめる
         val warning = when {
@@ -304,13 +354,13 @@ class GameView(
             text.textSize = 14
             var w: String = warning
             while (w.isNotEmpty() && text.measure(w) > 248) w = w.dropLast(1)
-            text.draw(pixels, w, 4, 37, 3)
+            text.draw(pixels, w, 4, 37, C_TEXT)
         }
     }
 
     private fun drawToolbar(top: Int) {
-        pixels.fillRect(0, top, LOGICAL_W, Hud.TOOLBAR_HEIGHT, 0)
-        pixels.fillRect(0, top, LOGICAL_W, 1, 3)
+        pixels.fillRect(0, top, LOGICAL_W, Hud.TOOLBAR_HEIGHT, C_BG)
+        pixels.fillRect(0, top, LOGICAL_W, 2, C_LINE)
 
         text.textSize = 14
         for ((i, tool) in Hud.TOOLS.withIndex()) {
@@ -319,23 +369,29 @@ class GameView(
             val y = top + 4
             val selected = tool.kind == selectedTool
             // 枠を二重にして選択中を示す。塗りつぶすと、同じ濃さのアイコンが消えてしまう。
-            pixels.drawRect(x, y, Hud.TOOL_SIZE, Hud.TOOL_SIZE, 3)
+            pixels.drawRect(x, y, Hud.TOOL_SIZE, Hud.TOOL_SIZE, C_LINE)
             if (selected) {
-                pixels.drawRect(x + 1, y + 1, Hud.TOOL_SIZE - 2, Hud.TOOL_SIZE - 2, 3)
-                pixels.drawRect(x + 2, y + 2, Hud.TOOL_SIZE - 4, Hud.TOOL_SIZE - 4, 3)
+                pixels.drawRect(x + 1, y + 1, Hud.TOOL_SIZE - 2, Hud.TOOL_SIZE - 2, C_TEXT)
+                pixels.drawRect(x + 2, y + 2, Hud.TOOL_SIZE - 4, Hud.TOOL_SIZE - 4, C_TEXT)
             }
 
-            // アイコン
+            // アイコン。地図と同じドット絵を縮めて見せる。
             val sprite = when (tool.kind) {
-                TileKind.ROAD -> Sprites.ROAD_CROSS
-                TileKind.ZONE_R -> Sprites.ZONE_R1
-                TileKind.ZONE_C -> Sprites.ZONE_C1
-                TileKind.ZONE_I -> Sprites.ZONE_I1
-                TileKind.EMPTY -> null
-                else -> Sprites.forBuilding(tool.kind)
+                TileKind.ROAD -> IsoTiles.ROAD_CROSS
+                TileKind.ZONE_R -> IsoBuildings.HOUSE_1
+                TileKind.ZONE_C -> IsoBuildings.SHOP_1
+                TileKind.ZONE_I -> IsoBuildings.FACTORY_1
+                TileKind.POWER_COAL -> IsoBuildings.POWER_COAL
+                TileKind.POWER_SOLAR -> IsoBuildings.POWER_SOLAR
+                TileKind.PARK -> IsoBuildings.PARK
+                TileKind.POLICE -> IsoBuildings.POLICE
+                TileKind.FIRE -> IsoBuildings.FIRE
+                TileKind.SCHOOL -> IsoBuildings.SCHOOL
+                TileKind.HOSPITAL -> IsoBuildings.HOSPITAL
+                else -> null
             }
             if (sprite != null) {
-                drawSpriteScaled(sprite, x + 6, y + 6, 16)
+                drawIcon(sprite, x + 1, y + 1, Hud.TOOL_SIZE - 2)
             } else {
                 // 取り壊しは×印
                 for (k in 0 until 16) {
@@ -346,8 +402,8 @@ class GameView(
 
             // チュートリアルで指す先を点滅させる
             if (tutorial.active && tutorial.step?.highlightTool == tool.kind && blinkOn()) {
-                pixels.drawRect(x - 3, y - 3, Hud.TOOL_SIZE + 6, Hud.TOOL_SIZE + 6, 3)
-                pixels.drawRect(x - 4, y - 4, Hud.TOOL_SIZE + 8, Hud.TOOL_SIZE + 8, 3)
+                pixels.drawRect(x - 3, y - 3, Hud.TOOL_SIZE + 6, Hud.TOOL_SIZE + 6, C_TEXT)
+                pixels.drawRect(x - 4, y - 4, Hud.TOOL_SIZE + 8, Hud.TOOL_SIZE + 8, C_TEXT)
             }
         }
 
@@ -356,32 +412,39 @@ class GameView(
         if (tool != null) {
             val price = if (tool.kind == TileKind.EMPTY) BuildCost.BULLDOZE else BuildCost.cost(tool.kind)
             text.textSize = 15
-            text.draw(pixels, "${tool.label} $${price}", 4, top + 38, 3)
+            text.draw(pixels, "${tool.label} $${price}", 4, top + 38, C_TEXT)
         }
 
         // 右下に予算・けんちくの入口
         text.textSize = 15
-        pixels.drawRect(BUDGET_X, top + 36, 62, 20, 3)
-        text.draw(pixels, "よさん", BUDGET_X + 5, top + 38, 3)
-        pixels.drawRect(MONUMENT_X, top + 36, 78, 20, 3)
-        text.draw(pixels, "けんちく", MONUMENT_X + 5, top + 38, 3)
+        pixels.drawRect(BUDGET_X, top + 36, 62, 20, C_LINE)
+        text.draw(pixels, "よさん", BUDGET_X + 5, top + 38, C_TEXT)
+        pixels.drawRect(MONUMENT_X, top + 36, 78, 20, C_LINE)
+        text.draw(pixels, "けんちく", MONUMENT_X + 5, top + 38, C_TEXT)
         if (tutorial.active && tutorial.step?.highlightBudget == true && blinkOn()) {
-            pixels.drawRect(BUDGET_X - 2, top + 34, 66, 24, 3)
+            pixels.drawRect(BUDGET_X - 2, top + 34, 66, 24, C_TEXT)
         }
         if (tutorial.active && tutorial.step?.highlightSpeed == true && blinkOn()) {
-            pixels.drawRect(SPEED_X - 4, 17, 40, 24, 3)
+            pixels.drawRect(SPEED_X - 4, 17, 40, 24, C_TEXT)
         }
     }
 
-    /** 8×8 のドット絵を [size] の大きさで描く。 */
-    private fun drawSpriteScaled(sprite: ByteArray, x: Int, y: Int, size: Int) {
-        val n = Sprites.SIZE
-        for (dy in 0 until size) {
-            val sy = dy * n / size
-            for (dx in 0 until size) {
-                val v = sprite[sy * n + dx * n / size].toInt()
-                if (v == 0) continue
-                pixels.set(x + dx, y + dy, v)
+    /**
+     * ツールバーのアイコン。[size] の枠に収まるよう縮めて描く。
+     * 縦長の建物も、全体が入るように縦横で同じ率を使う。
+     */
+    private fun drawIcon(sprite: Sprite, x: Int, y: Int, size: Int) {
+        val scaleNum = size
+        val scaleDen = maxOf(sprite.width, sprite.height)
+        // 中央寄せ
+        val ox = x + (size - sprite.width * scaleNum / scaleDen) / 2
+        val oy = y + (size - sprite.height * scaleNum / scaleDen) / 2
+        for (dy in 0 until sprite.height * scaleNum / scaleDen) {
+            val sy = dy * scaleDen / scaleNum
+            for (dx in 0 until sprite.width * scaleNum / scaleDen) {
+                val v = sprite.at(dx * scaleDen / scaleNum, sy)
+                if (v == Pix.TRANSPARENT) continue
+                pixels.set(ox + dx, oy + dy, v.toInt())
             }
         }
     }
@@ -404,9 +467,9 @@ class GameView(
         // 本文の行数と、進むボタンの有無で高さを決める。文字が欠けないようにする。
         val h = bannerHeight()
         val y = logicalH - Hud.TOOLBAR_HEIGHT - h
-        pixels.fillRect(0, y, LOGICAL_W, h, 0)
-        pixels.drawRect(0, y, LOGICAL_W, h, 3)
-        pixels.drawRect(1, y + 1, LOGICAL_W - 2, h - 2, 3)
+        pixels.fillRect(0, y, LOGICAL_W, h, C_BG)
+        pixels.drawRect(0, y, LOGICAL_W, h, C_LINE)
+        pixels.drawRect(1, y + 1, LOGICAL_W - 2, h - 2, C_LINE)
 
         // 見出しは「あと N」の手前で切る。重ねると両方読めなくなる。
         val remain = tutorial.remaining()
@@ -417,15 +480,15 @@ class GameView(
         while (title.isNotEmpty() && text.measure(title) > LOGICAL_W - 16 - counterW) {
             title = title.dropLast(1)
         }
-        text.draw(pixels, title, 8, y + 5, 3)
+        text.draw(pixels, title, 8, y + 5, C_TEXT)
         if (counter.isNotEmpty()) {
-            text.draw(pixels, counter, LOGICAL_W - text.measure(counter) - 8, y + 5, 3)
+            text.draw(pixels, counter, LOGICAL_W - text.measure(counter) - 8, y + 5, C_TEXT)
         }
-        pixels.fillRect(8, y + 26, LOGICAL_W - 16, 2, 2)
+        pixels.fillRect(8, y + 26, LOGICAL_W - 16, 2, C_LINE)
 
         var ly = y + 32
         for (line in lines) {
-            text.draw(pixels, line, 8, ly, 3)
+            text.draw(pixels, line, 8, ly, C_TEXT)
             ly += 18
         }
 
@@ -435,10 +498,10 @@ class GameView(
             val w = text.measure(label) + 16
             val bx = LOGICAL_W - w - 8
             val by = ly + 2
-            pixels.fillRect(bx, by, w, 24, 0)
-            pixels.drawRect(bx, by, w, 24, 3)
-            if (blinkOn()) pixels.drawRect(bx - 2, by - 2, w + 4, 28, 3)
-            text.draw(pixels, label, bx + 8, by + 3, 3)
+            pixels.fillRect(bx, by, w, 24, C_BG)
+            pixels.drawRect(bx, by, w, 24, C_LINE)
+            if (blinkOn()) pixels.drawRect(bx - 2, by - 2, w + 4, 28, C_TEXT)
+            text.draw(pixels, label, bx + 8, by + 3, C_TEXT)
         }
     }
 
@@ -447,9 +510,9 @@ class GameView(
         val w = text.measure(msg) + 20
         val x = (LOGICAL_W - w) / 2
         val y = logicalH - Hud.TOOLBAR_HEIGHT - 36
-        pixels.fillRect(x, y, w, 26, 0)
-        pixels.drawRect(x, y, w, 26, 3)
-        text.draw(pixels, msg, x + 10, y + 4, 3)
+        pixels.fillRect(x, y, w, 26, C_BG)
+        pixels.drawRect(x, y, w, 26, C_LINE)
+        text.draw(pixels, msg, x + 10, y + 4, C_TEXT)
     }
 
     /** いま開いているパネルの高さ。中身に合わせて決まる。 */
@@ -466,12 +529,12 @@ class GameView(
         val m = PANEL_MARGIN
         panelHeight = 44 + contentHeight + 40
         val top = panelTop()
-        pixels.fillRect(m, top, LOGICAL_W - m * 2, panelHeight, 0)
-        pixels.drawRect(m, top, LOGICAL_W - m * 2, panelHeight, 3)
-        pixels.drawRect(m + 1, top + 1, LOGICAL_W - m * 2 - 2, panelHeight - 2, 3)
+        pixels.fillRect(m, top, LOGICAL_W - m * 2, panelHeight, C_BG)
+        pixels.drawRect(m, top, LOGICAL_W - m * 2, panelHeight, C_LINE)
+        pixels.drawRect(m + 1, top + 1, LOGICAL_W - m * 2 - 2, panelHeight - 2, C_LINE)
         text.textSize = 16
-        text.drawCentered(pixels, title, LOGICAL_W / 2, top + 6, 3)
-        pixels.fillRect(m + 8, top + 28, LOGICAL_W - m * 2 - 16, 2, 2)
+        text.drawCentered(pixels, title, LOGICAL_W / 2, top + 6, C_TEXT)
+        pixels.fillRect(m + 8, top + 28, LOGICAL_W - m * 2 - 16, 2, C_LINE)
         return top + 36
     }
 
@@ -479,33 +542,33 @@ class GameView(
         val rows = 6 + if (city.tourismIncome > 0) 1 else 0
         var y = drawPanel("よさん", 28 + rows * 20 + 40)
         text.textSize = 16
-        text.draw(pixels, "ぜいりつ ${city.taxRate}%", 30, y, 3)
+        text.draw(pixels, "ぜいりつ ${city.taxRate}%", 30, y, C_TEXT)
         // 税率の増減ボタン
-        pixels.drawRect(TAX_MINUS_X, y - 2, 26, 22, 3)
-        text.drawCentered(pixels, "-", TAX_MINUS_X + 13, y - 1, 3)
-        pixels.drawRect(TAX_PLUS_X, y - 2, 26, 22, 3)
-        text.drawCentered(pixels, "+", TAX_PLUS_X + 13, y - 1, 3)
+        pixels.drawRect(TAX_MINUS_X, y - 2, 26, 22, C_LINE)
+        text.drawCentered(pixels, "-", TAX_MINUS_X + 13, y - 1, C_TEXT)
+        pixels.drawRect(TAX_PLUS_X, y - 2, 26, 22, C_LINE)
+        text.drawCentered(pixels, "+", TAX_PLUS_X + 13, y - 1, C_TEXT)
         y += 28
 
         text.textSize = 15
-        text.draw(pixels, "しゅうにゅう  $${city.lastIncome}", 30, y, 3); y += 20
-        text.draw(pixels, "ししゅつ    $${city.lastUpkeep}", 30, y, 3); y += 20
+        text.draw(pixels, "しゅうにゅう  $${city.lastIncome}", 30, y, C_TEXT); y += 20
+        text.draw(pixels, "ししゅつ    $${city.lastUpkeep}", 30, y, C_TEXT); y += 20
         val balance = city.lastIncome - city.lastUpkeep
-        text.draw(pixels, "さしひき    $${balance}", 30, y, 3); y += 24
+        text.draw(pixels, "さしひき    $${balance}", 30, y, C_TEXT); y += 24
         val powerLabel = if (city.powerSupply < city.powerDemand) {
             "でんりょく  ${city.powerSupply}/${city.powerDemand} ふそく"
         } else {
             "でんりょく  ${city.powerSupply}/${city.powerDemand}"
         }
-        text.draw(pixels, powerLabel, 30, y, 3); y += 20
-        text.draw(pixels, "しごと     ${city.jobs}", 30, y, 3); y += 20
+        text.draw(pixels, powerLabel, 30, y, C_TEXT); y += 20
+        text.draw(pixels, "しごと     ${city.jobs}", 30, y, C_TEXT); y += 20
         if (city.tourismIncome > 0) {
-            text.draw(pixels, "かんこう    $${city.tourismIncome}", 30, y, 3); y += 20
+            text.draw(pixels, "かんこう    $${city.tourismIncome}", 30, y, C_TEXT); y += 20
         }
 
         text.textSize = 14
-        text.draw(pixels, "ぜいりつが たかいと", 30, y + 4, 2)
-        text.draw(pixels, "ひとが でていきます", 30, y + 22, 2)
+        text.draw(pixels, "ぜいりつが たかいと", 30, y + 4, C_DIM)
+        text.draw(pixels, "ひとが でていきます", 30, y + 22, C_DIM)
         drawCloseButton()
     }
 
@@ -530,11 +593,11 @@ class GameView(
                 unlocked -> "${m.label} $${m.cost}"
                 else -> "${m.label}（じんこう${m.unlockPopulation}）"
             }
-            val shade = if (built || unlocked) 3 else 2
+            val shade = if (built || unlocked) C_TEXT else C_DIM
             text.draw(pixels, label, 30, y, shade)
             y += MONUMENT_ROW_H
         }
-        text.draw(pixels, "えらんで マップを タップ", 30, y + 4, 3)
+        text.draw(pixels, "えらんで マップを タップ", 30, y + 4, C_TEXT)
         drawCloseButton()
     }
 
@@ -544,24 +607,24 @@ class GameView(
         var y = drawPanel(messageTitle, lines.size * 20)
         text.textSize = 15
         for (line in lines) {
-            text.draw(pixels, line, 30, y, 3)
+            text.draw(pixels, line, 30, y, C_TEXT)
             y += 20
         }
         drawCloseButton()
     }
 
     private fun drawGameOver() {
-        pixels.clear(0)
+        pixels.clear(C_BG)
         // 画面の高さは端末で変わるので、中央から組み立てる。
         val mid = logicalH / 2
         text.textSize = 20
-        text.drawCentered(pixels, "ざいせい はさん", LOGICAL_W / 2, mid - 80, 3)
+        text.drawCentered(pixels, "ざいせい はさん", LOGICAL_W / 2, mid - 80, C_TEXT)
         text.textSize = 15
-        text.drawCentered(pixels, "しきんが つきました", LOGICAL_W / 2, mid - 40, 3)
-        text.drawCentered(pixels, "さいだい じんこう ${city.population}", LOGICAL_W / 2, mid - 16, 3)
+        text.drawCentered(pixels, "しきんが つきました", LOGICAL_W / 2, mid - 40, C_TEXT)
+        text.drawCentered(pixels, "さいだい じんこう ${city.population}", LOGICAL_W / 2, mid - 16, C_TEXT)
         text.textSize = 16
-        pixels.drawRect(LOGICAL_W / 2 - 70, restartButtonY(), 140, 28, 3)
-        text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, restartButtonY() + 4, 3)
+        pixels.drawRect(LOGICAL_W / 2 - 70, restartButtonY(), 140, 28, C_LINE)
+        text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, restartButtonY() + 4, C_TEXT)
     }
 
     /** もういちどボタンの y。描画と判定で共有する。 */
@@ -573,10 +636,10 @@ class GameView(
     private fun drawCloseButton() {
         val x = CLOSE_X
         val y = closeButtonY()
-        pixels.fillRect(x, y, 64, 26, 0)
-        pixels.drawRect(x, y, 64, 26, 3)
+        pixels.fillRect(x, y, 64, 26, C_BG)
+        pixels.drawRect(x, y, 64, 26, C_LINE)
         text.textSize = 15
-        text.draw(pixels, "とじる", x + 8, y + 4, 3)
+        text.draw(pixels, "とじる", x + 8, y + 4, C_TEXT)
     }
 
     // ------------------------------------------------------------------
@@ -638,8 +701,11 @@ class GameView(
 
                 if (panning) {
                     // 指の動きにあわせて地図を送る
-                    camX -= dx / scale / tileSize
-                    camY -= dy / scale / tileSize
+                    // 画面の移動量を、斜めの軸にほどいてタイル座標へ変換する
+                    val lx2 = dx / scale * zoomDen / zoomNum
+                    val ly2 = dy / scale * zoomDen / zoomNum
+                    camX -= (lx2 / (Iso.TILE_W / 2f) + ly2 / (Iso.TILE_H / 2f)) / 2f
+                    camY -= (ly2 / (Iso.TILE_H / 2f) - lx2 / (Iso.TILE_W / 2f)) / 2f
                     clampCamera()
                     lastTouchX = event.x
                     lastTouchY = event.y
@@ -726,7 +792,9 @@ class GameView(
         val toolbarTop = logicalH - Hud.TOOLBAR_HEIGHT
 
         // 速度
-        if (ly in 17..44 && lx in (SPEED_X - 4)..(SPEED_X + 40)) { cycleSpeed(); return }
+        if (ly in 17..44 && lx in (SPEED_X - 4)..(SPEED_X + 36)) { cycleSpeed(); return }
+        // 拡大率
+        if (ly in 17..44 && lx in ZOOM_X..(ZOOM_X + 64)) { cycleZoom(); return }
 
         // 予算・けんちく
         if (ly >= toolbarTop + 34) {
@@ -798,11 +866,21 @@ class GameView(
         }
     }
 
-    /** 論理座標からタイル座標へ。マップ外なら null。 */
+    /**
+     * 論理座標からタイル座標へ。マップ外なら null。
+     *
+     * 描画と同じ原点を使って、画面座標を菱形の格子へ戻す。
+     */
     private fun mapCoords(lx: Int, ly: Int): Pair<Int, Int>? {
         if (!isOnMap(ly)) return null
-        val tx = ((lx / tileSize.toFloat()) + camX).toInt()
-        val ty = (((ly - Hud.STATUS_HEIGHT) / tileSize.toFloat()) + camY).toInt()
+        val mapTop = Hud.STATUS_HEIGHT
+        val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
+        val originX = LOGICAL_W / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
+        val originY = mapTop + mapHeight / 2 - Iso.screenY2(camX, camY).toInt() * zoomNum / zoomDen
+        // 菱形の中心を基準に戻す
+        val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
+        val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
+        val (tx, ty) = Iso.tileAt(sx, sy)
         if (!city.inBounds(tx, ty)) return null
         return tx to ty
     }
@@ -896,21 +974,18 @@ class GameView(
 
     /** カメラを街の中央へ。 */
     fun centerCamera() {
-        camX = city.width / 2f - visibleTilesX() / 2f
-        camY = city.height / 2f - visibleTilesY() / 2f
+        camX = city.width / 2f
+        camY = city.height / 2f
         clampCamera()
     }
 
-    private fun visibleTilesX(): Float = LOGICAL_W.toFloat() / tileSize
-    private fun visibleTilesY(): Float =
-        (logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT).toFloat() / tileSize
-
-    /** マップの外が見えないようにカメラを収める。 */
+    /**
+     * カメラが街から離れすぎないようにする。
+     * 斜め見下ろしでは端が菱形にはみ出すので、少し余裕を持たせる。
+     */
     private fun clampCamera() {
-        val maxX = (city.width - visibleTilesX()).coerceAtLeast(0f)
-        val maxY = (city.height - visibleTilesY()).coerceAtLeast(0f)
-        camX = camX.coerceIn(0f, maxX)
-        camY = camY.coerceIn(0f, maxY)
+        camX = camX.coerceIn(-2f, city.width + 2f)
+        camY = camY.coerceIn(-2f, city.height + 2f)
     }
 
     fun pause() { speedIndex = 0 }
