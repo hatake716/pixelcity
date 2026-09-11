@@ -115,7 +115,7 @@ class MainActivity : Activity() {
             textSize = 11f
             setText(
                 "PIXELCITY のコードとドット絵は MIT ライセンスです。\n\n" +
-                    "どうこうフォント DotGothic16 は Fontworks Inc. による\n" +
+                    "同梱のドットフォント DotGothic16 は Fontworks Inc. による\n" +
                     "SIL Open Font License 1.1 のもとで同梱しています。\n" +
                     "改変せずそのまま収録しています。\n\n" +
                     "--- DotGothic16 OFL ---\n\n" + body,
