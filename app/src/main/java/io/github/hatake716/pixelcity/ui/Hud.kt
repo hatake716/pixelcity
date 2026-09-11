@@ -10,8 +10,14 @@ import io.github.hatake716.pixelcity.game.TileKind
  * 同じ値を使って行うので、ここが配置の唯一の出どころになる。
  */
 object Hud {
-    const val STATUS_HEIGHT = 52
-    const val TOOLBAR_HEIGHT = 96
+    /**
+     * 上下の帯の高さ。
+     *
+     * 指で押すものは、48dp（この端末で約126px、論理で約63）を下回らないようにする。
+     * それより小さいと、狙って押すのが難しくなる。
+     */
+    const val STATUS_HEIGHT = 62
+    const val TOOLBAR_HEIGHT = 132
 
     /**
      * ツールの分類。
@@ -91,14 +97,14 @@ object Hud {
         TOOLS.firstOrNull { it.kind == kind }?.label ?: ""
 
     /** 分類の並ぶ1マスの大きさ。 */
-    const val CATEGORY_W = 56
-    const val CATEGORY_H = 22
+    const val CATEGORY_W = 74
+    const val CATEGORY_H = 34
 
     fun categoryX(index: Int): Int = TOOL_GAP + index * (CATEGORY_W + TOOL_GAP)
 
     /** ツールの並ぶ1マスの大きさ。 */
-    const val TOOL_SIZE = 28
-    const val TOOL_GAP = 4
+    const val TOOL_SIZE = 44
+    const val TOOL_GAP = 6
 
     fun toolCount(): Int = TOOLS.size
 

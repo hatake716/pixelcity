@@ -67,8 +67,13 @@ class CityRenderer {
         }
 
         // カメラの位置を画面の中央に置く
-        val originX = canvas.width / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
-        val originY = viewTop + viewHeight / 2 - Iso.screenY2(camX, camY).toInt() * zoomNum / zoomDen
+        // 原点。先に整数へ落としてから割ると、拡大率が低いときに
+        // 1ドットぶんの差が何ドットにも化けて、地図がかくかく動く。
+        // 小数のまま割り、最後に一度だけ丸める。
+        val originX = canvas.width / 2 -
+            Math.round(Iso.screenX2(camX, camY) * zoomNum / zoomDen)
+        val originY = viewTop + viewHeight / 2 -
+            Math.round(Iso.screenY2(camX, camY) * zoomNum / zoomDen)
 
         val clipTop = viewTop
         val clipBottom = viewTop + viewHeight

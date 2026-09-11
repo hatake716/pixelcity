@@ -109,7 +109,18 @@ class GameView(
          * 拡大率の段（分子, 分母）。広いマップを見渡せるよう、引いた画を厚くしてある。
          * 1/4 = 街の全体像、1/2 = 区画の配置、1/1 = 標準、2/1 = 建物の細部。
          */
-        private val ZOOM_STEPS = arrayOf(1 to 16, 1 to 8, 1 to 4, 1 to 2, 1 to 1)
+        /**
+         * 拡大率の分母。描画は整数で行うので、倍率はこの分母の分数で表す。
+         * 64 なら、1/16 から 1/1 までを 1% 未満の誤差で表せる。
+         */
+        private const val ZOOM_DEN = 64
+
+        /** 引ける限界と、寄れる限界。 */
+        private const val ZOOM_MIN = 1f / 16f
+        private const val ZOOM_MAX = 1f
+
+        /** 釦で切り替えるときの段。つまむ操作は段に縛られない。 */
+        private val ZOOM_PRESETS = floatArrayOf(1f / 16f, 1f / 8f, 1f / 4f, 1f / 2f, 1f)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
         /**
@@ -169,6 +180,27 @@ class GameView(
 
     /** 端末の縦横比にあわせた論理の高さ。onSizeChanged で決まる。 */
     private var logicalH = LOGICAL_H
+
+    /**
+     * 通知の欄・操作の欄の高さ（論理ピクセル）。
+     *
+     * 絵は画面の端まで描くが、状態表示とツールバーはこの内側に置く。
+     * そうしないと、時計や戻る釦と重なって押せなくなる。
+     */
+    private val insetTop: Int get() = SystemBars.top(scale)
+    private val insetBottom: Int get() = SystemBars.bottom(scale)
+
+    /**
+     * 状態表示の帯の下端。通知の欄のぶんだけ下げる。
+     * 地図はこの下から始まる。
+     */
+    private val statusBottom: Int get() = insetTop + Hud.STATUS_HEIGHT
+
+    /**
+     * ツールバーの上端。操作の欄のぶんだけ上げる。
+     * 地図はここまで。
+     */
+    private val toolbarTopY: Int get() = logicalH - insetBottom - Hud.TOOLBAR_HEIGHT
     private var pixels = PixelCanvas(LOGICAL_W, LOGICAL_H)
     private val renderer = CityRenderer()
     private val info = InfoPanel(GbText(context))
@@ -199,37 +231,55 @@ class GameView(
     private var camY = 16f
     private var cameraInitialised = false
     /**
-     * 地図の拡大率の段。[ZOOM_STEPS] の索引。
-     * 引いた画（街全体）から、寄った画（建物の細部）まで選べる。
+     * 地図の拡大率。1.0 が等倍で、小さいほど引いた画になる。
+     *
+     * 段ではなく連続した値にしてある。つまむ操作に段でついていくと、
+     * 一定以上ひらいた瞬間に絵が跳ぶ。指の動きにそのまま追いたい。
      */
-    var zoomStep = 3
-        private set
+    var zoom: Float = 0.25f
+        private set(value) {
+            field = value.coerceIn(ZOOM_MIN, ZOOM_MAX)
+        }
 
-    /** いまの拡大率。分数を使わずに済むよう、分子と分母で持つ。 */
-    private val zoomNum: Int get() = ZOOM_STEPS[zoomStep].first
-    private val zoomDen: Int get() = ZOOM_STEPS[zoomStep].second
+    /**
+     * いまの拡大率を分数で。描画は整数の掛け算で行うため。
+     *
+     * 分母を [ZOOM_DEN] に固定し、分子だけを変える。
+     * こうすると、どの倍率でも同じ式で描ける。
+     */
+    private val zoomNum: Int get() = Math.round(zoom * ZOOM_DEN).coerceAtLeast(1)
+    private val zoomDen: Int get() = ZOOM_DEN
 
-    /** 拡大率を切り替える。 */
+    /** 段で切り替える釦のために、近い段を覚えておく。 */
+    private val zoomStepIndex: Int
+        get() = ZOOM_PRESETS.indices.minByOrNull { Math.abs(ZOOM_PRESETS[it] - zoom) } ?: 0
+
+    /** 釦で拡大率を切り替える。決まった段を順に回る。 */
     fun cycleZoom() {
-        zoomStep = (zoomStep + 1) % ZOOM_STEPS.size
+        val next = (zoomStepIndex + 1) % ZOOM_PRESETS.size
+        zoomAround(ZOOM_PRESETS[next], LOGICAL_W / 2, (statusBottom + toolbarTopY) / 2)
         clampCamera()
         invalidate()
     }
 
     /**
-     * 拡大率を1段変える。[lx]/[ly] を動かさないように地図を送る。
+     * 拡大率を [target] にする。[lx]/[ly] が指しているところを動かさない。
      *
-     * ただ段を変えるだけだと、画面の中心を軸に伸び縮みする。
+     * ただ倍率を変えるだけだと、画面の中心を軸に伸び縮みする。
      * 指で広げたところが動かないほうが、拡げている感じになる。
      *
-     * @return 実際に段が変わったか
+     * @return 実際に変わったか
      */
-    private fun zoomAround(step: Int, lx: Int, ly: Int): Boolean {
-        val next = step.coerceIn(0, ZOOM_STEPS.size - 1)
-        if (next == zoomStep) return false
+    private fun zoomAround(target: Float, lx: Int, ly: Int): Boolean {
+        val next = target.coerceIn(ZOOM_MIN, ZOOM_MAX)
+        // 描く側は分数に丸めるので、丸めた結果が同じなら何も変わらない
+        if (Math.round(next * ZOOM_DEN) == Math.round(zoom * ZOOM_DEN)) {
+            zoom = next
+            return false
+        }
         // 変える前に、その点が指しているタイルを覚えておく
         val before = mapCoordsFree(lx, ly)
-        zoomStep = next
+        zoom = next
         val after = mapCoordsFree(lx, ly)
         if (before != null && after != null) {
             // 同じ点が同じタイルを指すように、地図をずらす
@@ -279,6 +329,13 @@ class GameView(
 
     /** 選んだマスをまとめて実行する。ツールバーの「じっこう」と同じ。 */
     fun runSelectionForTest() = runSelection()
+
+    /** 拡大率を直に決める。試験で、端に寄っていない状態を作るために使う。 */
+    fun setZoomForTest(value: Float) {
+        zoom = value
+        clampCamera()
+        invalidate()
+    }
 
     /** なぞって選んでいる最中に、足しているのか外しているのか。 */
     private var strokeAdding = true
@@ -494,8 +551,8 @@ class GameView(
     }
 
     private fun renderFrame() {
-        val mapTop = Hud.STATUS_HEIGHT
-        val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
+        val mapTop = statusBottom
+        val mapHeight = toolbarTopY - statusBottom
 
         renderer.draw(
             pixels, city, camX, camY, zoomNum, zoomDen, mapTop, mapHeight, info.overlay,
@@ -552,20 +609,21 @@ class GameView(
     }
 
     private fun drawStatusBar() {
-        pixels.fillRect(0, 0, LOGICAL_W, Hud.STATUS_HEIGHT, C_BG)
-        pixels.fillRect(0, Hud.STATUS_HEIGHT - 2, LOGICAL_W, 2, C_LINE)
+        // 通知の欄の裏まで地の色を敷き、その下に中身を置く
+        pixels.fillRect(0, 0, LOGICAL_W, statusBottom, C_BG)
+        pixels.fillRect(0, statusBottom - 2, LOGICAL_W, 2, C_LINE)
 
         text.textSize = 16
-        text.draw(pixels, "$" + city.funds.toString(), 4, 1, C_TEXT)
+        text.draw(pixels, "$" + city.funds.toString(), 4, insetTop + 1, C_TEXT)
 
         val year = 1900 + city.month / 12
         val mon = city.month % 12 + 1
-        text.draw(pixels, "${year}ねん${mon}がつ", LOGICAL_W - 150, 1, C_TEXT)
+        text.draw(pixels, "${year}ねん${mon}がつ", LOGICAL_W - 150, insetTop + 1, C_TEXT)
 
-        text.draw(pixels, "じんこう " + city.population, 4, 20, C_TEXT)
+        text.draw(pixels, "じんこう " + city.population, 4, insetTop + 20, C_TEXT)
 
         // 需要バー R/C/I
-        Hud.drawDemandBars(pixels, city, 258, 19, 28)
+        Hud.drawDemandBars(pixels, city, 258, insetTop + 19, 28)
 
         // 速度
         val speedLabel = when (speedIndex) {
@@ -576,19 +634,19 @@ class GameView(
             4 -> "×10"
             else -> "×30"
         }
-        text.draw(pixels, speedLabel, SPEED_X, 20, C_TEXT)
+        text.draw(pixels, speedLabel, SPEED_X, insetTop + 20, C_TEXT)
 
         // 拡大率の切り替え
-        val zoomLabel = when (zoomStep) {
-            0 -> "ぜんたい"
-            1 -> "ひろい"
-            2 -> "ちゅう"
-            3 -> "ふつう"
+        val zoomLabel = when {
+            zoom < 0.10f -> "ぜんたい"
+            zoom < 0.19f -> "ひろい"
+            zoom < 0.36f -> "ちゅう"
+            zoom < 0.72f -> "ふつう"
             else -> "よせる"
         }
-        pixels.drawRect(ZOOM_X, 18, 64, 24, C_LINE)
+        pixels.drawRect(ZOOM_X, insetTop + 18, 64, 24, C_LINE)
         text.textSize = 14
-        text.draw(pixels, zoomLabel, ZOOM_X + 5, 21, C_TEXT)
+        text.draw(pixels, zoomLabel, ZOOM_X + 5, insetTop + 21, C_TEXT)
         text.textSize = 16
 
         // 警告は1行にまとめる
@@ -612,7 +670,8 @@ class GameView(
     }
 
     private fun drawToolbar(top: Int) {
-        pixels.fillRect(0, top, LOGICAL_W, Hud.TOOLBAR_HEIGHT, C_BG)
+        // 操作の欄の裏まで地の色を敷く
+        pixels.fillRect(0, top, LOGICAL_W, Hud.TOOLBAR_HEIGHT + insetBottom, C_BG)
         pixels.fillRect(0, top, LOGICAL_W, 2, C_LINE)
 
         // --- 分類の帯 ---
@@ -844,7 +903,7 @@ class GameView(
         val lines = text.wrap(step.body, BODY_WRAP_W)
         // 本文の行数と、進むボタンの有無で高さを決める。文字が欠けないようにする。
         val h = bannerHeight()
-        val y = logicalH - Hud.TOOLBAR_HEIGHT - h
+        val y = toolbarTopY - h
         pixels.fillRect(0, y, LOGICAL_W, h, C_BG)
         pixels.drawRect(0, y, LOGICAL_W, h, C_LINE)
         pixels.drawRect(1, y + 1, LOGICAL_W - 2, h - 2, C_LINE)
@@ -896,7 +955,7 @@ class GameView(
         text.textSize = 16
         val w = text.measure(msg) + 20
         val x = (LOGICAL_W - w) / 2
-        val y = logicalH - Hud.TOOLBAR_HEIGHT - 36
+        val y = toolbarTopY - 36
         pixels.fillRect(x, y, w, 26, C_BG)
         pixels.drawRect(x, y, w, 26, C_LINE)
         text.draw(pixels, msg, x + 10, y + 4, C_TEXT)
@@ -1059,7 +1118,7 @@ class GameView(
                 panning = false
                 strokeCancelled = false
                 // パネルを開いている間は、下のツールバーに触れさせない。
-                val tbTop = logicalH - Hud.TOOLBAR_HEIGHT
+                val tbTop = toolbarTopY
                 draggingCategories = screen == Screen.PLAYING &&
                     ly >= tbTop + 4 && ly < tbTop + 4 + Hud.CATEGORY_H
                 draggingToolbar = screen == Screen.PLAYING && ly >= tbTop && !draggingCategories
@@ -1119,23 +1178,18 @@ class GameView(
                 // つまんで拡大・縮小。地図送りより先に見る。
                 if (panning && event.pointerCount >= 2 && pinchBase > 0f) {
                     val span = pinchSpan(event)
+                    // 指の開きの比を、そのまま倍率の比にする。
+                    // 段で追うと、一定以上ひらいた瞬間に絵が跳ぶ。
                     val ratio = span / pinchBase
-                    // 段は飛び飛びなので、一定以上開いた/縮めたときに1段動かす。
-                    // 半分/2倍を目安にすると、段の刻み（2倍ずつ）と合う。
-                    val dir = when {
-                        ratio > PINCH_RATIO -> 1
-                        ratio < 1f / PINCH_RATIO -> -1
-                        else -> 0
-                    }
-                    if (dir != 0) {
+                    if (Math.abs(ratio - 1f) > 0.004f) {
                         // 2本指の中点を軸にする
                         val mx = toLogicalX((event.getX(0) + event.getX(1)) / 2f)
                         val my = toLogicalY((event.getY(0) + event.getY(1)) / 2f)
-                        if (zoomAround(zoomStep + dir, mx, my)) {
+                        if (zoomAround(zoom * ratio, mx, my)) {
                             pinched = true
                             dragged = true
                         }
-                        // 段を変えたら、そこを新しい基準にする
+                        // いまの開きを次の基準にする
                         pinchBase = span
                     }
                     // つまんでいるあいだも、中点の移動ぶんだけ地図を送る
@@ -1205,14 +1259,14 @@ class GameView(
      * 重ねると、説明に隠れて釦が押せなくなる。
      */
     private fun selectionBarBottom(): Int {
-        var bottom = logicalH - Hud.TOOLBAR_HEIGHT
+        var bottom = toolbarTopY
         if (tutorial.active && tutorial.step != null) bottom -= bannerHeight()
         return bottom
     }
 
     private fun isOnMap(ly: Int): Boolean {
-        if (ly < Hud.STATUS_HEIGHT) return false
-        var bottom = logicalH - Hud.TOOLBAR_HEIGHT
+        if (ly < statusBottom) return false
+        var bottom = toolbarTopY
         // 帯が出ているあいだは、その上だけが地図。
         // でないと、釦を押したときに下のマスまで選んでしまう。
         if (selection.isNotEmpty()) bottom = selectionBarBottom() - SELECTION_BAR_H
@@ -1288,8 +1342,8 @@ class GameView(
 
         // チュートリアルの「つぎへ」
         if (tutorial.active && tutorial.awaitingContinue()) {
-            val bannerTop = logicalH - Hud.TOOLBAR_HEIGHT - bannerHeight()
-            if (ly >= bannerTop && ly < logicalH - Hud.TOOLBAR_HEIGHT) {
+            val bannerTop = toolbarTopY - bannerHeight()
+            if (ly >= bannerTop && ly < toolbarTopY) {
                 tutorial.onContinuePressed()
                 showTutorialMessageIfNeeded()
                 if (tutorial.finished) onTutorialFinished?.invoke()
@@ -1298,12 +1352,13 @@ class GameView(
             }
         }
 
-        val toolbarTop = logicalH - Hud.TOOLBAR_HEIGHT
+        val toolbarTop = toolbarTopY
 
         // 速度
-        if (ly in 17..44 && lx in (SPEED_X - 4)..(SPEED_X + 36)) { cycleSpeed(); return }
+        val statusRow = (insetTop + 17)..(insetTop + 44)
+        if (ly in statusRow && lx in (SPEED_X - 4)..(SPEED_X + 36)) { cycleSpeed(); return }
         // 拡大率
-        if (ly in 17..44 && lx in ZOOM_X..(ZOOM_X + 64)) { cycleZoom(); return }
+        if (ly in statusRow && lx in ZOOM_X..(ZOOM_X + 64)) { cycleZoom(); return }
 
         // 情報・予算・けんちく
         if (ly >= toolbarTop + Hud.TOOLBAR_HEIGHT - 24) {
@@ -1520,10 +1575,14 @@ class GameView(
      */
     private fun mapCoords(lx: Int, ly: Int): Pair<Int, Int>? {
         if (!isOnMap(ly)) return null
-        val mapTop = Hud.STATUS_HEIGHT
-        val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
-        val originX = LOGICAL_W / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
-        val originY = mapTop + mapHeight / 2 - Iso.screenY2(camX, camY).toInt() * zoomNum / zoomDen
+        val mapTop = statusBottom
+        val mapHeight = toolbarTopY - statusBottom
+        // 描く側（CityRenderer）と同じ式でなければ、押した場所と
+        // 実際に選ばれるマスがずれる。
+        val originX = LOGICAL_W / 2 -
+            Math.round(Iso.screenX2(camX, camY) * zoomNum / zoomDen)
+        val originY = mapTop + mapHeight / 2 -
+            Math.round(Iso.screenY2(camX, camY) * zoomNum / zoomDen)
         // 菱形の中心を基準に戻す
         val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
         val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
@@ -1537,10 +1596,14 @@ class GameView(
      * 盤の外でも切り捨てずに実数で返す。拡大の軸を求めるのに使う。
      */
     private fun mapCoordsFree(lx: Int, ly: Int): Pair<Float, Float>? {
-        val mapTop = Hud.STATUS_HEIGHT
-        val mapHeight = logicalH - Hud.STATUS_HEIGHT - Hud.TOOLBAR_HEIGHT
-        val originX = LOGICAL_W / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
-        val originY = mapTop + mapHeight / 2 - Iso.screenY2(camX, camY).toInt() * zoomNum / zoomDen
+        val mapTop = statusBottom
+        val mapHeight = toolbarTopY - statusBottom
+        // 描く側（CityRenderer）と同じ式でなければ、押した場所と
+        // 実際に選ばれるマスがずれる。
+        val originX = LOGICAL_W / 2 -
+            Math.round(Iso.screenX2(camX, camY) * zoomNum / zoomDen)
+        val originY = mapTop + mapHeight / 2 -
+            Math.round(Iso.screenY2(camX, camY) * zoomNum / zoomDen)
         val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
         val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
         // Iso.tileAt と同じ式。切り捨てずに実数のまま返す。

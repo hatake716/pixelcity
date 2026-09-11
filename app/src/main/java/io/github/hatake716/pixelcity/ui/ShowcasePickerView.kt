@@ -72,18 +72,23 @@ class ShowcasePickerView(context: Context) : View(context) {
 
     private fun cardY(index: Int): Int {
         val total = ShowcaseCity.Kind.entries.size * (CARD_H + CARD_GAP)
-        val top = max(76, (logicalH - total) / 2)
+        // 欄の内側に収める
+        val usable = logicalH - SystemBars.top(scale) - SystemBars.bottom(scale)
+        val top = SystemBars.top(scale) + max(76, (usable - total) / 2)
         return top + index * (CARD_H + CARD_GAP)
     }
 
-    private fun backButtonY(): Int = logicalH - 52
+    private fun backButtonY(): Int = logicalH - SystemBars.bottom(scale) - 52
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         pixels.clear(Palette.UI_BG)
 
         text.textSize = 22
-        text.drawCentered(pixels, "おてほんから はじめる", GameView.LOGICAL_W / 2, 26, Palette.UI_ACCENT)
+        text.drawCentered(
+            pixels, "おてほんから はじめる", GameView.LOGICAL_W / 2,
+            SystemBars.top(scale) + 26, Palette.UI_ACCENT,
+        )
         pixels.fillRect(MARGIN, 60, GameView.LOGICAL_W - MARGIN * 2, 2, Palette.UI_LINE)
 
         for ((i, kind) in ShowcaseCity.Kind.entries.withIndex()) {

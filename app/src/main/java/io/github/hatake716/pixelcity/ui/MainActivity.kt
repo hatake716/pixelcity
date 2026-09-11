@@ -30,9 +30,18 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        goFullScreen()
+        drawBehindSystemBars()
         root = FrameLayout(this)
         setContentView(root)
+        // 欄の高さを受け取って、画面ぜんぶで使えるようにしておく
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            SystemBars.set(bars.top, bars.bottom)
+            view.invalidate()
+            // 子（ゲーム画面）にも伝える
+            (view as FrameLayout).getChildAt(0)?.invalidate()
+            insets
+        }
         // 旧版（1スロットだけ）で遊んでいた街を、最初の枠へ引き継ぐ。
         SaveGame.migrateLegacySave(this)
         showTitle()
@@ -243,20 +252,15 @@ class MainActivity : Activity() {
         gameView?.resume()
     }
 
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        // 通知を引き下ろしたあとなどに、また隠す
-        if (hasFocus) goFullScreen()
-    }
-
     /**
-     * 画面いっぱいに描く。
+     * 画面の端まで描く。
      *
-     * 上下の帯（状態表示と操作の欄）を隠して、街を広く見せる。
-     * 画面の端から引き出せば、いつでも出てくる。
+     * 通知の欄と操作の欄は**隠さない**。隠すと、遊んでいる最中に
+     * うっかり引き出してしまったり、戻る操作ができずに困る。
+     * 欄の裏まで絵を伸ばしたうえで、その高さぶんだけ中身を寄せる。
+     * こうすると余白は消えるが、欄には重ならない。
      */
-    private fun goFullScreen() {
-        // 表示領域を、切り欠きのある端末でも端まで広げる
+    private fun drawBehindSystemBars() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
@@ -264,11 +268,10 @@ class MainActivity : Activity() {
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
+        // 欄は出したまま。文字が読めるよう、背景に合わせて暗くする。
         WindowInsetsControllerCompat(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            // 端から引き出すと一時的に出て、しばらくすると自動で隠れる
-            systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
         }
     }
 

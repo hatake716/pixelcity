@@ -91,11 +91,13 @@ class SlotView(
     /** [index] 番目の枠の y（論理座標）。一覧を画面の中ほどに寄せる。 */
     private fun rowY(index: Int): Int {
         val total = SaveGame.SLOT_COUNT * (ROW_H + ROW_GAP)
-        val top = max(LIST_TOP, (logicalH - total) / 2)
+        // 欄の内側に収める
+        val usable = logicalH - SystemBars.top(scale) - SystemBars.bottom(scale)
+        val top = SystemBars.top(scale) + max(LIST_TOP, (usable - total) / 2)
         return top + index * (ROW_H + ROW_GAP)
     }
 
-    private fun backButtonY(): Int = logicalH - 52
+    private fun backButtonY(): Int = logicalH - SystemBars.bottom(scale) - 52
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -103,8 +105,10 @@ class SlotView(
 
         // 見出し
         text.textSize = 24
-        text.drawCentered(pixels, title, GameView.LOGICAL_W / 2, 28, Palette.UI_ACCENT)
-        pixels.fillRect(MARGIN, 62, GameView.LOGICAL_W - MARGIN * 2, 2, Palette.UI_LINE)
+        text.drawCentered(pixels, title, GameView.LOGICAL_W / 2,
+            SystemBars.top(scale) + 28, Palette.UI_ACCENT)
+        pixels.fillRect(MARGIN, SystemBars.top(scale) + 62,
+            GameView.LOGICAL_W - MARGIN * 2, 2, Palette.UI_LINE)
 
         for (i in 0 until SaveGame.SLOT_COUNT) {
             drawRow(i, slots.getOrNull(i))
