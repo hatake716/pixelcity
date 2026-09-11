@@ -244,6 +244,18 @@ class CityRenderer {
         }
     }
 
+    /**
+     * その場所の建物の番号。
+     *
+     * 場所から決めるので、同じマスなら毎回同じ絵になる。
+     * 乱数で選ぶと、画面を動かすたびに建物が入れ替わってしまう。
+     */
+    private fun variantAt(tx: Int, ty: Int): Int {
+        var h = tx * 374761393 + ty * 668265263
+        h = (h xor (h shr 13)) * 1274126177
+        return (h xor (h shr 16)) and 0x7fffffff
+    }
+
     /** そのタイルに建つもの。地面だけのタイルは null。 */
     private fun buildingFor(
         city: City,
@@ -254,22 +266,10 @@ class CityRenderer {
         // モニュメントは本体タイルでのみ描く（2×2 を1枚で覆う）
         tile.monument != null -> MonumentSprites.of(tile.monument!!)
         tile.kind == TileKind.MONUMENT -> null
-        tile.kind.isZone -> if (tile.stage == 0) null else when (tile.kind) {
-            TileKind.ZONE_R -> when (tile.stage) {
-                1 -> IsoBuildings.HOUSE_1
-                2 -> IsoBuildings.HOUSE_2
-                else -> IsoBuildings.HOUSE_3
-            }
-            TileKind.ZONE_C -> when (tile.stage) {
-                1 -> IsoBuildings.SHOP_1
-                2 -> IsoBuildings.SHOP_2
-                else -> IsoBuildings.SHOP_3
-            }
-            else -> when (tile.stage) {
-                1 -> IsoBuildings.FACTORY_1
-                2 -> IsoBuildings.FACTORY_2
-                else -> IsoBuildings.FACTORY_3
-            }
+        // 区分は、場所ごとに違う棟を建てる。
+        // 1種類しかないと、同じ建物が並んで「反復」に見えてしまう。
+        tile.kind.isZone -> if (tile.stage == 0) null else {
+            IsoBuildings.zoneBuilding(tile.kind, tile.stage, variantAt(tx, ty))
         }
         else -> when (tile.kind) {
             TileKind.POWER_COAL -> IsoBuildings.POWER_COAL

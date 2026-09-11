@@ -113,14 +113,21 @@ class GameView(
          * 拡大率の分母。描画は整数で行うので、倍率はこの分母の分数で表す。
          * 64 なら、1/16 から 1/1 までを 1% 未満の誤差で表せる。
          */
-        private const val ZOOM_DEN = 64
+        private const val ZOOM_DEN = 256
 
-        /** 引ける限界と、寄れる限界。 */
-        private const val ZOOM_MIN = 1f / 16f
-        private const val ZOOM_MAX = 1f
+        /**
+         * 引ける限界と、寄れる限界。
+         *
+         * タイルが 512px になったので、全体を見るには 1/64 まで引ける必要がある。
+         * 寄る側は 1/2（1タイル 256px）で十分に細部が見え、
+         * 等倍だと画面に1枚しか入らず、街として読めなくなる。
+         */
+        private const val ZOOM_MIN = 1f / 64f
+        private const val ZOOM_MAX = 1f / 2f
 
         /** 釦で切り替えるときの段。つまむ操作は段に縛られない。 */
-        private val ZOOM_PRESETS = floatArrayOf(1f / 16f, 1f / 8f, 1f / 4f, 1f / 2f, 1f)
+        private val ZOOM_PRESETS =
+            floatArrayOf(1f / 64f, 1f / 32f, 1f / 16f, 1f / 8f, 1f / 4f, 1f / 2f)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
         /**
@@ -239,7 +246,7 @@ class GameView(
      * 段ではなく連続した値にしてある。つまむ操作に段でついていくと、
      * 一定以上ひらいた瞬間に絵が跳ぶ。指の動きにそのまま追いたい。
      */
-    var zoom: Float = 0.25f
+    var zoom: Float = 1f / 16f
         private set(value) {
             field = value.coerceIn(ZOOM_MIN, ZOOM_MAX)
         }
@@ -653,10 +660,10 @@ class GameView(
 
         // 拡大率の切り替え
         val zoomLabel = when {
-            zoom < 0.10f -> "ぜんたい"
-            zoom < 0.19f -> "ひろい"
-            zoom < 0.36f -> "ちゅう"
-            zoom < 0.72f -> "ふつう"
+            zoom <= 1f / 48f -> "ぜんたい"
+            zoom <= 1f / 24f -> "ひろい"
+            zoom <= 1f / 12f -> "ちゅう"
+            zoom <= 1f / 6f -> "ふつう"
             else -> "よせる"
         }
         pixels.drawRect(ZOOM_X, insetTop + 18, 64, 24, C_LINE)
@@ -1897,11 +1904,14 @@ class GameView(
         super.onAttachedToWindow()
         audio.resume()
         updateBgm()
+        // 建物の絵は別の糸で作る。できあがったら描き直す。
+        IsoBuildings.onSpriteReady = { postInvalidate() }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         audio.pause()
+        IsoBuildings.onSpriteReady = null
     }
 
     /** 画面から離れる。音を止めて、機械の資源を返す。 */

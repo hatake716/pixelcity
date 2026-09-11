@@ -182,7 +182,9 @@ class TitleView(
         cityRenderer.draw(
             pixels, showcase,
             camX = 31f, camY = 31f,
-            zoomNum = 1, zoomDen = 3,
+            // タイルが 512px あるので、街並みとして見せるには
+            // このくらい引かないと、数棟しか映らない。
+            zoomNum = 1, zoomDen = 12,
             viewTop = 0, viewHeight = logicalH,
             clearBackground = false,
         )
@@ -197,4 +199,15 @@ class TitleView(
         }
         return true
     }
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // 建物の絵は別の糸で作る。できあがったら描き直す。
+        IsoBuildings.onSpriteReady = { postInvalidate() }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        IsoBuildings.onSpriteReady = null
+    }
+
 }

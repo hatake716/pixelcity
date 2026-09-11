@@ -18,7 +18,9 @@ import kotlin.math.sqrt
  *
  * 以前は 64 ドットで形を決めてから4倍に引き伸ばしていた。そのため最小の粒が
  * 4×4 の塊になり、柱・窓・装飾といった細部がそもそも描けなかった。
- * いまは最終の大きさ（[W] = 256）のまま描いている。
+ * 形は [DRAW_W] = 256 の座標で書き、置くときに [S] 倍する。
+ * 引き伸ばしではなく置く側で広げているので、
+ * ドームや円柱の縁は [S] 倍の細かさで刻める。
  *
  * 細部を出すために、次の道具を用意している。
  *  - [column]    円柱。丸みを階調で出す
@@ -30,11 +32,23 @@ import kotlin.math.sqrt
  */
 object MonumentSprites {
 
-    /** 2×2 タイルぶんの幅。形もこの大きさのまま決める。 */
+    /** 2×2 タイルぶんの幅。実際に描き出す大きさ。 */
     const val W = Iso.TILE_W * 2
 
-    /** 底面の菱形の高さ。2タイルぶんの奥行き。 */
-    private const val BASE_H = Iso.TILE_H * 2
+    /**
+     * 形を決めるときの幅。
+     *
+     * 形の定義は、この幅（256）の座標で書いてある。
+     * タイルを大きくしても、寸法を全部書き直さずに済むようにするため。
+     * 実際に画素を置くときは [S] 倍した位置へ置く。
+     */
+    private const val DRAW_W = 256
+
+    /** 形の座標から、実際の大きさへの倍率。 */
+    private const val S = W / DRAW_W
+
+    /** 底面の菱形の高さ（形の座標で）。 */
+    private const val BASE_H = 128
 
     // ------------------------------------------------------------------
     // 素材
@@ -98,28 +112,62 @@ object MonumentSprites {
     // 描く先
     // ------------------------------------------------------------------
 
+    /**
+     * 描く先。
+     *
+     * [w]/[h] は**形の座標**での大きさ。実際の絵はその [S] 倍で持つ。
+     * 形を 1 点置くと、絵の上では S×S の正方形が埋まる。
+     *
+     * この形にしてあるのは、形の定義（何百という寸法）を書き直さずに
+     * タイルの大きさを変えられるようにするため。
+     * 引き伸ばしではなく、置くときに広げているので、
+     * 円やドームの縁は S 倍の細かさで刻まれる。
+     */
     private class Buf(val w: Int, val h: Int) {
-        val data = ByteArray(w * h) { Pix.TRANSPARENT }
+        /** 実際の絵の大きさ。 */
+        val pw = w * S
+        val ph = h * S
+        val data = ByteArray(pw * ph) { Pix.TRANSPARENT }
 
+        /** 形の座標で 1 点置く。絵の上では S×S を埋める。 */
         fun set(x: Int, y: Int, v: Int) {
-            if (x in 0 until w && y in 0 until h) data[y * w + x] = v.toByte()
+            if (x < 0 || y < 0 || x >= w || y >= h) return
+            val b = v.toByte()
+            val px = x * S
+            val py = y * S
+            for (dy in 0 until S) {
+                val row = (py + dy) * pw
+                for (dx in 0 until S) data[row + px + dx] = b
+            }
+        }
+
+        /** 絵の座標で 1 点置く。曲面を S 倍の細かさで刻むときに使う。 */
+        fun setFine(px: Int, py: Int, v: Int) {
+            if (px in 0 until pw && py in 0 until ph) data[py * pw + px] = v.toByte()
         }
 
         fun get(x: Int, y: Int): Int =
-            if (x in 0 until w && y in 0 until h) data[y * w + x].toInt() else Pix.TRANSPARENT.toInt()
+            if (x in 0 until w && y in 0 until h) data[(y * S) * pw + x * S].toInt()
+            else Pix.TRANSPARENT.toInt()
 
         fun isInk(x: Int, y: Int): Boolean = get(x, y) != Pix.TRANSPARENT.toInt()
 
-        /** すでに何か描いてあるところだけ塗り替える。装飾を building の上に乗せるとき用。 */
+        /** すでに何か描いてあるところだけ塗り替える。装飾を上に乗せるとき用。 */
         fun over(x: Int, y: Int, v: Int) {
             if (isInk(x, y)) set(x, y, v)
         }
 
         fun clear(x: Int, y: Int) {
-            if (x in 0 until w && y in 0 until h) data[y * w + x] = Pix.TRANSPARENT
+            if (x < 0 || y < 0 || x >= w || y >= h) return
+            val px = x * S
+            val py = y * S
+            for (dy in 0 until S) {
+                val row = (py + dy) * pw
+                for (dx in 0 until S) data[row + px + dx] = Pix.TRANSPARENT
+            }
         }
 
-        fun toSprite() = Sprite(w, h, data)
+        fun toSprite() = Sprite(pw, ph, data)
     }
 
     // ------------------------------------------------------------------
@@ -140,22 +188,31 @@ object MonumentSprites {
             // 段の上面の中心。上の段ほど高い位置に来る。
             val top = baseY - s * thickness
             // 側面を先に、上面をあとに描く（上面が手前に来るため）
+            // 菱形の縁は斜めなので、絵の細かさで刻む。
+            // 形の座標のまま置くと、縁がぎざぎざに見える。
+            val fw = ww * S
+            val fh2 = hh * S
             for (t in thickness downTo 1) {
-                for (y in 0 until hh) for (x in 0 until ww) {
-                    val dx = (x + 0.5f) - ww / 2f
-                    val dy = (y + 0.5f) - hh / 2f
-                    if (abs(dx) / (ww / 2f) + abs(dy) / (hh / 2f) > 1f) continue
-                    // 側面が見えるのは菱形の下半分だけ
+                for (y in 0 until fh2) for (x in 0 until fw) {
+                    val dx = (x + 0.5f) - fw / 2f
+                    val dy = (y + 0.5f) - fh2 / 2f
+                    if (abs(dx) / (fw / 2f) + abs(dy) / (fh2 / 2f) > 1f) continue
                     if (dy < 0) continue
-                    set(cx - ww / 2 + x, top - hh / 2 + y + t, if (dx < 0) r.mid else r.dark)
+                    setFine(
+                        (cx - ww / 2) * S + x, (top - hh / 2 + t) * S + y,
+                        if (dx < 0) r.mid else r.dark,
+                    )
                 }
             }
-            for (y in 0 until hh) for (x in 0 until ww) {
-                val dx = (x + 0.5f) - ww / 2f
-                val dy = (y + 0.5f) - hh / 2f
-                val d = abs(dx) / (ww / 2f) + abs(dy) / (hh / 2f)
+            for (y in 0 until fh2) for (x in 0 until fw) {
+                val dx = (x + 0.5f) - fw / 2f
+                val dy = (y + 0.5f) - fh2 / 2f
+                val d = abs(dx) / (fw / 2f) + abs(dy) / (fh2 / 2f)
                 if (d > 1f) continue
-                set(cx - ww / 2 + x, top - hh / 2 + y, if (d > 0.94f) r.lit else r.hi)
+                setFine(
+                    (cx - ww / 2) * S + x, (top - hh / 2) * S + y,
+                    if (d > 0.94f) r.lit else r.hi,
+                )
             }
         }
     }
@@ -248,17 +305,19 @@ object MonumentSprites {
     private fun Buf.column(
         cx: Int, baseY: Int, h: Int, radius: Int, r: Ramp, flute: Boolean = false,
     ) {
-        for (y in baseY - h + 1..baseY) {
-            for (x in -radius..radius) {
-                val u = x.toFloat() / radius            // -1..1
+        // 円柱の丸みも、絵の細かさで刻む。
+        val fr = radius * S
+        for (y in (baseY - h + 1) * S until (baseY + 1) * S) {
+            for (x in -fr..fr) {
+                val u = x.toFloat() / fr            // -1..1
                 // 円筒の法線。光は左上から。
                 var t = sqrt((1f - u * u).coerceAtLeast(0f)) * (0.62f - u * 0.42f)
                 if (flute && radius >= 3) {
                     // 溝を数本。明暗を交互にして丸みを強調する。
-                    val f = ((x + radius) * 3f / radius).toInt() % 2
+                    val f = ((x + fr) * 3f / fr).toInt() % 2
                     if (f == 1) t -= 0.16f
                 }
-                set(cx + x, y, r.at(t))
+                setFine(cx * S + S / 2 + x, y, r.at(t))
             }
         }
     }
@@ -292,9 +351,11 @@ object MonumentSprites {
     private fun Buf.dome(
         cx: Int, baseY: Int, radius: Int, height: Int, r: Ramp, onion: Float = 0f,
     ) {
-        for (i in 0..height) {
-            val v = i.toFloat() / height              // 0=下 1=頂上
-            // 半円を基本に、たまねぎ形は下で一度ふくらむ
+        // ドームは曲面なので、絵の細かさ（S 倍）で刻む。
+        // 形の座標のまま置くと、輪郭が階段状に見えてしまう。
+        val fh = height * S
+        for (i in 0..fh) {
+            val v = i.toFloat() / fh                 // 0=下 1=頂上
             // 半球を基本に、たまねぎ形は下でいったんふくらみ、
             // 上で細く絞ってから閉じる。
             var rr = sqrt((1f - v * v).coerceAtLeast(0f))
@@ -302,15 +363,15 @@ object MonumentSprites {
                 val bulge = sin(Math.PI * (0.22f + v * 0.78f)).toFloat() * (1f - v * v).pow(0.42f)
                 rr = rr * (1f - onion) + onion * bulge * 1.34f
             }
-            val half = (rr * radius).roundToInt()
-            val y = baseY - i
+            val half = (rr * radius * S).roundToInt()
+            val y = baseY * S + (S - 1) - i
             for (x in -half..half) {
                 val u = if (half == 0) 0f else x.toFloat() / half
                 // 球の陰影。左上が明るい。
                 val nz = sqrt((1f - u * u).coerceAtLeast(0f))
                 var t = (-u * 0.52f + v * 0.30f + nz * 0.46f).coerceIn(0f, 1f)
                 if (abs(x) >= half) t -= 0.30f
-                set(cx + x, y, r.at(t))
+                setFine(cx * S + S / 2 + x, y, r.at(t))
             }
         }
     }
@@ -449,8 +510,8 @@ object MonumentSprites {
      */
     private fun tokyoTower(): Sprite {
         val h = 300
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 6, baseY + 4, 150)
@@ -560,8 +621,8 @@ object MonumentSprites {
      */
     private fun arcDeTriomphe(): Sprite {
         val h = 250
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 5, baseY + 3, 156)
@@ -653,8 +714,8 @@ object MonumentSprites {
      */
     private fun colosseum(): Sprite {
         val h = 190
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
 
@@ -697,17 +758,17 @@ object MonumentSprites {
         // 輪の向こう側の壁。全部描くと画面を覆ってしまうので、
         // 内側の面の「上のほう」だけを帯として描く。
         // これが輪の向こうの縁になり、輪が閉じて見える。
-        for (x in -rx.toInt()..rx.toInt()) {
-            val u = (x / rx).toDouble().coerceIn(-1.0, 1.0)
+        // 楕円の縁はなめらかなので、絵の細かさ（S 倍）で刻む。
+        for (fx in (-rx * S).toInt()..(rx * S).toInt()) {
+            val u = (fx / (rx * S)).toDouble().coerceIn(-1.0, 1.0)
             val backDeg = (360 - Math.toDegrees(Math.acos(u))).roundToInt().coerceIn(180, 359)
-            val yb = footAt(backDeg)
-            val top = yb - wallAt(backDeg)
-            for (i in 0 until 10) {
+            val yb = footAt(backDeg) * S
+            val top = yb - wallAt(backDeg) * S
+            for (i in 0 until 10 * S) {
                 val y = top + i
                 if (y > yb) break
-                // 上端は明るく、下るほど日陰
-                val t = if (i < 2) 0.46f else 0.28f - i * 0.010f
-                b.set(cx + x, y, TRAVERTINE.at(t))
+                val t = if (i < 2 * S) 0.46f else 0.28f - (i / S) * 0.010f
+                b.setFine(cx * S + fx, y, TRAVERTINE.at(t))
             }
         }
 
@@ -725,8 +786,9 @@ object MonumentSprites {
             return sqrt((1f - u * u).coerceAtLeast(0f))
         }
 
-        for (x in -rx.toInt()..rx.toInt()) {
-            val u = (x / rx).toDouble().coerceIn(-1.0, 1.0)
+        for (fx in (-rx * S).toInt()..(rx * S).toInt()) {
+            val x = (fx / S.toFloat()).roundToInt()
+            val u = (fx / (rx * S)).toDouble().coerceIn(-1.0, 1.0)
             val backDeg = (360 - Math.toDegrees(Math.acos(u))).roundToInt().coerceIn(180, 359)
             // 奥の壁の足元（観客席の上端）
             val seatTop = footAt(backDeg)
@@ -752,8 +814,8 @@ object MonumentSprites {
         //
         // こちらも x で回す。角度で回すと、楕円の左右の端で
         // 同じ x に何度も描かれ、あいだに縦の隙間が残る。
-        for (x in -rx.toInt()..rx.toInt()) {
-            val u = (x / rx).toDouble().coerceIn(-1.0, 1.0)
+        for (fx in (-rx * S).toInt()..(rx * S).toInt()) {
+            val u = (fx / (rx * S)).toDouble().coerceIn(-1.0, 1.0)
             val deg = Math.toDegrees(Math.acos(u)).roundToInt().coerceIn(0, 180)
             val yb = footAt(deg)
             val hh = wallAt(deg)
@@ -761,27 +823,29 @@ object MonumentSprites {
             // 面の向き。左を明るく、右を暗く。
             val facing = -u.toFloat() * 0.40f + 0.48f
 
-            for (i in 0 until hh) {
-                val y = yb - i
+            // 高さも絵の細かさで刻む。アーチの丸みが階段状にならない。
+            for (fi in 0 until hh * S) {
+                val i = fi / S
+                val y = yb * S + (S - 1) - fi
                 val tier = when {
                     i < 26 -> 0
                     i < 50 -> 1
                     i < 72 -> 2
                     else -> 3
                 }
-                val inTier = i - intArrayOf(0, 26, 50, 72)[tier]
+                val inTier = fi - intArrayOf(0, 26, 50, 72)[tier] * S
                 var t = facing
-                if (inTier < 4) t += 0.22f          // 各段の下の繰形
+                if (inTier < 4 * S) t += 0.22f          // 各段の下の繰形
                 var col = TRAVERTINE.at(t)
 
                 if (tier < 3) {
                     // アーチの列。角度で数えると、円周に沿って等間隔に並ぶ。
                     val phase = deg % 9
-                    if (phase in 2..7 && inTier in 5..22) {
+                    if (phase in 2..7 && inTier in (5 * S)..(22 * S)) {
                         val au = (phase - 4.5f) / 3.6f
-                        val top = 5 + (16 * sqrt((1f - au * au).coerceAtLeast(0f))).roundToInt()
+                        val top = (5 + 16 * sqrt((1f - au * au).coerceAtLeast(0f))) * S
                         if (inTier <= top) {
-                            col = if (inTier >= top - 1) TRAVERTINE.at(t - 0.40f)
+                            col = if (inTier >= top - S) TRAVERTINE.at(t - 0.40f)
                             else Palette.OPENING
                         }
                     }
@@ -789,15 +853,17 @@ object MonumentSprites {
                     // 最上段は壁。付け柱と、そのあいだの四角い窓。
                     val phase = deg % 9
                     if (phase == 0) t += 0.18f
-                    if (phase in 3..6 && inTier in 4..13) t -= 0.34f
+                    if (phase in 3..6 && inTier in (4 * S)..(13 * S)) t -= 0.34f
                     col = TRAVERTINE.at(t)
                 }
-                b.set(cx + x, y, col)
+                b.setFine(cx * S + fx, y, col)
             }
             // 上端。崩れているところは欠けさせる。
-            val jag = if (ruin(deg) > 0.04f) (deg * 7 % 4) else 0
-            b.set(cx + x, yb - hh + jag, TRAVERTINE.hi)
-            b.set(cx + x, yb - hh + jag + 1, TRAVERTINE.lit)
+            val jag = if (ruin(deg) > 0.04f) (deg * 7 % 4) * S else 0
+            for (k in 0 until S) {
+                b.setFine(cx * S + fx, (yb - hh) * S + jag + k, TRAVERTINE.hi)
+                b.setFine(cx * S + fx, (yb - hh) * S + jag + S + k, TRAVERTINE.lit)
+            }
         }
 
         // --- 4. 足元の石畳と影 ---
@@ -833,8 +899,8 @@ object MonumentSprites {
      */
     private fun statueOfLiberty(): Sprite {
         val h = 368
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 6, baseY + 4, 150, flat = 0.46f)
@@ -991,8 +1057,8 @@ object MonumentSprites {
      */
     private fun bigBen(): Sprite {
         val h = 392
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 6, baseY + 4, 118, flat = 0.46f)
@@ -1152,8 +1218,8 @@ object MonumentSprites {
      */
     private fun leaningTower(): Sprite {
         val h = 360
-        val b = Buf(W, h)
-        val cx = W / 2 - 14
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2 - 14
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 16, baseY + 4, 128, flat = 0.46f)
@@ -1303,8 +1369,8 @@ object MonumentSprites {
      */
     private fun tajMahal(): Sprite {
         val h = 300
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         b.groundShadow(cx + 6, baseY + 4, 236, flat = 0.42f)
@@ -1478,8 +1544,8 @@ object MonumentSprites {
      */
     private fun pyramid(): Sprite {
         val h = 236
-        val b = Buf(W, h)
-        val cx = W / 2
+        val b = Buf(DRAW_W, h)
+        val cx = DRAW_W / 2
         val baseY = h - 1 - BASE_H / 4
 
         /**
@@ -1496,33 +1562,34 @@ object MonumentSprites {
             val depth = half / 2
             // 頂点
             val apexY = pbase - height
-            for (x in -half..half) {
-                val u = abs(x).toFloat() / half
+            // 斜面は、絵の細かさ（S 倍）で刻む。
+            // 形の座標のまま置くと、稜線が階段状に見える。
+            for (fx in (-half * S)..(half * S)) {
+                val u = abs(fx).toFloat() / (half * S)
                 // その x での、底辺の y（菱形の手前側の輪郭）
-                val footY = pbase + depth - (depth * u).roundToInt()
+                val footY = (pbase + depth) * S - (depth * S * u).roundToInt()
                 // その x での、上の輪郭（頂点から左右の角へ下る稜線）
-                val top = apexY + ((height - depth) * u).roundToInt()
+                val top = apexY * S + ((height - depth) * S * u).roundToInt()
                 for (y in top..footY) {
                     if (y < 0) continue
                     // 左の面は光を受け、右の面は陰。差をつけすぎない。
-                    var t = if (x < 0) 0.72f else 0.44f
+                    var t = if (fx < 0) 0.72f else 0.44f
                     // 上へいくほどわずかに明るく（空気遠近）。
-                    // これがないと面が2色の板になってしまう。
-                    t += (footY - y).toFloat() / height * 0.16f
+                    t += (footY - y).toFloat() / (height * S) * 0.16f
                     // 稜線から離れるほど、わずかに暗く（面の丸み）
                     t -= u * 0.10f
-                    // 石を積んだ段。画面の高さで数えると水平にそろう。
-                    // 実物も水平に積まれているので、これが正しい。
-                    if ((pbase - y) % 7 == 0) t += 0.09f      // 石の上端
-                    else if ((pbase - y) % 7 == 1) t -= 0.07f // その下の目地
+                    // 石を積んだ段。実物も水平に積まれている。
+                    val course = (pbase * S - y) % (7 * S)
+                    if (course < S) t += 0.09f                   // 石の上端
+                    else if (course < 2 * S) t -= 0.07f          // その下の目地
                     // 頂部に残る化粧石
-                    if (cap > 0f && y < apexY + (height * cap).roundToInt()) t += 0.14f
-                    b.set(pcx + x, y, LIMESTONE.at(t))
+                    if (cap > 0f && y < apexY * S + (height * S * cap).roundToInt()) t += 0.14f
+                    b.setFine(pcx * S + fx, y, LIMESTONE.at(t))
                 }
                 // 上の輪郭を明るく（陽の当たる稜）
-                b.set(pcx + x, top, LIMESTONE.at(if (x < 0) 0.94f else 0.52f))
+                b.setFine(pcx * S + fx, top, LIMESTONE.at(if (fx < 0) 0.94f else 0.52f))
                 // 裾の影
-                b.set(pcx + x, footY + 1, LIMESTONE.edge)
+                for (k in 1..S) b.setFine(pcx * S + fx, footY + k, LIMESTONE.edge)
             }
             // 手前に立つ稜線（頂点から手前の角へ）。ここが面の折れ目。
             for (i2 in 0..(height + depth)) {
@@ -1541,7 +1608,7 @@ object MonumentSprites {
         pyramidAt(cx + 2, baseY - 2, 78, 132, cap = 0.18f)
 
         // --- 砂の地面。ピラミッドの裾に沿って敷く ---
-        for (x in -W / 2 until W / 2) {
+        for (x in -DRAW_W / 2 until DRAW_W / 2) {
             val yy = baseY + 2 + (abs(x) / 20)
             for (y in yy..yy + 7) {
                 if (!b.isInk(cx + x, y)) {

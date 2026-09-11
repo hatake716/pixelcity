@@ -25,10 +25,16 @@ class CityRendererTest {
     }
 
     /** 街の中心をカメラに置いて描く。 */
+    /**
+     * 試験用に描く。
+     *
+     * 既定の縮尺は 1/8。タイルが 512px あるので、等倍だと
+     * 480×420 の画面に1枚も入らず、何を置いても絵が変わらない。
+     */
     private fun render(
         city: City,
         zoomNum: Int = 1,
-        zoomDen: Int = 1,
+        zoomDen: Int = 8,
         camX: Float = 16f,
         camY: Float = 16f,
     ): PixelCanvas {

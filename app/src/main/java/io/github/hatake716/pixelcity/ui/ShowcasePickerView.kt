@@ -123,7 +123,8 @@ class ShowcasePickerView(context: Context) : View(context) {
         renderer.draw(
             pixels, city,
             camX = 30f, camY = 30f,
-            zoomNum = 1, zoomDen = 8,
+            // タイルが 512px あるので、街の様子が分かる大きさまで引く
+            zoomNum = 1, zoomDen = 28,
             viewTop = y + 2, viewHeight = VIEW_H,
         )
         pixels.drawRect(x, y + 2, w, VIEW_H, Palette.UI_LINE)

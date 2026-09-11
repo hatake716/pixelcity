@@ -2,6 +2,7 @@ package io.github.hatake716.pixelcity.ui
 
 import io.github.hatake716.pixelcity.game.City
 import io.github.hatake716.pixelcity.game.CustomStyle
+import io.github.hatake716.pixelcity.game.TileKind
 import kotlin.math.abs
 
 /**
@@ -318,12 +319,182 @@ object IsoBuildings {
     }
 
     // ------------------------------------------------------------------
+    // 街並みに変化をつける部品
+    //
+    // 同じ形の箱が並ぶと、どれだけ数があっても「街」に見えない。
+    // 実際の街並みは、屋根の形・窓の割りつけ・1階の店・屋上の設備が
+    // 棟ごとに違うから、にぎやかに見える。
+    // ここでは、その違いを作るための部品を用意する。
+    // ------------------------------------------------------------------
+
+    /**
+     * 切妻屋根。菱形の上に、三角の山をのせる。
+     *
+     * [ridge] は棟の向き。0 なら左右に、1 なら奥手前に傾く。
+     * 平らな屋根の建物ばかりだと、住宅地が倉庫街に見えてしまう。
+     */
+    private fun gableRoof(
+        skin: Skin, ridge: Int = 0, tile: Boolean = true,
+    ): (Int, Int, Float) -> Int? = { x, y, _ ->
+        val dx = (x + 0.5f) - W / 2f
+        val dy = (y + 0.5f) - TH / 2f
+        // 棟からの距離。棟に近いほど高い（＝明るい）
+        val t = if (ridge == 0) abs(dy) / (TH / 2f) else abs(dx) / (W / 2f)
+        when {
+            t < 0.08f -> skin.roof                       // 棟木
+            t < 0.55f -> if (ridge == 0) skin.roof else skin.left
+            else -> skin.right
+        }?.let { base ->
+            // 瓦の筋。横に並べると、屋根らしく見える。
+            if (tile && ((if (ridge == 0) x else y) / 6) % 2 == 0) darken(base) else base
+        }
+    }
+
+    /**
+     * マンサード屋根（腰折れ屋根）。
+     * パリの街並みでよく見る、上が平らで下が急に落ちる形。
+     */
+    private fun mansardRoof(skin: Skin): (Int, Int, Float) -> Int? = { x, y, d ->
+        when {
+            d < 0.45f -> skin.roof                       // 上の平らなところ
+            d < 0.52f -> skin.edge                       // 折れ目
+            else -> {
+                // 急な斜面。屋根窓（ドーマー）を点々と入れる。
+                val around = ((x + y) / 22) % 3
+                if (around == 0 && d in 0.62f..0.86f) Palette.WINDOW_LIT else skin.left
+            }
+        }
+    }
+
+    /**
+     * 屋上の設備。給水塔・室外機・煙突・階段室。
+     *
+     * 平らな屋根がそのままだと、のっぺりして見える。
+     * 参考にした街の絵は、どの屋根にも何かが載っている。
+     */
+    private fun roofClutter(
+        skin: Skin, seed: Int,
+    ): (Int, Int, Float) -> Int? = { x, y, d ->
+        if (d > 0.88f) null
+        else {
+            val cx = W / 2
+            val cy = TH / 2
+            var c: Int? = null
+            // 給水塔（丸い樽と脚）
+            if (seed % 3 == 0) {
+                val tx = x - (cx - W / 5)
+                val ty = y - (cy - TH / 8)
+                if (tx * tx + ty * ty * 4 < (W / 12) * (W / 12)) {
+                    c = if (tx < 0) Palette.TRUNK else Palette.GRIT_ROOF
+                }
+            }
+            // 室外機の列
+            if (seed % 3 == 1) {
+                val gx = (x - cx + W / 4) / (W / 22)
+                if (gx in 0..2 && abs(y - cy) < TH / 10 && (x - cx + W / 4) % (W / 22) > 2) {
+                    c = Palette.METAL
+                }
+            }
+            // 階段室（小さな箱）
+            if (seed % 3 == 2) {
+                if (x in (cx + W / 8)..(cx + W / 8 + W / 12) &&
+                    y in (cy - TH / 10)..(cy + TH / 12)
+                ) {
+                    c = if (x < cx + W / 8 + W / 24) skin.left else skin.right
+                }
+            }
+            c
+        }
+    }
+
+    /** その色を一段暗くする。瓦や板の筋を入れるのに使う。 */
+    private fun darken(c: Int): Int = when (c) {
+        Palette.HOUSE_ROOF -> Palette.HOUSE_ROOF_DARK
+        Palette.EURO_ROOF -> Palette.EURO_ROOF_DARK
+        Palette.RURAL_ROOF -> Palette.RURAL_ROOF_DARK
+        Palette.GRIT_ROOF -> Palette.GRIT_ROOF_DARK
+        Palette.JP_ROOF -> Palette.JP_ROOF_DARK
+        Palette.WALL_ROOF -> Palette.WALL_LEFT
+        Palette.OFFICE_ROOF -> Palette.OFFICE_LEFT
+        Palette.FACTORY_ROOF -> Palette.FACTORY_LEFT
+        else -> c
+    }
+
+    /**
+     * 1階を店にする壁。
+     *
+     * 参考にした街の絵は、どの通りも1階が店になっている。
+     * 大きなショーウィンドウと、その上のひさし（日よけ）を描く。
+     * [awning] を変えると、ひさしの色が棟ごとに変わる。
+     */
+    private fun shopFront(
+        base: (Float, Float, Int) -> Int?,
+        awning: Int,
+        /** 建物の高さに対する、1階ぶんの割合。 */
+        floorFrac: Float = 0.30f,
+    ): (Float, Float, Int) -> Int? = { u, v, side ->
+        if (v > floorFrac) base(u, (v - floorFrac) / (1f - floorFrac), side)
+        else {
+            val f = v / floorFrac          // 1階のなかでの高さ 0..1
+            when {
+                // ひさし。縞模様にする。
+                f in 0.72f..0.88f && u < 0.92f ->
+                    if (((u * 22).toInt() and 1) == 0) awning else Palette.WHITE
+                // ひさしの下の影
+                f in 0.66f..0.72f -> Palette.WALL_EDGE
+                // ショーウィンドウ
+                f in 0.12f..0.64f && u in 0.06f..0.90f -> {
+                    val pane = (u * 5).toInt()
+                    val pu = (u * 5) - pane
+                    when {
+                        pu < 0.10f -> Palette.WALL_EDGE          // 窓の桟
+                        f < 0.20f -> Palette.WALL_EDGE           // 下端の枠
+                        // 中に並ぶ品。点々と色を変えて、賑わいを出す。
+                        f in 0.24f..0.40f && pu in 0.25f..0.75f ->
+                            when ((pane + (if (side < 0) 0 else 5)) % 4) {
+                                0 -> Palette.RED
+                                1 -> Palette.GOLD
+                                2 -> Palette.TREE
+                                else -> Palette.SKY
+                            }
+                        else -> Palette.WINDOW_LIT
+                    }
+                }
+                f < 0.10f -> Palette.WALL_EDGE                   // 歩道との境
+                else -> null
+            }
+        }
+    }
+
+    /**
+     * 外階段（非常階段）。壁の手前に、踏み板と手すりを重ねる。
+     *
+     * 参考にした街の絵の、赤レンガの建物によく付いている。
+     */
+    private fun fireEscape(
+        base: (Float, Float, Int) -> Int?, rows: Int,
+    ): (Float, Float, Int) -> Int? = { u, v, side ->
+        // 右の面にだけ付ける。両面だと、うるさくなる。
+        if (side > 0 && u in 0.14f..0.52f && v < 0.92f) {
+            val r = ((1f - v) * rows).toInt()
+            val rv = ((1f - v) * rows) - r
+            when {
+                rv < 0.10f -> Palette.METAL_DARK                     // 踏み板
+                rv in 0.10f..0.26f && ((u * 30).toInt() and 1) == 0 -> Palette.METAL
+                // 縦の柱
+                u in 0.14f..0.17f || u in 0.49f..0.52f -> Palette.METAL_DARK
+                else -> base(u, v, side)
+            }
+        } else base(u, v, side)
+    }
+
+    // ------------------------------------------------------------------
     // 住宅 1〜3段階
     // ------------------------------------------------------------------
 
     /** 一戸建て。切妻の瓦屋根、玄関と小窓。 */
-    val HOUSE_1 = box(
-        h = 32,
+    val HOUSE_1: Sprite by lazy { box(
+        h = 128,
         skin = HOUSE,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -331,9 +502,9 @@ object IsoBuildings {
             when {
                 d > 0.96f -> Palette.HOUSE_ROOF_DARK
                 // 棟（頂上の線）
-                abs(dy) < 2f -> Palette.STONE_DARK
+                abs(dy) < 8f -> Palette.STONE_DARK
                 // 瓦の筋。4倍の面積があるので、1枚ずつ描ける。
-                ((x / 3) + (y / 2)) % 2 == 0 ->
+                ((x / 12) + (y / 8)) % 2 == 0 ->
                     if (dx < 0) Palette.HOUSE_ROOF else Palette.HOUSE_ROOF_DARK
                 dx < 0 -> Palette.HOUSE_ROOF_DARK
                 else -> Palette.RED_DARK
@@ -355,19 +526,19 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 低層の集合住宅。 */
-    val HOUSE_2 = box(
-        h = 68,
+    val HOUSE_2: Sprite by lazy { box(
+        h = 272,
         skin = HOUSE,
         roof = { _, _, d -> if (d > 0.94f) Palette.HOUSE_ROOF_DARK else Palette.HOUSE_ROOF },
         wall = windows(5, 4, balcony = true) { c, r -> hash(c, r, 11) % 5 != 0 },
-    )
+    ) }
 
     /** 高層の集合住宅。屋上に給水塔。 */
-    val HOUSE_3 = box(
-        h = 112,
+    val HOUSE_3: Sprite by lazy { box(
+        h = 448,
         skin = HOUSE,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -375,20 +546,20 @@ object IsoBuildings {
             when {
                 d > 0.94f -> Palette.HOUSE_ROOF_DARK
                 // 屋上の塔屋
-                dx < 9f && dy < 5f -> Palette.WALL_LEFT
+                dx < 36f && dy < 20f -> Palette.WALL_LEFT
                 else -> Palette.HOUSE_ROOF_DARK
             }
         },
         wall = windows(8, 5, balcony = true) { c, r -> hash(c, r, 23) % 4 != 0 },
-    )
+    ) }
 
     // ------------------------------------------------------------------
     // 商業 1〜3段階
     // ------------------------------------------------------------------
 
     /** 商店。大きなショーウィンドウと日よけ。 */
-    val SHOP_1 = box(
-        h = 40,
+    val SHOP_1: Sprite by lazy { box(
+        h = 160,
         skin = OFFICE,
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.OFFICE_ROOF },
         wall = { u, v, _ ->
@@ -407,11 +578,11 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 雑居ビル。1階が店、上が事務所。 */
-    val SHOP_2 = box(
-        h = 84,
+    val SHOP_2: Sprite by lazy { box(
+        h = 336,
         skin = OFFICE,
         wall = { u, v, side ->
             when {
@@ -420,11 +591,11 @@ object IsoBuildings {
                 else -> windows(4, 4) { c, r -> hash(c, r, 31) % 6 != 0 }(u, v, side)
             }
         },
-    )
+    ) }
 
     /** オフィスビル。全面ガラスの縦帯。 */
-    val SHOP_3 = box(
-        h = 148,
+    val SHOP_3: Sprite by lazy { box(
+        h = 592,
         skin = OFFICE,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -454,15 +625,15 @@ object IsoBuildings {
                 }
             }
         },
-    )
+    ) }
 
     // ------------------------------------------------------------------
     // 工業 1〜3段階
     // ------------------------------------------------------------------
 
     /** 作業場。のこぎり屋根。 */
-    val FACTORY_1 = box(
-        h = 40,
+    val FACTORY_1: Sprite by lazy { box(
+        h = 160,
         skin = FACTORY,
         roof = { x, _, d ->
             when {
@@ -474,11 +645,11 @@ object IsoBuildings {
         wall = { u, v, _ ->
             if (u in 0.15f..0.60f && v < 0.5f) Palette.METAL_DARK else null   // シャッター
         },
-    )
+    ) }
 
     /** 工場。煙突つき。 */
-    val FACTORY_2 = box(
-        h = 68,
+    val FACTORY_2: Sprite by lazy { box(
+        h = 272,
         skin = FACTORY,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -492,11 +663,11 @@ object IsoBuildings {
             }
         },
         wall = windows(2, 4, frame = Palette.FACTORY_RIGHT) { c, _ -> c % 2 == 0 },
-    )
+    ) }
 
     /** 大規模な工場。 */
-    val FACTORY_3 = box(
-        h = 96,
+    val FACTORY_3: Sprite by lazy { box(
+        h = 384,
         skin = FACTORY,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -510,15 +681,15 @@ object IsoBuildings {
             }
         },
         wall = windows(4, 5, frame = Palette.FACTORY_RIGHT) { c, r -> hash(c, r, 41) % 3 != 0 },
-    )
+    ) }
 
     // ------------------------------------------------------------------
     // 施設
     // ------------------------------------------------------------------
 
     /** 火力発電所。太い煙突と、赤白の帯。 */
-    val POWER_COAL = box(
-        h = 80,
+    val POWER_COAL: Sprite by lazy { box(
+        h = 320,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -538,11 +709,11 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 太陽光発電。青いパネルが並ぶ。 */
-    val POWER_SOLAR = box(
-        h = 24,
+    val POWER_SOLAR: Sprite by lazy { box(
+        h = 96,
         skin = Skin(Palette.METAL, Palette.METAL, Palette.METAL_DARK),
         roof = { x, y, d ->
             when {
@@ -552,7 +723,7 @@ object IsoBuildings {
                 else -> Palette.WINDOW_DARK
             }
         },
-    )
+    ) }
 
     /**
      * 風力発電。細い塔と3枚の羽根。
@@ -663,8 +834,8 @@ object IsoBuildings {
     }
 
     /** 警察署。青い看板と車寄せ。 */
-    val POLICE = box(
-        h = 60,
+    val POLICE: Sprite by lazy { box(
+        h = 240,
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.OFFICE_ROOF },
         wall = { u, v, side ->
             when {
@@ -675,11 +846,11 @@ object IsoBuildings {
                 else -> windows(2, 4) { c, r -> hash(c, r, 61) % 3 != 0 }(u, v, side)
             }
         },
-    )
+    ) }
 
     /** 消防署。赤い大きなシャッター。 */
-    val FIRE = box(
-        h = 60,
+    val FIRE: Sprite by lazy { box(
+        h = 240,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.RED_DARK },
         wall = { u, v, _ ->
@@ -690,11 +861,11 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 学校。横に長い窓の並び。 */
-    val SCHOOL = box(
-        h = 64,
+    val SCHOOL: Sprite by lazy { box(
+        h = 256,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
             val dy = abs((y + 0.5f) - TH / 2f)
@@ -713,11 +884,11 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 病院。屋根に赤十字。 */
-    val HOSPITAL = box(
-        h = 80,
+    val HOSPITAL: Sprite by lazy { box(
+        h = 320,
         skin = Skin(Palette.WHITE, Palette.WALL_ROOF, Palette.WALL_LEFT),
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -730,15 +901,15 @@ object IsoBuildings {
             }
         },
         wall = windows(4, 4) { c, r -> hash(c, r, 53) % 4 != 0 },
-    )
+    ) }
 
     // ------------------------------------------------------------------
     // v2 の施設
     // ------------------------------------------------------------------
 
     /** 診療所。白い小さな建物に緑の十字。 */
-    val CLINIC = box(
-        h = 44,
+    val CLINIC: Sprite by lazy { box(
+        h = 176,
         skin = Skin(Palette.WHITE, Palette.WALL_ROOF, Palette.WALL_LEFT),
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -753,7 +924,7 @@ object IsoBuildings {
         wall = { u, v, _ ->
             if (v < 0.4f && u in 0.2f..0.5f) Palette.GLASS_LIT else null
         },
-    )
+    ) }
 
     /** 給水塔。細い脚の上に丸いタンク。 */
     val WATER_TOWER: Sprite = run {
@@ -794,8 +965,8 @@ object IsoBuildings {
     }
 
     /** 浄水場。四角い沈殿池が並ぶ。 */
-    val WATER_PLANT = box(
-        h = 32,
+    val WATER_PLANT: Sprite by lazy { box(
+        h = 128,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             when {
@@ -805,11 +976,11 @@ object IsoBuildings {
                 else -> Palette.WATER_DARK
             }
         },
-    )
+    ) }
 
     /** 下水処理場。円形の池。 */
-    val SEWAGE_PLANT = box(
-        h = 28,
+    val SEWAGE_PLANT: Sprite by lazy { box(
+        h = 112,
         skin = Skin(Palette.STONE, Palette.STONE_DARK, Palette.STONE_EDGE),
         roof = { x, y, d ->
             val dx = ((x + 0.5f) - W / 2f) / (W / 2f)
@@ -822,7 +993,7 @@ object IsoBuildings {
                 else -> Palette.STONE
             }
         },
-    )
+    ) }
 
     /** 埋立地。土を盛った山。 */
     val LANDFILL: Sprite = run {
@@ -855,8 +1026,8 @@ object IsoBuildings {
     }
 
     /** 焼却場。高い煙突。 */
-    val INCINERATOR = box(
-        h = 72,
+    val INCINERATOR: Sprite by lazy { box(
+        h = 288,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -875,11 +1046,11 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** リサイクル施設。緑の屋根に矢印の輪。 */
-    val RECYCLING = box(
-        h = 40,
+    val RECYCLING: Sprite by lazy { box(
+        h = 160,
         skin = Skin(Palette.TREE, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = ((x + 0.5f) - W / 2f) / (W / 2f)
@@ -891,7 +1062,7 @@ object IsoBuildings {
                 else -> Palette.TREE
             }
         },
-    )
+    ) }
 
     /** バス停。小さな屋根とベンチ。 */
     val BUS_STOP: Sprite = run {
@@ -919,8 +1090,8 @@ object IsoBuildings {
     }
 
     /** 地下鉄の駅。地上の入口。 */
-    val SUBWAY_STATION = box(
-        h = 36,
+    val SUBWAY_STATION: Sprite by lazy { box(
+        h = 144,
         skin = Skin(Palette.STONE_LIT, Palette.STONE, Palette.STONE_DARK),
         roof = { _, _, d -> if (d > 0.94f) Palette.STONE_EDGE else Palette.STONE_LIT },
         wall = { u, v, side ->
@@ -931,7 +1102,7 @@ object IsoBuildings {
                 else -> null
             }
         },
-    )
+    ) }
 
     /** 空港。滑走路と管制塔。 */
     val AIRPORT: Sprite = run {
@@ -1102,4 +1273,304 @@ object IsoBuildings {
         }
         Sprite(w, h, outlined)
     }
+
+    // ------------------------------------------------------------------
+    // 街並みのバリエーション
+    //
+    // 同じ段階でも、棟ごとに違う絵を使う。
+    // 1種類しかないと、どれだけ数が増えても「同じ建物の反復」に見える。
+    // 参考にした街の絵は、隣り合う建物がことごとく違う。
+    // ------------------------------------------------------------------
+
+    /** 棟ごとに変える壁の色。同じ形でも、色が違えば別の建物に見える。 */
+    private val HOUSE_SKINS = arrayOf(
+        Skin(Palette.HOUSE_ROOF, Palette.HOUSE_LEFT, Palette.HOUSE_RIGHT),
+        Skin(Palette.EURO_ROOF, Palette.EURO_WALL, Palette.EURO_WALL_DARK),
+        Skin(Palette.RURAL_ROOF, Palette.RURAL_WALL, Palette.RURAL_WALL_DARK),
+        Skin(Palette.JP_ROOF, Palette.JP_WALL, Palette.JP_WALL_DARK),
+        Skin(Palette.GRIT_ROOF, Palette.GRIT_WALL, Palette.GRIT_WALL_DARK),
+    )
+
+    private val SHOP_SKINS = arrayOf(
+        Skin(Palette.OFFICE_ROOF, Palette.OFFICE_LEFT, Palette.OFFICE_RIGHT),
+        Skin(Palette.PRIME_ROOF, Palette.PRIME_LEFT, Palette.PRIME_RIGHT),
+        Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
+        Skin(Palette.EURO_ROOF, Palette.EURO_WALL, Palette.EURO_WALL_DARK),
+        Skin(Palette.STONE, Palette.STONE_LIT, Palette.STONE_DARK),
+    )
+
+    private val FACTORY_SKINS = arrayOf(
+        Skin(Palette.FACTORY_ROOF, Palette.FACTORY_LEFT, Palette.FACTORY_RIGHT),
+        Skin(Palette.GRIT_ROOF, Palette.GRIT_WALL, Palette.GRIT_WALL_DARK),
+        Skin(Palette.METAL, Palette.METAL_LIT, Palette.METAL_DARK),
+        Skin(Palette.TRUNK, Palette.SAND_DARK, Palette.STONE_EDGE),
+    )
+
+    /** ひさしの色。店ごとに変える。 */
+    private val AWNINGS = intArrayOf(
+        Palette.RED, Palette.TREE, Palette.SKY_DEEP, Palette.GOLD,
+        Palette.EURO_ROOF, Palette.PATINA,
+    )
+
+    /**
+     * 住宅の棟。[variant] で屋根の形と色が変わる。
+     *
+     * 低層は切妻とマンサードを混ぜる。平らな屋根だけだと、
+     * 住宅地が倉庫街に見えてしまう。
+     */
+    private fun houseVariant(stage: Int, variant: Int): Sprite {
+        val skin = HOUSE_SKINS[variant % HOUSE_SKINS.size]
+        return when (stage) {
+            1 -> {
+                // 一戸建て。屋根の形を3通りに振る。
+                val h = 96 + (variant % 3) * 32
+                box(
+                    h = h,
+                    skin = skin,
+                    roof = when (variant % 3) {
+                        0 -> gableRoof(skin, ridge = 0)
+                        1 -> gableRoof(skin, ridge = 1)
+                        else -> mansardRoof(skin)
+                    },
+                    wall = { u, v, side ->
+                        when {
+                            // 玄関
+                            side < 0 && u in 0.30f..0.50f && v < 0.42f -> Palette.TRUNK
+                            side < 0 && u in 0.26f..0.54f && v < 0.48f -> skin.edge
+                            // 窓。棟ごとに数を変える。
+                            else -> windows(
+                                1 + variant % 2, 2,
+                                frame = skin.edge,
+                            ) { c, r -> hash(c, r, variant * 7) % 4 != 0 }(u, v, side)
+                        }
+                    },
+                )
+            }
+            2 -> {
+                val h = 224 + (variant % 3) * 48
+                box(
+                    h = h,
+                    skin = skin,
+                    roof = if (variant % 2 == 0) mansardRoof(skin) else roofClutter(skin, variant),
+                    wall = if (variant % 3 == 0) {
+                        // 外階段つき。赤レンガの集合住宅らしくなる。
+                        fireEscape(
+                            windows(4 + variant % 2, 4, frame = skin.edge, balcony = true) {
+                                c, r -> hash(c, r, 11 + variant) % 5 != 0
+                            },
+                            rows = 4,
+                        )
+                    } else {
+                        windows(4 + variant % 3, 4, frame = skin.edge, balcony = true) {
+                            c, r -> hash(c, r, 11 + variant) % 5 != 0
+                        }
+                    },
+                )
+            }
+            else -> {
+                val h = 400 + (variant % 4) * 64
+                box(
+                    h = h,
+                    skin = skin,
+                    roof = roofClutter(skin, variant),
+                    wall = windows(7 + variant % 3, 5, frame = skin.edge, balcony = variant % 2 == 0) {
+                        c, r -> hash(c, r, 23 + variant) % 4 != 0
+                    },
+                )
+            }
+        }
+    }
+
+    /**
+     * 商業の棟。1階はどれも店。
+     *
+     * 参考にした街の絵は、どの通りも1階が店になっている。
+     * ひさしの色を棟ごとに変えると、通りがにぎやかに見える。
+     */
+    private fun shopVariant(stage: Int, variant: Int): Sprite {
+        val skin = SHOP_SKINS[variant % SHOP_SKINS.size]
+        val awning = AWNINGS[variant % AWNINGS.size]
+        return when (stage) {
+            1 -> box(
+                h = 128 + (variant % 3) * 32,
+                skin = skin,
+                roof = if (variant % 3 == 0) gableRoof(skin, ridge = variant % 2)
+                else roofClutter(skin, variant),
+                wall = shopFront(
+                    windows(1, 3, frame = skin.edge) { c, r -> hash(c, r, variant) % 3 != 0 },
+                    awning, floorFrac = 0.55f,
+                ),
+            )
+            2 -> box(
+                h = 288 + (variant % 3) * 64,
+                skin = skin,
+                roof = roofClutter(skin, variant),
+                wall = shopFront(
+                    windows(3 + variant % 2, 4, frame = skin.edge) {
+                        c, r -> hash(c, r, 5 + variant) % 4 != 0
+                    },
+                    awning, floorFrac = 0.28f,
+                ),
+            )
+            else -> box(
+                h = 512 + (variant % 4) * 96,
+                skin = skin,
+                roof = roofClutter(skin, variant),
+                wall = shopFront(
+                    // 高層はガラス張り。窓を細かく割る。
+                    windows(9 + variant % 4, 6, frame = skin.edge) {
+                        c, r -> hash(c, r, 17 + variant) % 5 != 0
+                    },
+                    awning, floorFrac = 0.16f,
+                ),
+            )
+        }
+    }
+
+    /** 工業の棟。屋根は平らで、煙突や設備が載る。 */
+    private fun factoryVariant(stage: Int, variant: Int): Sprite {
+        val skin = FACTORY_SKINS[variant % FACTORY_SKINS.size]
+        return when (stage) {
+            1 -> box(
+                // 高さを6通りに散らす。棟ごとの違いが、いちばん目につく。
+                h = 112 + (variant % 6) * 26,
+                skin = skin,
+                roof = when (variant % 3) {
+                    // のこぎり屋根。工場らしい形。
+                    0 -> { x, _, d ->
+                        if (d > 0.94f) skin.edge
+                        else if ((x / 40) % 2 == 0) skin.roof else skin.left
+                    }
+                    // 筋の向きを変えたのこぎり屋根
+                    1 -> { _, y, d ->
+                        if (d > 0.94f) skin.edge
+                        else if ((y / 20) % 2 == 0) skin.roof else skin.left
+                    }
+                    // 平らな屋根に設備を載せる
+                    else -> roofClutter(skin, variant)
+                },
+                wall = { u, v, side ->
+                    when {
+                        // 大きなシャッター。位置と幅を棟ごとに変える。
+                        side > 0 && u in (0.14f + (variant % 3) * 0.08f)..
+                            (0.62f + (variant % 3) * 0.08f) && v < 0.52f -> {
+                            if (((v * 40).toInt() and 1) == 0) Palette.METAL else Palette.METAL_DARK
+                        }
+                        v < 0.06f -> skin.edge
+                        else -> null
+                    }
+                },
+            )
+            2 -> box(
+                h = 224 + (variant % 3) * 48,
+                skin = skin,
+                roof = roofClutter(skin, variant + 1),
+                wall = windows(3, 5, frame = skin.edge) { c, r -> hash(c, r, 31 + variant) % 3 != 0 },
+            )
+            else -> box(
+                h = 320 + (variant % 3) * 64,
+                skin = skin,
+                roof = roofClutter(skin, variant + 2),
+                wall = windows(5 + variant % 2, 6, frame = skin.edge) {
+                    c, r -> hash(c, r, 41 + variant) % 3 != 0
+                },
+            )
+        }
+    }
+
+    /**
+     * 棟ごとの絵は重いので、作ったものを使い回す。
+     *
+     * 別の糸から書き込むので、[java.util.concurrent.ConcurrentHashMap] を使う。
+     */
+    private val variantCache = java.util.concurrent.ConcurrentHashMap<Int, Sprite>()
+
+    /**
+     * まだ絵ができていないときに出す、間に合わせの箱。
+     *
+     * 1棟あたり 0.1〜0.2 秒かかるので、54種を画面を止めて作ると
+     * 10秒近く固まる。作っているあいだは、この簡単な箱で場所を示し、
+     * できあがった順に差し替える。
+     */
+    private val placeholders = java.util.concurrent.ConcurrentHashMap<Int, Sprite>()
+
+    /** 絵を作る糸。1本にして、機械を占有しないようにする。 */
+    private val builder by lazy {
+        java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+            Thread(r, "pixelcity-sprites").apply {
+                isDaemon = true
+                // 画面より低い優先度にする。作っているあいだも操作は滑らかに。
+                priority = Thread.MIN_PRIORITY
+            }
+        }
+    }
+
+    /** いま作っている最中のもの。二重に頼まないようにする。 */
+    private val inFlight = java.util.Collections.newSetFromMap(
+        java.util.concurrent.ConcurrentHashMap<Int, Boolean>(),
+    )
+
+    /** 絵ができあがったときに呼ぶ。画面を描き直させる。 */
+    var onSpriteReady: (() -> Unit)? = null
+
+    /**
+     * その絵が、もう本物になっているか。
+     * 試験で「間に合わせ」と比べてしまわないために使う。
+     */
+    fun isReady(kind: TileKind, stage: Int, variant: Int): Boolean {
+        val v = ((variant % VARIANTS) + VARIANTS) % VARIANTS
+        return variantCache.containsKey(kind.ordinal * 1000 + stage * 100 + v)
+    }
+
+    /**
+     * 間に合わせの箱。色と高さだけ合わせた、装飾のない箱。
+     * 作るのが軽いので、画面を止めずに出せる。
+     */
+    private fun placeholderFor(kind: TileKind, stage: Int, variant: Int): Sprite {
+        val key = kind.ordinal * 1000 + stage * 100 + variant
+        return placeholders.getOrPut(key) {
+            val skin = when (kind) {
+                TileKind.ZONE_R -> HOUSE_SKINS[variant % HOUSE_SKINS.size]
+                TileKind.ZONE_C -> SHOP_SKINS[variant % SHOP_SKINS.size]
+                else -> FACTORY_SKINS[variant % FACTORY_SKINS.size]
+            }
+            val h = when (stage) {
+                1 -> 112
+                2 -> 240
+                else -> 432
+            }
+            box(h = h, skin = skin)
+        }
+    }
+
+    /** 1つの段階あたり、何通りの見た目を用意するか。 */
+    const val VARIANTS = 6
+
+    /**
+     * その区分・段階・番号の建物。
+     *
+     * [variant] はタイルの位置から決める。同じ場所なら毎回同じ絵になるので、
+     * 街を眺め直しても建物が入れ替わらない。
+     */
+    fun zoneBuilding(kind: TileKind, stage: Int, variant: Int): Sprite {
+        val v = ((variant % VARIANTS) + VARIANTS) % VARIANTS
+        val key = kind.ordinal * 1000 + stage * 100 + v
+        variantCache[key]?.let { return it }
+
+        // まだできていない。別の糸で作り始め、いまは間に合わせを返す。
+        if (inFlight.add(key)) {
+            builder.execute {
+                val sp = when (kind) {
+                    TileKind.ZONE_R -> houseVariant(stage, v)
+                    TileKind.ZONE_C -> shopVariant(stage, v)
+                    else -> factoryVariant(stage, v)
+                }
+                variantCache[key] = sp
+                inFlight.remove(key)
+                onSpriteReady?.invoke()
+            }
+        }
+        return placeholderFor(kind, stage, v)
+    }
+
 }
