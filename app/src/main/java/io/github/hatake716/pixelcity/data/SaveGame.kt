@@ -77,6 +77,7 @@ object SaveGame {
             put("ordinances", JSONArray().apply { city.ordinances.forEach { put(it.name) } })
             put("disasterLevel", city.disasterLevel.name)
             put("style", city.style.name)
+            put("customStyle", JSONArray().apply { city.customStyle.save().forEach { put(it) } })
             put("garbageBacklog", city.garbageBacklog)
             put("infection", city.infection)
             // 埋立地の埋まり具合は、タイルごとに持つ
@@ -245,6 +246,9 @@ object SaveGame {
         json.optString("disasterLevel", "").takeIf { it.isNotEmpty() }?.let { name ->
             City.DisasterLevel.entries.firstOrNull { it.name == name }
                 ?.let { city.disasterLevel = it }
+        }
+        json.optJSONArray("customStyle")?.let { arr ->
+            city.customStyle.restore(IntArray(arr.length()) { arr.getInt(it) })
         }
         json.optString("style", "").takeIf { it.isNotEmpty() }?.let { name ->
             City.Style.entries.firstOrNull { it.name == name }?.let { city.style = it }

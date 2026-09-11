@@ -31,8 +31,8 @@ class StyleTest {
         s.data.filter { it != Pix.TRANSPARENT }.map { it.toInt() }.toSet()
 
     @Test
-    fun `there are eight styles and each is named`() {
-        assertEquals(8, City.Style.entries.size)
+    fun `there are nine styles and each is named`() {
+        assertEquals(9, City.Style.entries.size)
         for (st in City.Style.entries) {
             assertTrue("${st.name} has no label", st.label.isNotBlank())
             assertTrue("${st.name} has no detail", st.detail.isNotBlank())
@@ -63,11 +63,13 @@ class StyleTest {
      */
     @Test
     fun `every style looks different from the others`() {
-        val fingerprints = City.Style.entries.associateWith { st ->
+        // 「じぶんで きめる」は、手をつけるまで標準と同じなので、ここでは比べない。
+        val fixed = City.Style.entries.filter { it != City.Style.CUSTOM }
+        val fingerprints = fixed.associateWith { st ->
             samples().flatMap { (_, sprite) -> coloursOf(IsoBuildings.styled(sprite, st)) }.toSet()
         }
-        for (a in City.Style.entries) {
-            for (b in City.Style.entries) {
+        for (a in fixed) {
+            for (b in fixed) {
                 if (a >= b) continue
                 assertTrue(
                     "$a and $b use the same colours",

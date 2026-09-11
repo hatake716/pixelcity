@@ -105,7 +105,7 @@ class GameView(
     }
 
     /** 画面の状態。 */
-    enum class Screen { PLAYING, BUDGET, MONUMENTS, MESSAGE, GAME_OVER, INFO }
+    enum class Screen { PLAYING, BUDGET, MONUMENTS, MESSAGE, GAME_OVER, INFO, STYLE_EDIT }
 
     var screen: Screen = Screen.PLAYING
         private set
@@ -115,6 +115,7 @@ class GameView(
     private var pixels = PixelCanvas(LOGICAL_W, LOGICAL_H)
     private val renderer = CityRenderer()
     private val info = InfoPanel(GbText(context))
+    private val styleEditor = StyleEditor(GbText(context))
     private val text = GbText(context)
 
     private var frame = Bitmap.createBitmap(LOGICAL_W, LOGICAL_H, Bitmap.Config.ARGB_8888)
@@ -201,6 +202,7 @@ class GameView(
     init {
         isFocusable = true
         keepScreenOn = true
+        info.custom = city.customStyle
         showTutorialMessageIfNeeded()
     }
 
@@ -322,6 +324,7 @@ class GameView(
             Screen.MESSAGE -> drawMessage()
             Screen.GAME_OVER -> drawGameOver()
             Screen.INFO -> info.draw(pixels, city, logicalH)
+            Screen.STYLE_EDIT -> styleEditor.draw(pixels, city.customStyle, logicalH)
             Screen.PLAYING -> {
                 if (tutorial.active) drawTutorialBanner()
                 toast?.let { drawToast(it) }
@@ -903,6 +906,10 @@ class GameView(
                 handleInfoTap(lx, ly)
                 return
             }
+            Screen.STYLE_EDIT -> {
+                handleStyleEditTap(lx, ly)
+                return
+            }
             Screen.PLAYING -> {}
         }
 
@@ -1022,6 +1029,15 @@ class GameView(
             invalidate()
             return
         }
+        // 自分の様式の色を決める
+        if (info.customEditTapped(lx, ly)) {
+            city.style = City.Style.CUSTOM
+            info.custom = city.customStyle
+            screen = Screen.STYLE_EDIT
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
         // 条例
         info.ordinanceAt(lx, ly, logicalH)?.let { o ->
             if (o in city.ordinances) {
@@ -1031,6 +1047,37 @@ class GameView(
                 tutorial.onOrdinanceEnabled()
                 if (tutorial.finished) onTutorialFinished?.invoke()
             }
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
+    }
+
+    private fun handleStyleEditTap(lx: Int, ly: Int) {
+        // もどる
+        val by = styleEditor.backButtonY(logicalH)
+        if (ly >= by && ly < by + 28) {
+            screen = Screen.INFO
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
+        // もとに もどす
+        if (styleEditor.resetTapped(lx, ly, logicalH)) {
+            city.customStyle.reset()
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
+        // 編集する場所を変える
+        styleEditor.slotAt(lx, ly)?.let { sl ->
+            styleEditor.slot = sl
+            invalidate()
+            return
+        }
+        // 色を割り当てる
+        styleEditor.colourAt(lx, ly, logicalH)?.let { c ->
+            city.customStyle[styleEditor.slot] = c
             onStateChanged?.invoke()
             invalidate()
             return

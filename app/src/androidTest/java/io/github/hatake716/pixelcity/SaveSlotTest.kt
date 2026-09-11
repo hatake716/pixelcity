@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.hatake716.pixelcity.data.SaveGame
 import io.github.hatake716.pixelcity.game.City
+import io.github.hatake716.pixelcity.game.CustomStyle
 import io.github.hatake716.pixelcity.game.Terrain
 import io.github.hatake716.pixelcity.game.TileKind
 import io.github.hatake716.pixelcity.game.Tutorial
@@ -48,6 +49,32 @@ class SaveSlotTest {
             build(x, 11, TileKind.ZONE_C)
         }
         repeat(24) { step() }
+    }
+
+    /** 自分で決めた色が、街といっしょに残ること。 */
+    @Test
+    fun the_chosen_colours_are_saved_with_the_city() {
+        val city = cityWith(100)
+        city.style = City.Style.CUSTOM
+        city.customStyle[CustomStyle.Slot.HOUSE_ROOF] = io.github.hatake716.pixelcity.ui.Palette.GOLD
+        city.customStyle[CustomStyle.Slot.OFFICE_WALL] = io.github.hatake716.pixelcity.ui.Palette.TREE
+        SaveGame.save(context, 0, city, Tutorial(), 7L)
+
+        val loaded = SaveGame.load(context, 0)
+        assertNotNull(loaded)
+        assertEquals(City.Style.CUSTOM, loaded!!.city.style)
+        for (sl in CustomStyle.Slot.entries) {
+            assertEquals(sl.name, city.customStyle[sl], loaded.city.customStyle[sl])
+        }
+    }
+
+    /** 色を決めていない街も、これまでどおり読めること。 */
+    @Test
+    fun a_city_without_chosen_colours_still_loads() {
+        SaveGame.save(context, 0, cityWith(100), Tutorial(), 7L)
+        val loaded = SaveGame.load(context, 0)
+        assertNotNull(loaded)
+        assertTrue(loaded!!.city.customStyle.isDefault)
     }
 
     @Test

@@ -116,9 +116,13 @@ class City(
         FUTURE("みらい", "しろい ごうせいそざいと ひかる あお"),
         EUROPE("ヨーロッパ", "あかちゃの かわらと クリームいろの いし"),
         JAPAN("にほんの ちほう", "いぶしぎんの かわらと しろい かべ"),
+        CUSTOM("じぶんで きめる", "すきな いろを ひとつずつ えらぶ"),
     }
 
     var style: Style = Style.STANDARD
+
+    /** 「じぶんで きめる」を選んだときの色。 */
+    val customStyle: CustomStyle = CustomStyle()
 
     var lastIncomeBreakdown: Income = Income()
     var lastSpending: Spending = Spending()

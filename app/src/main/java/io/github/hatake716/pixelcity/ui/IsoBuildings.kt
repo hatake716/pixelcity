@@ -1,6 +1,7 @@
 package io.github.hatake716.pixelcity.ui
 
 import io.github.hatake716.pixelcity.game.City
+import io.github.hatake716.pixelcity.game.CustomStyle
 import kotlin.math.abs
 
 /**
@@ -177,11 +178,22 @@ object IsoBuildings {
         Palette.WALL_ROOF to Palette.JP_WALL,
     )
 
-    private val recolourCache = HashMap<Pair<Sprite, City.Style>, Sprite>()
+    private val recolourCache = HashMap<Any, Sprite>()
 
-    /** [style] に合わせて色を変えた絵を返す。作った結果は使い回す。 */
-    fun styled(sprite: Sprite, style: City.Style): Sprite {
+    /**
+     * [style] に合わせて色を変えた絵を返す。作った結果は使い回す。
+     *
+     * 「じぶんで きめる」のときは [custom] の色を使う。色を変えるたびに
+     * 別の絵になるので、使い回しの鍵には色の組み合わせも含める。
+     */
+    fun styled(sprite: Sprite, style: City.Style, custom: CustomStyle? = null): Sprite {
         if (style == City.Style.STANDARD) return sprite
+        if (style == City.Style.CUSTOM) {
+            val c = custom ?: return sprite
+            if (c.isDefault) return sprite
+            val key = Triple(sprite, style, c.save().toList())
+            return recolourCache.getOrPut(key) { recolour(sprite, c.toMap()) }
+        }
         return recolourCache.getOrPut(sprite to style) {
             recolour(
                 sprite,
@@ -193,7 +205,7 @@ object IsoBuildings {
                     City.Style.FUTURE -> FUTURE_MAP
                     City.Style.EUROPE -> EUROPE_MAP
                     City.Style.JAPAN -> JAPAN_MAP
-                    City.Style.STANDARD -> emptyMap()
+                    else -> emptyMap()
                 },
             )
         }

@@ -2,6 +2,7 @@ package io.github.hatake716.pixelcity.ui
 
 import io.github.hatake716.pixelcity.game.City
 import io.github.hatake716.pixelcity.game.MonthlyStat
+import io.github.hatake716.pixelcity.game.CustomStyle
 import io.github.hatake716.pixelcity.game.Ordinance
 
 /**
@@ -422,6 +423,19 @@ class InfoPanel(private val text: GbText) {
             if (y > logicalH - 130) break
         }
 
+        // 「じぶんで きめる」なら、色を選ぶ入口を出す
+        if (city.style == City.Style.CUSTOM) {
+            y += 4
+            customEditY = y
+            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, 24, Palette.UI_BG_LIGHT)
+            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, 24, Palette.UI_ACCENT)
+            text.textSize = 13
+            text.draw(pixels, "いろを えらぶ ▶", MARGIN + 8, y + 5, Palette.UI_ACCENT)
+            y += 28
+        } else {
+            customEditY = -1
+        }
+
         y += 6
         text.textSize = 14
         text.draw(pixels, "さいがいの おおさ", MARGIN + 6, y, Palette.UI_ACCENT)
@@ -449,10 +463,28 @@ class InfoPanel(private val text: GbText) {
         City.Style.FUTURE -> intArrayOf(Palette.FUTURE_ROOF, Palette.FUTURE_WALL, Palette.FUTURE_GLOW)
         City.Style.EUROPE -> intArrayOf(Palette.EURO_ROOF, Palette.EURO_WALL, Palette.SAND_LIT)
         City.Style.JAPAN -> intArrayOf(Palette.JP_ROOF, Palette.JP_WALL, Palette.TREE_DARK)
+        City.Style.CUSTOM -> intArrayOf(
+            customSwatch(CustomStyle.Slot.HOUSE_ROOF),
+            customSwatch(CustomStyle.Slot.HOUSE_WALL),
+            customSwatch(CustomStyle.Slot.GLASS_LIT),
+        )
     }
+
+    /** いま編集中のカスタム様式。見本を出すために持つ。 */
+    var custom: CustomStyle? = null
+
+    private fun customSwatch(slot: CustomStyle.Slot): Int =
+        custom?.get(slot) ?: slot.default
 
     /** 災害の段の y。描いたときに覚えて、判定で使う。 */
     private var settingsDisasterY = 0
+
+    /** 「いろを えらぶ」の y。出していないときは -1。 */
+    private var customEditY = -1
+
+    /** 「いろを えらぶ」が押されたか。 */
+    fun customEditTapped(lx: Int, ly: Int): Boolean =
+        tab == Tab.SETTINGS && customEditY >= 0 && ly >= customEditY && ly < customEditY + 24
 
     /** せっていの一覧で、その座標にある様式。 */
     fun styleAt(lx: Int, ly: Int, logicalH: Int): City.Style? {
