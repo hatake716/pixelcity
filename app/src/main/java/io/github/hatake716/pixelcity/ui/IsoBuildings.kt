@@ -103,6 +103,8 @@ object IsoBuildings {
         rows: Int,
         cols: Int,
         frame: Int = Palette.WALL_EDGE,
+        /** ベランダを付けるか。集合住宅らしくなる。 */
+        balcony: Boolean = false,
         lit: (Int, Int) -> Boolean,
     ): (Float, Float, Int) -> Int? = { u, v, side ->
         if (u > 0.93f || v > 0.95f || v < 0.05f) null
@@ -111,10 +113,21 @@ object IsoBuildings {
             val row = ((1f - v) * rows).toInt().coerceIn(0, rows - 1)
             val cu = (u * cols) - col
             val cv = ((1f - v) * rows) - row
+            val isLit = lit(col + if (side < 0) 0 else cols, row)
             when {
+                // ベランダの手すり
+                balcony && cv in 0.80f..0.92f && cu in 0.10f..0.90f ->
+                    if (((cu * 14).toInt() and 1) == 0) frame else Palette.WALL_ROOF
+                // 窓の桟（縦と横）。4倍の面積があるので描き分けられる。
+                cu in 0.46f..0.54f && cv in 0.22f..0.78f -> frame
+                cv in 0.46f..0.54f && cu in 0.20f..0.80f -> frame
+                // ガラス。上半分をわずかに明るくして、映り込みを出す。
                 cu in 0.20f..0.80f && cv in 0.22f..0.78f ->
-                    if (lit(col + if (side < 0) 0 else cols, row)) Palette.WINDOW_LIT
-                    else Palette.WINDOW_DARK
+                    when {
+                        !isLit -> Palette.WINDOW_DARK
+                        cv < 0.4f -> Palette.WHITE
+                        else -> Palette.WINDOW_LIT
+                    }
                 // 窓枠
                 cu in 0.14f..0.86f && cv in 0.16f..0.84f -> frame
                 else -> null
@@ -128,28 +141,35 @@ object IsoBuildings {
 
     /** 一戸建て。切妻の瓦屋根、玄関と小窓。 */
     val HOUSE_1 = box(
-        h = 16,
+        h = 32,
         skin = HOUSE,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
             val dy = (y + 0.5f) - TH / 2f
             when {
-                d > 0.94f -> Palette.HOUSE_ROOF_DARK
+                d > 0.96f -> Palette.HOUSE_ROOF_DARK
                 // 棟（頂上の線）
-                abs(dy) < 1.5f -> Palette.HOUSE_ROOF_DARK
-                // 瓦の筋
-                ((x + y) / 3) % 2 == 0 && dx < 0 -> Palette.HOUSE_ROOF
-                dx < 0 -> Palette.HOUSE_ROOF
-                else -> Palette.HOUSE_ROOF_DARK
+                abs(dy) < 2f -> Palette.STONE_DARK
+                // 瓦の筋。4倍の面積があるので、1枚ずつ描ける。
+                ((x / 3) + (y / 2)) % 2 == 0 ->
+                    if (dx < 0) Palette.HOUSE_ROOF else Palette.HOUSE_ROOF_DARK
+                dx < 0 -> Palette.HOUSE_ROOF_DARK
+                else -> Palette.RED_DARK
             }
         },
         wall = { u, v, side ->
             when {
-                // 玄関
-                side < 0 && u in 0.30f..0.55f && v < 0.55f -> Palette.TRUNK
-                // 小窓
-                u in 0.62f..0.82f && v in 0.35f..0.70f -> Palette.WINDOW_LIT
-                u in 0.58f..0.86f && v in 0.30f..0.75f -> Palette.WALL_EDGE
+                // 玄関（枠つき）
+                side < 0 && u in 0.32f..0.52f && v < 0.50f -> Palette.TRUNK
+                side < 0 && u in 0.28f..0.56f && v < 0.56f -> Palette.WALL_EDGE
+                // 窓（桟つき）
+                u in 0.66f..0.70f && v in 0.34f..0.72f -> Palette.WALL_EDGE
+                u in 0.62f..0.82f && v in 0.36f..0.70f -> Palette.WINDOW_LIT
+                u in 0.58f..0.86f && v in 0.32f..0.74f -> Palette.WALL_EDGE
+                // 雨どい
+                u > 0.90f -> Palette.STONE_DARK
+                // 土台
+                v < 0.08f -> Palette.STONE_DARK
                 else -> null
             }
         },
@@ -157,15 +177,15 @@ object IsoBuildings {
 
     /** 低層の集合住宅。 */
     val HOUSE_2 = box(
-        h = 34,
+        h = 68,
         skin = HOUSE,
         roof = { _, _, d -> if (d > 0.94f) Palette.HOUSE_ROOF_DARK else Palette.HOUSE_ROOF },
-        wall = windows(3, 3) { c, r -> hash(c, r, 11) % 5 != 0 },
+        wall = windows(5, 4, balcony = true) { c, r -> hash(c, r, 11) % 5 != 0 },
     )
 
     /** 高層の集合住宅。屋上に給水塔。 */
     val HOUSE_3 = box(
-        h = 56,
+        h = 112,
         skin = HOUSE,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -177,7 +197,7 @@ object IsoBuildings {
                 else -> Palette.HOUSE_ROOF_DARK
             }
         },
-        wall = windows(6, 4) { c, r -> hash(c, r, 23) % 4 != 0 },
+        wall = windows(8, 5, balcony = true) { c, r -> hash(c, r, 23) % 4 != 0 },
     )
 
     // ------------------------------------------------------------------
@@ -186,14 +206,22 @@ object IsoBuildings {
 
     /** 商店。大きなショーウィンドウと日よけ。 */
     val SHOP_1 = box(
-        h = 20,
+        h = 40,
         skin = OFFICE,
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.OFFICE_ROOF },
         wall = { u, v, _ ->
             when {
-                v < 0.42f && u < 0.88f -> Palette.GLASS_LIT       // ショーウィンドウ
-                v in 0.42f..0.52f && u < 0.92f ->
-                    if (((u * 12).toInt() and 1) == 0) Palette.RED else Palette.WHITE  // 縞の日よけ
+                // ショーウィンドウ（枠つき）
+                v < 0.38f && u in 0.06f..0.88f -> Palette.GLASS_LIT
+                v < 0.42f && u < 0.92f -> Palette.WALL_EDGE
+                // 縞の日よけ
+                v in 0.42f..0.54f && u < 0.92f ->
+                    if (((u * 16).toInt() and 1) == 0) Palette.RED else Palette.WHITE
+                // 看板
+                v in 0.60f..0.78f && u in 0.12f..0.80f ->
+                    if (((u * 20).toInt() + (v * 30).toInt()) % 5 == 0) Palette.GOLD
+                    else Palette.SKY_DEEP
+                v in 0.56f..0.82f && u in 0.08f..0.84f -> Palette.WALL_EDGE
                 else -> null
             }
         },
@@ -201,7 +229,7 @@ object IsoBuildings {
 
     /** 雑居ビル。1階が店、上が事務所。 */
     val SHOP_2 = box(
-        h = 42,
+        h = 84,
         skin = OFFICE,
         wall = { u, v, side ->
             when {
@@ -214,7 +242,7 @@ object IsoBuildings {
 
     /** オフィスビル。全面ガラスの縦帯。 */
     val SHOP_3 = box(
-        h = 74,
+        h = 148,
         skin = OFFICE,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -230,11 +258,15 @@ object IsoBuildings {
                 v < 0.10f && u < 0.90f -> Palette.GLASS_LIT
                 u > 0.94f -> null
                 else -> {
-                    val col = (u * 6).toInt()
-                    val cu = (u * 6) - col
+                    val col = (u * 8).toInt()
+                    val cu = (u * 8) - col
+                    val floor = (v * 30).toInt()
+                    val fv = (v * 30) - floor
                     when {
-                        cu < 0.18f -> Palette.OFFICE_RIGHT       // 柱
-                        ((v * 22).toInt() and 1) == 0 -> Palette.GLASS_LIT
+                        cu < 0.16f -> Palette.OFFICE_RIGHT        // 縦の柱
+                        fv < 0.18f -> Palette.OFFICE_ROOF         // 階の帯
+                        // ガラス。上のほうを明るくして、空の映り込みを出す。
+                        fv < 0.45f -> Palette.GLASS_LIT
                         else -> Palette.GLASS
                     }
                 }
@@ -248,7 +280,7 @@ object IsoBuildings {
 
     /** 作業場。のこぎり屋根。 */
     val FACTORY_1 = box(
-        h = 20,
+        h = 40,
         skin = FACTORY,
         roof = { x, _, d ->
             when {
@@ -264,7 +296,7 @@ object IsoBuildings {
 
     /** 工場。煙突つき。 */
     val FACTORY_2 = box(
-        h = 34,
+        h = 68,
         skin = FACTORY,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -282,7 +314,7 @@ object IsoBuildings {
 
     /** 大規模な工場。 */
     val FACTORY_3 = box(
-        h = 48,
+        h = 96,
         skin = FACTORY,
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -304,7 +336,7 @@ object IsoBuildings {
 
     /** 火力発電所。太い煙突と、赤白の帯。 */
     val POWER_COAL = box(
-        h = 40,
+        h = 80,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -328,7 +360,7 @@ object IsoBuildings {
 
     /** 太陽光発電。青いパネルが並ぶ。 */
     val POWER_SOLAR = box(
-        h = 12,
+        h = 24,
         skin = Skin(Palette.METAL, Palette.METAL, Palette.METAL_DARK),
         roof = { x, y, d ->
             when {
@@ -345,7 +377,7 @@ object IsoBuildings {
      * 箱ではないので、地面の菱形の上へ直接組み立てる。
      */
     val POWER_WIND: Sprite = run {
-        val h = 78
+        val h = 156
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -397,7 +429,7 @@ object IsoBuildings {
 
     /** 公園。芝生と木立、小径。 */
     val PARK: Sprite = run {
-        val h = 22
+        val h = 44
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
 
@@ -450,7 +482,7 @@ object IsoBuildings {
 
     /** 警察署。青い看板と車寄せ。 */
     val POLICE = box(
-        h = 30,
+        h = 60,
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.OFFICE_ROOF },
         wall = { u, v, side ->
             when {
@@ -465,7 +497,7 @@ object IsoBuildings {
 
     /** 消防署。赤い大きなシャッター。 */
     val FIRE = box(
-        h = 30,
+        h = 60,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { _, _, d -> if (d > 0.94f) Palette.WALL_EDGE else Palette.RED_DARK },
         wall = { u, v, _ ->
@@ -480,7 +512,7 @@ object IsoBuildings {
 
     /** 学校。横に長い窓の並び。 */
     val SCHOOL = box(
-        h = 32,
+        h = 64,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
             val dy = abs((y + 0.5f) - TH / 2f)
@@ -503,7 +535,7 @@ object IsoBuildings {
 
     /** 病院。屋根に赤十字。 */
     val HOSPITAL = box(
-        h = 40,
+        h = 80,
         skin = Skin(Palette.WHITE, Palette.WALL_ROOF, Palette.WALL_LEFT),
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -524,7 +556,7 @@ object IsoBuildings {
 
     /** 診療所。白い小さな建物に緑の十字。 */
     val CLINIC = box(
-        h = 22,
+        h = 44,
         skin = Skin(Palette.WHITE, Palette.WALL_ROOF, Palette.WALL_LEFT),
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
@@ -543,7 +575,7 @@ object IsoBuildings {
 
     /** 給水塔。細い脚の上に丸いタンク。 */
     val WATER_TOWER: Sprite = run {
-        val h = 44
+        val h = 88
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -581,7 +613,7 @@ object IsoBuildings {
 
     /** 浄水場。四角い沈殿池が並ぶ。 */
     val WATER_PLANT = box(
-        h = 16,
+        h = 32,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             when {
@@ -595,7 +627,7 @@ object IsoBuildings {
 
     /** 下水処理場。円形の池。 */
     val SEWAGE_PLANT = box(
-        h = 14,
+        h = 28,
         skin = Skin(Palette.STONE, Palette.STONE_DARK, Palette.STONE_EDGE),
         roof = { x, y, d ->
             val dx = ((x + 0.5f) - W / 2f) / (W / 2f)
@@ -612,7 +644,7 @@ object IsoBuildings {
 
     /** 埋立地。土を盛った山。 */
     val LANDFILL: Sprite = run {
-        val h = 20
+        val h = 40
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         for (y in 0 until height) for (x in 0 until W) {
@@ -642,7 +674,7 @@ object IsoBuildings {
 
     /** 焼却場。高い煙突。 */
     val INCINERATOR = box(
-        h = 36,
+        h = 72,
         skin = Skin(Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = (x + 0.5f) - W / 2f
@@ -665,7 +697,7 @@ object IsoBuildings {
 
     /** リサイクル施設。緑の屋根に矢印の輪。 */
     val RECYCLING = box(
-        h = 20,
+        h = 40,
         skin = Skin(Palette.TREE, Palette.WALL_LEFT, Palette.WALL_RIGHT),
         roof = { x, y, d ->
             val dx = ((x + 0.5f) - W / 2f) / (W / 2f)
@@ -681,7 +713,7 @@ object IsoBuildings {
 
     /** バス停。小さな屋根とベンチ。 */
     val BUS_STOP: Sprite = run {
-        val h = 16
+        val h = 32
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -706,7 +738,7 @@ object IsoBuildings {
 
     /** 地下鉄の駅。地上の入口。 */
     val SUBWAY_STATION = box(
-        h = 18,
+        h = 36,
         skin = Skin(Palette.STONE_LIT, Palette.STONE, Palette.STONE_DARK),
         roof = { _, _, d -> if (d > 0.94f) Palette.STONE_EDGE else Palette.STONE_LIT },
         wall = { u, v, side ->
@@ -721,7 +753,7 @@ object IsoBuildings {
 
     /** 空港。滑走路と管制塔。 */
     val AIRPORT: Sprite = run {
-        val h = 30
+        val h = 60
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -754,7 +786,7 @@ object IsoBuildings {
 
     /** 港。クレーンとコンテナ。 */
     val SEAPORT: Sprite = run {
-        val h = 26
+        val h = 52
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -788,7 +820,7 @@ object IsoBuildings {
 
     /** 送電線。鉄塔と電線。 */
     val POWER_LINE: Sprite = run {
-        val h = 34
+        val h = 68
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         fun set(x: Int, y: Int, c: Int) {
@@ -852,7 +884,7 @@ object IsoBuildings {
      */
     val NO_POWER: Sprite = run {
         val w = 10
-        val h = 12
+        val h = 24
         val shape = listOf(
             "   ##   ",
             "  ####  ",

@@ -164,6 +164,15 @@ class Tile {
     /** 公共交通による交通量の軽減 0..100(%)。 */
     var transitRelief: Int = 0
 
+    /**
+     * 段階が変わった月。建ったばかりの建物をアニメーションさせるために使う。
+     * -1 は「まだ一度も変わっていない」。保存しない（見た目だけのため）。
+     */
+    var stageChangedMonth: Int = -1
+
+    /** 直前の段階。上がったのか下がったのかを見分ける。 */
+    var previousStage: Int = 0
+
     /** 渋滞しているか。容量に対して交通量が多い。 */
     val congested: Boolean
         get() = kind.capacity > 0 && traffic > kind.capacity

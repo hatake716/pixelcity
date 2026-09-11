@@ -1175,10 +1175,16 @@ class City(
             // 成長に必要な需要。上の段階ほど強い需要が要る。
             val demandToGrow = t.stage * 20 + jitter
 
+            val before = t.stage
             when {
                 t.stage < waterCap && quality >= required && demand > demandToGrow -> t.stage++
                 // 質が大きく欠けるか、需要が強く落ち込んだときだけ衰退する。
                 t.stage > 0 && (quality < required / 2 || demand < -30 + jitter) -> t.stage--
+            }
+            // 変わった月を覚えておく。建つ様子を見せるために使う。
+            if (t.stage != before) {
+                t.previousStage = before
+                t.stageChangedMonth = month
             }
         }
     }

@@ -48,6 +48,11 @@ class CityRenderer {
         highlight: IntArray? = null,
         suggest: ((Int, Int) -> Boolean)? = null,
         suggestOn: Boolean = false,
+        /**
+         * 建った直後の建物を動かすための進み具合 0f..1f。
+         * 1つの月のあいだで 0 から 1 へ動かす。
+         */
+        animationPhase: Float = 1f,
         /** 下地を塗るか。呼び出し側が空などを描いてあるときは false にする。 */
         clearBackground: Boolean = true,
     ) {
@@ -156,9 +161,25 @@ class CityRenderer {
                 if (sprite != null) {
                     val sx = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
                     // 建物の下端が、そのタイルの菱形に重なるよう持ち上げる
-                    val sy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen -
+                    var sy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen -
                         (sprite.height - Iso.TILE_H) * zoomNum / zoomDen
-                    blit(canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
+
+                    // 建ったばかりなら、地面から せり上がる形で見せる。
+                    // 街が育つ様子が、目で分かるようになる。
+                    val rising = tile.stageChangedMonth == city.month &&
+                        tile.stage > tile.previousStage
+                    if (rising && animationPhase < 1f) {
+                        val hidden = ((sprite.height - Iso.TILE_H) *
+                            (1f - animationPhase)).toInt() * zoomNum / zoomDen
+                        sy += hidden
+                        blitClipped(
+                            canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen,
+                            skipTop = (sprite.height - Iso.TILE_H) - ((sprite.height - Iso.TILE_H) *
+                                animationPhase).toInt(),
+                        )
+                    } else {
+                        blit(canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
+                    }
 
                     if (needsPowerMark(tile)) {
                         val mx = sx + (Iso.TILE_W / 2 - 4) * zoomNum / zoomDen
@@ -258,6 +279,38 @@ class CityRenderer {
             if (sx + Iso.TILE_W * zoomNum / zoomDen < 0 || sx > canvas.width) continue
             if (sy + Iso.TILE_H * zoomNum / zoomDen < clipTop || sy > clipBottom) continue
             body(tx, ty, sx, sy)
+        }
+    }
+
+    /**
+     * 上から [skipTop] 行を描かずに転送する。
+     * 地面から せり上がってくる様子を出すために使う。
+     */
+    private fun blitClipped(
+        canvas: PixelCanvas,
+        s: Sprite,
+        x: Int,
+        y: Int,
+        clipTop: Int,
+        clipBottom: Int,
+        zoomNum: Int,
+        zoomDen: Int,
+        skipTop: Int,
+    ) {
+        val dw = s.width * zoomNum / zoomDen
+        val dh = s.height * zoomNum / zoomDen
+        for (dy in 0 until dh) {
+            val sy = dy * zoomDen / zoomNum
+            if (sy < skipTop) continue
+            val ty = y + dy
+            if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
+            for (dx in 0 until dw) {
+                val tx = x + dx
+                if (tx < 0 || tx >= canvas.width) continue
+                val v = s.at(dx * zoomDen / zoomNum, sy)
+                if (v == Pix.TRANSPARENT) continue
+                canvas.set(tx, ty, v.toInt())
+            }
         }
     }
 

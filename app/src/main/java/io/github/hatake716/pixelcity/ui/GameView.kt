@@ -51,13 +51,23 @@ class GameView(
         const val LOGICAL_H_MAX = 1000
         /** 1か月の実時間（ミリ秒）。速度倍率で割る。 */
         const val MONTH_MILLIS = 8_000L
-        private val SPEEDS = intArrayOf(0, 1, 2, 4)
+
+        /**
+         * 時間の速さ。0 は停止。
+         *
+         * 街が育つのを待つ場面が多いので、30倍まで用意した。
+         * 30倍なら1年が約3秒で進む。
+         */
+        private val SPEEDS = intArrayOf(0, 1, 2, 4, 10, 30)
+
+        /** 1フレームで進める月数の上限。早送りでも描画が止まらないようにする。 */
+        private const val MAX_STEPS_PER_FRAME = 4
 
         /**
          * 拡大率の段（分子, 分母）。広いマップを見渡せるよう、引いた画を厚くしてある。
          * 1/4 = 街の全体像、1/2 = 区画の配置、1/1 = 標準、2/1 = 建物の細部。
          */
-        private val ZOOM_STEPS = arrayOf(1 to 8, 1 to 4, 1 to 2, 1 to 1)
+        private val ZOOM_STEPS = arrayOf(1 to 16, 1 to 8, 1 to 4, 1 to 2, 1 to 1)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
         private const val SPEED_X = 150
@@ -131,7 +141,7 @@ class GameView(
      * 地図の拡大率の段。[ZOOM_STEPS] の索引。
      * 引いた画（街全体）から、寄った画（建物の細部）まで選べる。
      */
-    private var zoomStep = 2
+    private var zoomStep = 3
 
     /** いまの拡大率。分数を使わずに済むよう、分子と分母で持つ。 */
     private val zoomNum: Int get() = ZOOM_STEPS[zoomStep].first
@@ -209,10 +219,15 @@ class GameView(
         val speed = SPEEDS[speedIndex]
         if (speed > 0 && screen == Screen.PLAYING && !city.gameOver) {
             monthAccumulator += delta * speed
-            while (monthAccumulator >= MONTH_MILLIS) {
+            // 早送りでも、1フレームで進めすぎない。
+            // まとめて何十か月も計算すると、その間 画面が固まる。
+            var steps = 0
+            while (monthAccumulator >= MONTH_MILLIS && steps < MAX_STEPS_PER_FRAME) {
                 monthAccumulator -= MONTH_MILLIS
                 advanceMonth()
+                steps++
             }
+            if (steps >= MAX_STEPS_PER_FRAME) monthAccumulator = 0
         }
         postInvalidateOnAnimation()
     }
@@ -295,6 +310,7 @@ class GameView(
             highlightForSelection(),
             suggest = placementHint(),
             suggestOn = blinkOn(),
+            animationPhase = growthPhase(),
         )
 
         drawStatusBar()
@@ -350,14 +366,22 @@ class GameView(
         Hud.drawDemandBars(pixels, city, 258, 19, 28)
 
         // 速度
-        val speedLabel = when (speedIndex) { 0 -> "‖"; 1 -> "▶"; 2 -> "▶▶"; else -> "▶▶▶" }
+        val speedLabel = when (speedIndex) {
+            0 -> "‖"
+            1 -> "▶"
+            2 -> "▶▶"
+            3 -> "▶▶▶"
+            4 -> "×10"
+            else -> "×30"
+        }
         text.draw(pixels, speedLabel, SPEED_X, 20, C_TEXT)
 
         // 拡大率の切り替え
         val zoomLabel = when (zoomStep) {
             0 -> "ぜんたい"
             1 -> "ひろい"
-            2 -> "ふつう"
+            2 -> "ちゅう"
+            3 -> "ふつう"
             else -> "よせる"
         }
         pixels.drawRect(ZOOM_X, 18, 64, 24, C_LINE)
@@ -521,6 +545,22 @@ class GameView(
         text.textSize = BODY_SIZE
         val lines = text.wrap(step.body, BODY_WRAP_W).size
         return 36 + lines * 18 + if (tutorial.awaitingContinue()) 30 else 6
+    }
+
+    /**
+     * 建物が せり上がる進み具合 0f..1f。
+     *
+     * 1か月のあいだで 0→1 へ動かす。早送りのときは月が短いので、
+     * 自然と速く建つように見える。
+     */
+    private fun growthPhase(): Float {
+        val speed = SPEEDS[speedIndex]
+        if (speed == 0) return 1f
+        val monthLength = MONTH_MILLIS / speed
+        if (monthLength <= 0) return 1f
+        // 月の前半で建て終える。後半は静止して見せる。
+        val t = monthAccumulator.toFloat() / (monthLength * 0.6f)
+        return t.coerceIn(0f, 1f)
     }
 
     /** 点滅の位相。0.5秒ごとに切り替える。 */
