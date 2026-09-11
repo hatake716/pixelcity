@@ -145,6 +145,15 @@ class GameView(
         /** ツールバーの一番下の段（情報・予算・けんちく）の高さ。 */
         private const val BOTTOM_ROW_H = 30
 
+        /**
+         * 車を描き始める拡大率。
+         * これより引くと1台が1ドットに満たず、描いても見えないうえ重い。
+         */
+        private const val CARS_MIN_ZOOM = 1f / 24f
+
+        /** 車を配り直す間隔（ミリ秒）。短すぎると瞬間移動して見える。 */
+        private const val REFILL_MILLIS = 2_500L
+
         /** 人口の節目。越えるたびに短い音が鳴る。 */
         private val MILESTONES = intArrayOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 
@@ -213,6 +222,11 @@ class GameView(
     private val toolbarTopY: Int get() = logicalH - insetBottom - Hud.TOOLBAR_HEIGHT
     private var pixels = PixelCanvas(LOGICAL_W, LOGICAL_H)
     private val renderer = CityRenderer()
+
+    /** 道を走る車。見えている範囲ぶんだけ持つ。 */
+    private val traffic = TrafficAnimation()
+    /** 車を配り直した時刻。頻繁にやり直すと、車が瞬間移動して見える。 */
+    private var lastRefill = 0L
     private val info = InfoPanel(GbText(context))
 
     /** 音。鳴らせないときも遊びは止めないよう、失敗は握りつぶす作り。 */
@@ -442,6 +456,14 @@ class GameView(
             }
             if (steps >= MAX_STEPS_PER_FRAME) monthAccumulator = 0
         }
+
+        // 車を進める。止めているときは動かさない。
+        if (screen == Screen.PLAYING && speed > 0) {
+            // 早送りでは車も速く走る。時間が進んでいるのに
+            // 車だけ同じ速さだと、ちぐはぐに見える。
+            val carSpeed = (1f + speed * 0.35f).coerceAtMost(4f)
+            traffic.advance(city, delta / 1000f * carSpeed)
+        }
         postInvalidateOnAnimation()
     }
 
@@ -570,6 +592,7 @@ class GameView(
             pixels, city, camX, camY, zoomNum, zoomDen, mapTop, mapHeight, info.overlay,
             highlightForSelection(),
             selected = selection,
+            cars = visibleCars(mapTop, mapHeight),
             suggest = placementHint(),
             suggestOn = blinkOn(),
             animationPhase = growthPhase(),
@@ -897,6 +920,33 @@ class GameView(
         text.draw(pixels, label, x + 10, y + 5, Palette.UI_ACCENT)
         overlayBadge = x to (x + w)
         overlayBadgeY = y
+    }
+
+    /**
+     * いま見えている範囲の車。
+     *
+     * 画面の外まで車を抱えると重いので、見える範囲だけを持つ。
+     * 配り直しはときどきでよい。毎フレームやると、
+     * 車が毎回別の場所に現れて、走っているように見えない。
+     */
+    private fun visibleCars(mapTop: Int, mapHeight: Int): List<TrafficAnimation.Car> {
+        // 拡大率が低いと、1台が1ドットにも満たない。描いても見えない。
+        if (zoom < CARS_MIN_ZOOM) return emptyList()
+
+        val now = System.currentTimeMillis()
+        if (now - lastRefill > REFILL_MILLIS) {
+            lastRefill = now
+            // 画面に映るタイルの範囲。余裕をもって広めにとる。
+            val span = (LOGICAL_W / (Iso.TILE_W * zoom)).toInt() + 4
+            val vspan = (mapHeight / (Iso.TILE_H * zoom)).toInt() + 4
+            val r = maxOf(span, vspan)
+            traffic.refill(
+                city,
+                (camX.toInt() - r), (camY.toInt() - r),
+                (camX.toInt() + r), (camY.toInt() + r),
+            )
+        }
+        return traffic.all
     }
 
     /** ツールバーに出すアイコン。地図と同じドット絵を使う。 */

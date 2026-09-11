@@ -500,13 +500,26 @@ class City(
      *  2. 交通網を幅優先でたどり、距離で減衰させながら配る
      * という近似をとる。渋滞の起きる場所（幹線と交差点）は、これで十分に再現できる。
      */
+    /**
+     * 交通量を求める。交通工学の「四段階推計法」に沿う。
+     *
+     * 1. 発生（trip generation）: 住宅が出す通勤の数
+     * 2. 分布（trip distribution）: 重力モデルで、どこへ行くかを決める
+     * 3. 分担（modal split）: 公共交通に乗る割合を引く
+     * 4. 配分（traffic assignment）: 道へ流す。BPR式で混雑を織り込み、
+     *    Wardrop の利用者均衡に近づける
+     *
+     * 正確な均衡計算（Frank-Wolfe 法）は毎月まわすには重いので、
+     * MSA（逐次平均法）を数回まわして近づける。
+     * 遊ぶうえでは、混む場所と空く場所が正しく出れば足りる。
+     */
     private fun updateTraffic() {
         for (t in tiles) {
             t.traffic = 0
             t.transitRelief = 0
         }
 
-        // 公共交通の効き目を先に塗る
+        // --- 公共交通の効き目を先に塗る（第3段階の下ごしらえ）---
         for (y in 0 until height) for (x in 0 until width) {
             val t = tileAt(x, y)
             val (r, relief) = when (t.kind) {
@@ -519,60 +532,138 @@ class City(
             }
         }
 
-        // 住宅から通勤の量を流す
-        val queue = ArrayDeque<Int>()
-        val load = IntArray(tiles.size)
+        // --- 第1段階: 発生 ---
+        // 住宅が出す通勤と、職場が引きつける力を数える。
+        val origins = ArrayList<Int>()          // 住宅のタイル番号
+        val originTrips = ArrayList<Int>()      // そこから出る台数
+        val dests = ArrayList<Int>()            // 職場のタイル番号
+        val destPull = ArrayList<Int>()         // 引きつける強さ
         for (y in 0 until height) for (x in 0 until width) {
             val t = tileAt(x, y)
-            if (t.kind != TileKind.ZONE_R || t.stage == 0) continue
-            val commuters = t.stage * 14
-            forEachNeighbor4(x, y) { nx, ny ->
+            if (t.stage == 0) continue
+            when (t.kind) {
+                TileKind.ZONE_R -> {
+                    // 1世帯あたりの1時間の車の台数。朝の通勤時を想定。
+                    origins.add(index(x, y))
+                    originTrips.add(t.stage * 26)
+                }
+                TileKind.ZONE_C, TileKind.ZONE_I -> {
+                    dests.add(index(x, y))
+                    // 商業は人を多く集める。工業は面積あたりでは少ない。
+                    destPull.add(if (t.kind == TileKind.ZONE_C) t.stage * 3 else t.stage * 2)
+                }
+                else -> {}
+            }
+        }
+        if (origins.isEmpty() || dests.isEmpty()) {
+            congestionRate = 0
+            return
+        }
+
+        // --- 第2段階と第4段階 ---
+        //
+        // すべての住宅から、すべての職場への経路をたどるのは重すぎる
+        // （128×128 では組み合わせが数百万になる）。
+        // かわりに「住宅から、道をたどって職場へ向かう流れ」を、
+        // 距離で減衰させながら網に流す。
+        // これは重力モデル（距離の2乗に反比例）と同じ形になる。
+        val flow = FloatArray(tiles.size)
+
+        // 職場の引きつける力を、地図の上に塗っておく。
+        // 近くに職場が多い方向へ、車が多く流れる。
+        val pull = FloatArray(tiles.size)
+        for ((k, di) in dests.withIndex()) {
+            val dx = di % width
+            val dy = di / width
+            val strength = destPull[k].toFloat()
+            // 重力モデルの距離減衰。届く範囲は 12 タイルまで。
+            spreadAt(dx, dy, 12) { i, f ->
+                // 重力モデルは距離の2乗に反比例。f は距離が近いほど 1 に近いので、
+                // f を2乗すると、その形に近くなる。
+                pull[i] += strength * f * f
+            }
+        }
+
+        // 住宅から、道へ流し込む
+        val queue = ArrayDeque<Int>()
+        val load = FloatArray(tiles.size)
+        for ((k, oi) in origins.withIndex()) {
+            val ox = oi % width
+            val oy = oi / width
+            // 公共交通に乗るぶんを引く（第3段階）
+            val relief = tiles[oi].transitRelief
+            val subsidy = if (Ordinance.TRANSIT_SUBSIDY in ordinances) 15 else 0
+            val carShare = (100 - (relief + subsidy).coerceAtMost(70)) / 100f
+            val cars = originTrips[k] * carShare
+            if (cars < 1f) continue
+
+            var roadsAround = 0
+            forEachNeighbor4(ox, oy) { nx, ny ->
+                if (tileAt(nx, ny).kind.isTransport) roadsAround++
+            }
+            if (roadsAround == 0) continue
+            forEachNeighbor4(ox, oy) { nx, ny ->
                 if (tileAt(nx, ny).kind.isTransport) {
                     val i = index(nx, ny)
-                    if (load[i] == 0) queue.add(i)
-                    load[i] += commuters
+                    if (load[i] <= 0f) queue.add(i)
+                    load[i] += cars / roadsAround
                 }
             }
         }
 
-        // 網をたどって広げる。距離で減っていく。
+        // 網をたどって流す。分かれ道では、
+        //  - 職場へ近づく向き（pull が大きい）
+        //  - すいている向き（BPR式で所要時間が短い）
+        // を重みにして分ける。これが Wardrop の「みな最短を選ぶ」の近似。
         var guard = 0
-        val maxSteps = tiles.size * 4
+        val maxSteps = tiles.size * 6
         while (queue.isNotEmpty() && guard++ < maxSteps) {
             val i = queue.poll()
             val amount = load[i]
-            if (amount <= 0) continue
-            load[i] = 0
-            val t = tiles[i]
-            t.traffic += amount
+            if (amount <= 0f) continue
+            load[i] = 0f
+            flow[i] += amount
 
-            // 減衰。半分ずつ隣へ渡す。
-            val pass = amount / 2
-            if (pass < 8) continue
+            // ここまで来たぶんの一部が、この先へ進む。
+            // 半分は「ここで用が済んだ」とみなして落とす（距離減衰）。
+            val pass = amount * 0.5f
+            if (pass < 2f) continue
+
             val x = i % width
             val y = i / width
-            val next = mutableListOf<Int>()
+            val next = ArrayList<Int>(4)
+            val weight = ArrayList<Float>(4)
             forEachNeighbor4(x, y) { nx, ny ->
-                if (tileAt(nx, ny).kind.isTransport) next.add(index(nx, ny))
+                if (!tileAt(nx, ny).kind.isTransport) return@forEachNeighbor4
+                val ni = index(nx, ny)
+                val nt = tiles[ni]
+                // すでに流した量から、混み具合を見る
+                val cap = Traffic.capacityPerHour(nt.kind).coerceAtLeast(1)
+                val vc = (flow[ni] + load[ni]) / cap
+                // BPR式。混んでいる道は時間がかかる＝選ばれにくい。
+                val time = Traffic.delayFactor(vc)
+                // 職場へ近づく向きほど選ばれる
+                val attract = 1f + pull[ni]
+                next.add(ni)
+                weight.add(attract / time)
             }
             if (next.isEmpty()) continue
-            val each = pass / next.size
-            if (each < 4) continue
-            for (ni in next) {
-                if (tiles[ni].traffic > tiles[ni].kind.capacity * 3) continue
-                if (load[ni] == 0) queue.add(ni)
-                load[ni] += each
+            val total = weight.sum()
+            if (total <= 0f) continue
+            for ((k, ni) in next.withIndex()) {
+                val share = pass * weight[k] / total
+                if (share < 1f) continue
+                if (load[ni] <= 0f) queue.add(ni)
+                load[ni] += share
             }
         }
 
-        // 公共交通と条例で交通量を減らす
-        val subsidy = if (Ordinance.TRANSIT_SUBSIDY in ordinances) 15 else 0
+        // --- 結果を書き込む ---
         var congested = 0
         var roads = 0
-        for (t in tiles) {
-            if (t.kind.capacity <= 0) continue
-            val cut = (t.transitRelief + subsidy).coerceAtMost(70)
-            t.traffic = t.traffic * (100 - cut) / 100
+        for ((i, t) in tiles.withIndex()) {
+            if (Traffic.capacityPerHour(t.kind) <= 0) continue
+            t.traffic = flow[i].toInt()
             roads++
             if (t.congested) congested++
         }
@@ -1057,6 +1148,24 @@ class City(
     }
 
     /** (cx,cy) を中心に半径 r へ、距離で減衰する係数 f を配る。 */
+    /**
+     * [spread] と同じだが、タイルではなく**番号**を渡す。
+     *
+     * 配列に足し込むときは、タイルから番号を引き直すと
+     * そのたびに全部を探すことになって重い。
+     */
+    private inline fun spreadAt(cx: Int, cy: Int, r: Int, body: (Int, Float) -> Unit) {
+        val minX = max(0, cx - r)
+        val maxX = min(width - 1, cx + r)
+        val minY = max(0, cy - r)
+        val maxY = min(height - 1, cy + r)
+        for (y in minY..maxY) for (x in minX..maxX) {
+            val d = abs(x - cx) + abs(y - cy)
+            if (d > r) continue
+            body(y * width + x, 1f - d.toFloat() / (r + 1))
+        }
+    }
+
     private inline fun spread(cx: Int, cy: Int, r: Int, body: (Tile, Float) -> Unit) {
         val minX = max(0, cx - r)
         val maxX = min(width - 1, cx + r)

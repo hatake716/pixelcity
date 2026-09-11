@@ -67,6 +67,8 @@ class CityRenderer {
          * タイル番号（y * width + x）の集まり。青い影をつける。
          */
         selected: Set<Int>? = null,
+        /** 道を走っている車。地面の上、建物の下に描く。 */
+        cars: List<TrafficAnimation.Car>? = null,
         suggest: ((Int, Int) -> Boolean)? = null,
         suggestOn: Boolean = false,
         /**
@@ -144,7 +146,36 @@ class CityRenderer {
             }
         }
 
-        // --- 3周目: 建物。奥から手前へ ---
+        // --- 3周目: 道を走る車 ---
+        //
+        // 地面の上、建物の下に描く。建物より先に描くことで、
+        // ビルの手前を通る車がビルに隠れ、奥行きが合う。
+        if (!cars.isNullOrEmpty()) {
+            for (c in cars) {
+                if (c.tx < 0 || c.ty < 0 || c.tx >= city.width || c.ty >= city.height) continue
+                // タイルのなかでの位置。進む向きへ progress ぶん進んだところ。
+                val (ox, oy) = carOffset(c)
+                val sx = originX +
+                    Math.round((Iso.screenX2(c.tx + ox, c.ty + oy)) * zoomNum / zoomDen)
+                val sy = originY +
+                    Math.round((Iso.screenY2(c.tx + ox, c.ty + oy)) * zoomNum / zoomDen)
+                val sprite = Vehicles.of(c.kind, c.dir)
+                // 菱形の中心に合わせる
+                val dw = sprite.width * zoomNum / zoomDen
+                val dh = sprite.height * zoomNum / zoomDen
+                // 車の絵は、車体の下に影の余白がある。
+                // 中心をそろえると宙に浮いて見えるので、
+                // 絵の下端が菱形の中心に来るように下げる。
+                blit(
+                    canvas, sprite,
+                    sx + (Iso.TILE_W * zoomNum / zoomDen - dw) / 2,
+                    sy + (Iso.TILE_H * zoomNum / zoomDen) / 2 - dh * 2 / 3,
+                    clipTop, clipBottom, zoomNum, zoomDen,
+                )
+            }
+        }
+
+        // --- 4周目: 建物。奥から手前へ ---
         // (tx+ty) が同じものは同じ奥行き。行ごとに描けば自然に前後が揃う。
         val maxDepth = city.width + city.height
         for (depth in 0 until maxDepth) {
@@ -189,7 +220,7 @@ class CityRenderer {
             }
         }
 
-        // --- 4周目: 情報の重ね表示 ---
+        // --- 5周目: 情報の重ね表示 ---
         //
         // 2段構えにする。
         //  1. 街ぜんたいを灰色に落とす
@@ -215,7 +246,7 @@ class CityRenderer {
             }
         }
 
-        // --- 5周目: これから建てるマスの青い影 ---
+        // --- 6周目: これから建てるマスの青い影 ---
         //
         // 地面や建物の上に重ねて染める。枠だけだと、
         // 建物が建っているマスで見分けがつきにくい。
@@ -233,7 +264,7 @@ class CityRenderer {
             }
         }
 
-        // --- 6周目: 選択中の枠 ---
+        // --- 7周目: 選択中の枠 ---
         if (highlight != null && highlight.size >= 2) {
             val span = if (highlight.size >= 3) highlight[2] else 1
             for (dy in 0 until span) for (dx in 0 until span) {
@@ -241,6 +272,24 @@ class CityRenderer {
                 val hy = originY + Iso.screenY(highlight[0] + dx, highlight[1] + dy) * zoomNum / zoomDen
                 outlineDiamond(canvas, hx, hy, zoomNum, zoomDen, Palette.WHITE, clipTop, clipBottom)
             }
+        }
+    }
+
+    /**
+     * 車の、タイルのなかでの位置。
+     *
+     * 進む向きへ [Car.progress] ぶん進み、
+     * 対向車とぶつからないよう、進行方向に対して右へ寄せる。
+     * 日本と同じ左側通行にすると、右へ寄るのが正しい。
+     */
+    private fun carOffset(c: TrafficAnimation.Car): Pair<Float, Float> {
+        val p = c.progress - 0.5f          // -0.5 .. 0.5
+        val lane = 0.16f                   // 中心からの寄せ幅
+        return when (c.dir) {
+            Vehicles.Dir.EAST -> (p) to (lane)
+            Vehicles.Dir.WEST -> (-p) to (-lane)
+            Vehicles.Dir.SOUTH -> (-lane) to (p)
+            Vehicles.Dir.NORTH -> (lane) to (-p)
         }
     }
 

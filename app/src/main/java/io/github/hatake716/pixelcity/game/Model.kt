@@ -77,6 +77,10 @@ enum class TileKind {
         get() = this == ROAD || this == AVENUE || this == HIGHWAY ||
             this == RAIL || this == SUBWAY
 
+    /** 車が走る道か。線路と地下鉄は車が通らない。 */
+    val isRoad: Boolean
+        get() = this == ROAD || this == AVENUE || this == HIGHWAY
+
     /** 区分が直接つながれる道か。高速道路と地下鉄は出入口が要る。 */
     val isLocalRoad: Boolean
         get() = this == ROAD || this == AVENUE || this == RAIL
@@ -174,8 +178,28 @@ class Tile {
     var previousStage: Int = 0
 
     /** 渋滞しているか。容量に対して交通量が多い。 */
+    /**
+     * 交通量 ÷ 容量。交通工学でいう v/c。
+     * 1.0 で容量ちょうど。これがすべての混雑の判断のもとになる。
+     */
+    val volumeCapacityRatio: Float
+        get() {
+            val c = Traffic.capacityPerHour(kind)
+            return if (c <= 0) 0f else traffic.toFloat() / c
+        }
+
+    /** サービス水準 A〜F。 */
+    val los: Traffic.Los
+        get() = Traffic.losOf(volumeCapacityRatio)
+
+    /**
+     * 渋滞しているか。
+     *
+     * サービス水準 D（v/c > 0.8）から、目に見えて流れが悪くなる。
+     * 容量ちょうどになるまで待つと、手を打つのが遅すぎる。
+     */
     val congested: Boolean
-        get() = kind.capacity > 0 && traffic > kind.capacity
+        get() = Traffic.capacityPerHour(kind) > 0 && los.isCongested
 
     fun clearForBulldoze() {
         kind = TileKind.EMPTY
