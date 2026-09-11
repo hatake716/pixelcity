@@ -63,19 +63,19 @@ class Tutorial {
                 highlightTool = TileKind.POWER_COAL,
             ),
             Step(
-                title = "じゅうたくちを つくる",
+                title = "じゅうたくを おく",
                 body = "ひとが すむ ばしょです。「じゅうたく」を えらんで、どうろの となりに 8マス おきましょう。かってに はってんします。",
                 goal = Goal.Place(TileKind.ZONE_R, 8),
                 highlightTool = TileKind.ZONE_R,
             ),
             Step(
-                title = "しごとばを つくる（しょうぎょう）",
+                title = "しょうぎょうを おく",
                 body = "しごとが ないと ひとは すみつきません。「しょうぎょう」を どうろの となりに 4マス。しょうぎょうは ぜいしゅうの ちゅうしんです。",
                 goal = Goal.Place(TileKind.ZONE_C, 4),
                 highlightTool = TileKind.ZONE_C,
             ),
             Step(
-                title = "しごとばを つくる（こうぎょう）",
+                title = "こうぎょうを おく",
                 body = "こうぎょうも しごとを うみます。ただし こうがいを だすので、じゅうたくから はなして 4マス おきましょう。",
                 goal = Goal.Place(TileKind.ZONE_I, 4),
                 highlightTool = TileKind.ZONE_I,
@@ -87,7 +87,7 @@ class Tutorial {
                 highlightSpeed = true,
             ),
             Step(
-                title = "こうえんで ちかを あげる",
+                title = "こうえんを おく",
                 body = "じんこうが ふえてきましたね。こうえんは まわりの ちかを あげ、こうがいを へらします。じゅうたくの ちかくに 2つ おきましょう。",
                 goal = Goal.Place(TileKind.PARK, 2),
                 highlightTool = TileKind.PARK,

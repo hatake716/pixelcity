@@ -101,6 +101,26 @@ class City(
         markShores()
     }
 
+    /**
+     * 街の中心に、必ず平らな土地を用意する。
+     *
+     * チュートリアルは「道路を引いて、その両側に区分を置く」という手順を踏むので、
+     * 中心が川や海だと最初の一歩が踏み出せない。生成のたびに詰まないよう、
+     * 中央の一画だけは必ず陸地にする。
+     */
+    fun clearStartingArea(halfWidth: Int = 7, halfHeight: Int = 5) {
+        val cx = width / 2
+        val cy = height / 2
+        for (y in (cy - halfHeight)..(cy + halfHeight)) {
+            for (x in (cx - halfWidth)..(cx + halfWidth)) {
+                if (inBounds(x, y)) tileAt(x, y).terrain = Terrain.LAND
+            }
+        }
+        // 平らにした縁で、水辺の判定をやり直す。
+        for (t in tiles) if (t.terrain == Terrain.SHORE) t.terrain = Terrain.LAND
+        markShores()
+    }
+
     /** 水に接する陸地を SHORE にする。地価の計算で使う。 */
     private fun markShores() {
         for (y in 0 until height) for (x in 0 until width) {
@@ -115,6 +135,15 @@ class City(
         tileOrNull(x + 1, y)?.let { add(it) }
         tileOrNull(x, y - 1)?.let { add(it) }
         tileOrNull(x, y + 1)?.let { add(it) }
+    }
+
+    /** 4近傍に道路があるか。区分が育つための最低条件。 */
+    fun touchesRoad(x: Int, y: Int): Boolean {
+        var found = false
+        forEachNeighbor4(x, y) { nx, ny ->
+            if (tileAt(nx, ny).kind == TileKind.ROAD) found = true
+        }
+        return found
     }
 
     fun canBuildOn(x: Int, y: Int): Boolean {
@@ -133,6 +162,11 @@ class City(
         if (t.terrain == Terrain.WATER) return "みずのうえには たてられません"
         if (t.monument != null || t.monumentAnchor >= 0) return "モニュメントが あります"
         if (t.kind == kind && !kind.isZone) return "すでに あります"
+        // 施設の上に、なぞって区分や道路を敷いてしまう事故を防ぐ。
+        // 建て替えたいときは「こわす」で明示的に壊してもらう。
+        if (t.kind.isBuilding && !t.kind.isZone && kind != t.kind) {
+            return "さきに こわしてください"
+        }
         if (!BuildCost.isUnlocked(kind, population)) return "まだ かいきんされていません"
         val cost = BuildCost.cost(kind) + if (t.kind != TileKind.EMPTY) BuildCost.BULLDOZE else 0
         if (funds < cost) return "しきんが たりません"

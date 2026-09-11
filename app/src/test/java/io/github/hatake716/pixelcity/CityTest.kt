@@ -35,6 +35,24 @@ class CityTest {
         assertTrue("buildable=$land", land > c.tiles.size / 2)
     }
 
+    /** どのシードでも、中心には道路と区分を置ける平地があること。 */
+    @Test
+    fun `the starting area is always buildable`() {
+        for (seed in 1L..30L) {
+            val c = City().apply { generateTerrain(seed); clearStartingArea() }
+            val cx = c.width / 2
+            val cy = c.height / 2
+            for (y in (cy - 5)..(cy + 5)) {
+                for (x in (cx - 7)..(cx + 7)) {
+                    assertTrue(
+                        "seed=$seed ($x,$y) is water",
+                        c.buildBlocker(x, y, TileKind.ROAD) == null,
+                    )
+                }
+            }
+        }
+    }
+
     @Test
     fun `building deducts funds and sets the tile`() {
         val c = flatCity()
@@ -69,6 +87,34 @@ class CityTest {
         assertEquals(before - BuildCost.cost(TileKind.ZONE_R) - BuildCost.BULLDOZE, c.funds)
     }
 
+    /**
+     * 発電所や公共施設を、区分や道路で上書きできないこと。
+     * なぞって建設しているときに、うっかり発電所を潰して街が停電する事故を防ぐ。
+     */
+    @Test
+    fun `zones cannot be painted over a power plant`() {
+        val c = flatCity()
+        c.funds = 100_000
+        assertTrue(c.build(4, 4, TileKind.POWER_COAL))
+        assertNotNull(c.buildBlocker(4, 4, TileKind.ZONE_R))
+        assertFalse(c.build(4, 4, TileKind.ZONE_R))
+        assertNotNull(c.buildBlocker(4, 4, TileKind.ROAD))
+        assertEquals(TileKind.POWER_COAL, c.tileAt(4, 4).kind)
+        // こわしてからなら置ける
+        assertTrue(c.bulldoze(4, 4))
+        assertTrue(c.build(4, 4, TileKind.ZONE_R))
+    }
+
+    /** 区分どうしは塗り替えられること。用途の変更は日常的な操作なので妨げない。 */
+    @Test
+    fun `zones can be repainted as another zone type`() {
+        val c = flatCity()
+        c.funds = 100_000
+        assertTrue(c.build(4, 4, TileKind.ZONE_R))
+        assertTrue(c.build(4, 4, TileKind.ZONE_C))
+        assertEquals(TileKind.ZONE_C, c.tileAt(4, 4).kind)
+    }
+
     @Test
     fun `bulldoze clears the tile`() {
         val c = flatCity()
@@ -76,6 +122,20 @@ class CityTest {
         assertTrue(c.bulldoze(4, 4))
         assertEquals(TileKind.EMPTY, c.tileAt(4, 4).kind)
         assertEquals(0, c.tileAt(4, 4).stage)
+    }
+
+    @Test
+    fun `touchesRoad reports adjacency in four directions`() {
+        val c = flatCity()
+        c.funds = 100_000
+        c.build(5, 5, TileKind.ROAD)
+        assertTrue(c.touchesRoad(4, 5))
+        assertTrue(c.touchesRoad(6, 5))
+        assertTrue(c.touchesRoad(5, 4))
+        assertTrue(c.touchesRoad(5, 6))
+        // 斜めは接していない
+        assertFalse(c.touchesRoad(4, 4))
+        assertFalse(c.touchesRoad(10, 10))
     }
 
     @Test

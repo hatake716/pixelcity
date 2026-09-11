@@ -31,6 +31,9 @@ class CityRenderer {
         viewHeight: Int,
         overlay: Overlay = Overlay.NONE,
         highlight: IntArray? = null,
+        /** 置ける場所を点滅で示す。チュートリアルで「どこに置くか」を伝えるために使う。 */
+        suggest: ((Int, Int) -> Boolean)? = null,
+        suggestOn: Boolean = false,
     ) {
         // 帯の外に描かないよう、地面で塗りつぶしてから描く。
         canvas.fillRect(0, viewTop, canvas.width, viewHeight, 0)
@@ -78,10 +81,16 @@ class CityRenderer {
                     }
                 }
 
-                // 電気が来ていない区分・施設に印をつける
-                if (tile.kind.isZone && tile.stage > 0 && !tile.powered ||
-                    (tile.kind.isBuilding && !tile.kind.isPowerPlant && !tile.powered && tile.kind != TileKind.MONUMENT)
-                ) {
+                // 電気が来ていない区分・施設に印をつける。
+                // 区分は isBuilding でもあるので、条件は種類ごとに分けて書く。
+                // まだ何も建っていない区分（stage 0）には出さない。紛らわしいため。
+                val showNoPower = when {
+                    tile.kind.isZone -> tile.stage > 0 && !tile.powered
+                    tile.kind.isPowerPlant || tile.kind == TileKind.MONUMENT -> false
+                    tile.kind.isBuilding -> !tile.powered
+                    else -> false
+                }
+                if (showNoPower) {
                     drawScaled(canvas, Sprites.NO_POWER, Sprites.SIZE, px, py, tileSize, transparent = 0)
                 }
             }
@@ -103,7 +112,17 @@ class CityRenderer {
             }
         }
 
-        // 3周目: 選択中の枠
+        // 3周目: 置ける場所の目印
+        if (suggest != null && suggestOn) {
+            for (ty in firstY..lastY) for (tx in firstX..lastX) {
+                if (!suggest(tx, ty)) continue
+                val px = originX + tx * tileSize
+                val py = originY + ty * tileSize
+                canvas.drawRect(px + 1, py + 1, tileSize - 2, tileSize - 2, 3)
+            }
+        }
+
+        // 4周目: 選択中の枠
         if (highlight != null && highlight.size >= 2) {
             val hx = originX + highlight[0] * tileSize
             val hy = originY + highlight[1] * tileSize

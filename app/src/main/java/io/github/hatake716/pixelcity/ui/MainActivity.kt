@@ -52,7 +52,11 @@ class MainActivity : Activity() {
     private fun newGame(withTutorial: Boolean) {
         val start = {
             seed = Random.nextLong()
-            city = City().apply { generateTerrain(seed) }
+            city = City().apply {
+                generateTerrain(seed)
+                // 最初の一歩で詰まないよう、中心は必ず平らにしておく。
+                clearStartingArea()
+            }
             tutorial = Tutorial()
             if (withTutorial) tutorial.start() else tutorial.skip()
             SaveGame.clear(this)

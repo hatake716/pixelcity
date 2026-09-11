@@ -100,6 +100,8 @@ class GameView(
     private var pointerDown = false
     /** 2本指で地図を動かしている最中か。 */
     private var panning = false
+    /** 道具が切り替わったので、指を離すまで置くのをやめる。 */
+    private var strokeCancelled = false
     private var toolScroll = 0
     private var draggingToolbar = false
 
@@ -127,7 +129,7 @@ class GameView(
     init {
         isFocusable = true
         keepScreenOn = true
-        if (tutorial.active) showTutorialMessageIfNeeded()
+        showTutorialMessageIfNeeded()
     }
 
     // ------------------------------------------------------------------
@@ -226,6 +228,8 @@ class GameView(
         renderer.draw(
             pixels, city, camX, camY, tileSize, mapTop, mapHeight, overlay,
             highlightForSelection(),
+            suggest = placementHint(),
+            suggestOn = blinkOn(),
         )
 
         drawStatusBar()
@@ -240,6 +244,21 @@ class GameView(
                 if (tutorial.active) drawTutorialBanner()
                 toast?.let { drawToast(it) }
             }
+        }
+    }
+
+    /**
+     * チュートリアル中、いま置ける場所を返す。
+     * 「道路のとなり」と言われても、どこが該当するのかは初心者には分かりにくい。
+     */
+    private fun placementHint(): ((Int, Int) -> Boolean)? {
+        if (!tutorial.active) return null
+        val kind = tutorial.step?.highlightTool ?: return null
+        if (!kind.isZone && !kind.isPowerPlant) return null
+        return { x, y ->
+            city.tileAt(x, y).kind == TileKind.EMPTY &&
+                city.canBuildOn(x, y) &&
+                city.touchesRoad(x, y)
         }
     }
 
@@ -379,8 +398,19 @@ class GameView(
         pixels.drawRect(0, y, LOGICAL_W, h, 3)
         pixels.drawRect(1, y + 1, LOGICAL_W - 2, h - 2, 3)
 
+        // 見出しは「あと N」の手前で切る。重ねると両方読めなくなる。
+        val remain = tutorial.remaining()
+        val counter = if (remain > 0) "あと $remain" else ""
         text.textSize = 16
-        text.draw(pixels, step.title, 8, y + 5, 3)
+        val counterW = if (counter.isEmpty()) 0 else text.measure(counter) + 12
+        var title = step.title
+        while (title.isNotEmpty() && text.measure(title) > LOGICAL_W - 16 - counterW) {
+            title = title.dropLast(1)
+        }
+        text.draw(pixels, title, 8, y + 5, 3)
+        if (counter.isNotEmpty()) {
+            text.draw(pixels, counter, LOGICAL_W - text.measure(counter) - 8, y + 5, 3)
+        }
         pixels.fillRect(8, y + 26, LOGICAL_W - 16, 2, 2)
 
         var ly = y + 32
@@ -389,11 +419,6 @@ class GameView(
             ly += 18
         }
 
-        val remain = tutorial.remaining()
-        if (remain > 0) {
-            text.textSize = 15
-            text.draw(pixels, "あと ${remain}", LOGICAL_W - 70, y + 5, 3)
-        }
         if (tutorial.awaitingContinue()) {
             text.textSize = 16
             val label = if (tutorial.stepIndex == Tutorial.STEPS.size - 1) "はじめる" else "つぎへ ▶"
@@ -531,6 +556,7 @@ class GameView(
                 dragged = false
                 pointerDown = true
                 panning = false
+                strokeCancelled = false
                 draggingToolbar = ly >= logicalH - Hud.TOOLBAR_HEIGHT
                 // マップ上なら、押した時点から置き始める（なぞって敷けるように）
                 if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null) {
@@ -577,7 +603,9 @@ class GameView(
                     return true
                 }
 
-                if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null) {
+                if (screen == Screen.PLAYING && isOnMap(ly) &&
+                    pendingMonument == null && !strokeCancelled
+                ) {
                     // なぞって連続で置く
                     applyToolAt(lx, ly)
                 }
@@ -591,6 +619,7 @@ class GameView(
                 if (!dragged && !panning) handleTap(lx, ly)
                 draggingToolbar = false
                 panning = false
+                strokeCancelled = false
                 invalidate()
                 return true
             }
@@ -756,6 +785,16 @@ class GameView(
         val blocker = city.buildBlocker(tx, ty, selectedTool)
         if (blocker != null) { showToast(blocker); return }
 
+        // チュートリアル中は、道路に接していない区分・発電所を断る。
+        // 置けてしまうと「電気の来ない街」ができて、
+        // 何が悪いのか分からないまま詰んでしまう。
+        if (tutorial.active && !city.touchesRoad(tx, ty) &&
+            (selectedTool.isZone || selectedTool.isPowerPlant)
+        ) {
+            showToast("どうろの となりに おいてください")
+            return
+        }
+
         if (city.build(tx, ty, selectedTool)) {
             tutorial.onBuilt(selectedTool)
             showTutorialMessageIfNeeded()
@@ -771,10 +810,33 @@ class GameView(
         invalidate()
     }
 
-    /** チュートリアル中は資金が尽きないように補う。 */
+    /**
+     * チュートリアルの状態にあわせて画面を整える。
+     *
+     * そのステップで使う道具を自動で選び、ツールバーを見える位置まで送る。
+     * 道具を自分で探させると、見つけられないまま他の操作も塞がれて詰む。
+     */
     private fun showTutorialMessageIfNeeded() {
-        if (tutorial.active && city.funds < 2_000) {
-            city.funds += Tutorial.GRANT
+        if (!tutorial.active) return
+        // 手順どおりに進めれば資金が尽きないように補う。
+        if (city.funds < 2_000) city.funds += Tutorial.GRANT
+
+        val needed = tutorial.step?.highlightTool ?: return
+        if (selectedTool != needed) {
+            selectedTool = needed
+            pendingMonument = null
+            // 道具が変わったら、いま触れている指での連続設置を打ち切る。
+            // 続けると、指を離さないまま次のステップまで置いてしまう。
+            strokeCancelled = true
+        }
+        // 選んだ道具が画面の外なら、見えるところまでツールバーを送る。
+        val index = Hud.TOOLS.indexOfFirst { it.kind == needed }
+        if (index >= 0) {
+            val x = Hud.toolX(index)
+            val maxScroll = max(0, Hud.toolStripWidth() - LOGICAL_W)
+            if (x - toolScroll < 0 || x - toolScroll + Hud.TOOL_SIZE > LOGICAL_W) {
+                toolScroll = (x - LOGICAL_W / 2).coerceIn(0, maxScroll)
+            }
         }
     }
 
