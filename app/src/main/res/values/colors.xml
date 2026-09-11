@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gb_lightest">#9BBC0F</color>
+    <color name="gb_light">#8BAC0F</color>
+    <color name="gb_dark">#306230</color>
+    <color name="gb_darkest">#0F380F</color>
+</resources>

@@ -1,0 +1,243 @@
+package io.github.hatake716.pixelcity.game
+
+/**
+ * チュートリアル。初心者が手順どおりに進めば、都市経営の基盤ができあがる。
+ *
+ * 方針（docs/SPEC.md §7）:
+ *  - 1ステップにつき1つの操作だけを求める
+ *  - そのステップに関係のない操作は受け付けない（[allows] で門番をする）
+ *  - 「なぜそうするのか」を必ず添える
+ *  - 完走した時点で黒字に回り始める街が残る
+ */
+class Tutorial {
+
+    /** 各ステップで player に何をさせるか。 */
+    sealed interface Goal {
+        /** ボタンを押して次へ進むだけ。 */
+        data object Continue : Goal
+        /** [kind] を [count] タイル置く。 */
+        data class Place(val kind: TileKind, val count: Int) : Goal
+        /** [months] か月ぶん時間を進める。 */
+        data class Advance(val months: Int) : Goal
+        /** 税率の画面を開く。 */
+        data object OpenBudget : Goal
+    }
+
+    data class Step(
+        val title: String,
+        val body: String,
+        val goal: Goal,
+        /** 強調するツールボタン。null なら強調しない。 */
+        val highlightTool: TileKind? = null,
+        /** 進行ボタンを強調するか。 */
+        val highlightSpeed: Boolean = false,
+        /** 予算ボタンを強調するか。 */
+        val highlightBudget: Boolean = false,
+    )
+
+    companion object {
+        /** チュートリアル中に補填する資金。手順どおりに進めれば足りなくならない。 */
+        const val GRANT = 20_000
+
+        val STEPS: List<Step> = listOf(
+            Step(
+                title = "ようこそ、しちょう！",
+                body = "きょうから あなたが このまちの しちょうです。\n" +
+                    "もくひょうは まちの じんこうを ふやすこと。\n" +
+                    "でも おかねが なくなると はさんします。",
+                goal = Goal.Continue,
+            ),
+            Step(
+                title = "がめんの みかた",
+                body = "うえに「しきん」「じんこう」「ねんげつ」が でています。\n" +
+                    "みぎの R/C/I の バーは、じゅうたく・しょうぎょう・こうぎょうの\n" +
+                    "「もっとほしい」ぐあい（じゅよう）です。",
+                goal = Goal.Continue,
+            ),
+            Step(
+                title = "まずは どうろ",
+                body = "たてものは どうろが ないと そだちません。\n" +
+                    "した の「どうろ」を えらんで、マップを なぞって\n" +
+                    "6マス ひいてみましょう。",
+                goal = Goal.Place(TileKind.ROAD, 6),
+                highlightTool = TileKind.ROAD,
+            ),
+            Step(
+                title = "でんきを つくる",
+                body = "まちには でんきが いります。\n" +
+                    "「かりょく」を えらんで、どうろの ちかくに\n" +
+                    "はつでんしょを 1つ たてましょう。",
+                goal = Goal.Place(TileKind.POWER_COAL, 1),
+                highlightTool = TileKind.POWER_COAL,
+            ),
+            Step(
+                title = "じゅうたくちを つくる",
+                body = "ひとが すむ ばしょです。\n" +
+                    "「じゅうたく」を えらんで、どうろの となりに\n" +
+                    "8マス おきましょう。かってに はってんします。",
+                goal = Goal.Place(TileKind.ZONE_R, 8),
+                highlightTool = TileKind.ZONE_R,
+            ),
+            Step(
+                title = "しごとばを つくる（しょうぎょう）",
+                body = "しごとが ないと ひとは すみつきません。\n" +
+                    "「しょうぎょう」を どうろの となりに 4マス。\n" +
+                    "しょうぎょうは ぜいしゅうの ちゅうしんです。",
+                goal = Goal.Place(TileKind.ZONE_C, 4),
+                highlightTool = TileKind.ZONE_C,
+            ),
+            Step(
+                title = "しごとばを つくる（こうぎょう）",
+                body = "こうぎょうも しごとを うみます。\n" +
+                    "ただし こうがいを だすので、じゅうたくから\n" +
+                    "はなして 4マス おきましょう。",
+                goal = Goal.Place(TileKind.ZONE_I, 4),
+                highlightTool = TileKind.ZONE_I,
+            ),
+            Step(
+                title = "じかんを すすめる",
+                body = "みぎしたの ▶ で じかんが すすみます。\n" +
+                    "はやさも かえられます。\n" +
+                    "3かげつ すすめて、まちの ようすを みましょう。",
+                goal = Goal.Advance(3),
+                highlightSpeed = true,
+            ),
+            Step(
+                title = "こうえんで ちかを あげる",
+                body = "じんこうが ふえてきましたね。\n" +
+                    "こうえんは まわりの ちかを あげ、こうがいを へらします。\n" +
+                    "じゅうたくの ちかくに 2つ おきましょう。",
+                goal = Goal.Place(TileKind.PARK, 2),
+                highlightTool = TileKind.PARK,
+            ),
+            Step(
+                title = "ぜいりつを しる",
+                body = "「よさん」で ぜいりつを かえられます。\n" +
+                    "たかすぎると ひとが でていきます。\n" +
+                    "ひらいて たしかめてみましょう。",
+                goal = Goal.OpenBudget,
+                highlightBudget = true,
+            ),
+            Step(
+                title = "そつぎょう！",
+                body = "これで きほんは かんぺきです。\n" +
+                    "じんこうが ふえると、とうきょうタワーなどの\n" +
+                    "せかいの けんちくが たてられます。めざせ 大とし！",
+                goal = Goal.Continue,
+            ),
+        )
+    }
+
+    var stepIndex: Int = 0
+        private set
+    var active: Boolean = false
+        private set
+    var finished: Boolean = false
+        private set
+
+    /** そのステップで数えた進み具合（置いた数・進めた月数）。 */
+    var progress: Int = 0
+        private set
+
+    val step: Step? get() = if (active && stepIndex in STEPS.indices) STEPS[stepIndex] else null
+
+    fun start() {
+        active = true
+        finished = false
+        stepIndex = 0
+        progress = 0
+    }
+
+    fun skip() {
+        active = false
+        finished = false
+        stepIndex = 0
+        progress = 0
+    }
+
+    /** 目標に対する残り。表示に使う。 */
+    fun remaining(): Int {
+        val g = step?.goal ?: return 0
+        return when (g) {
+            is Goal.Place -> (g.count - progress).coerceAtLeast(0)
+            is Goal.Advance -> (g.months - progress).coerceAtLeast(0)
+            else -> 0
+        }
+    }
+
+    /**
+     * その操作を いま 許すか。チュートリアル中は、
+     * ステップに関係のない建設をさせない（初心者が迷子にならないように）。
+     */
+    fun allowsBuild(kind: TileKind): Boolean {
+        if (!active) return true
+        val g = step?.goal ?: return false
+        return g is Goal.Place && g.kind == kind
+    }
+
+    /** 時間を進めてよいか。 */
+    fun allowsSpeedChange(): Boolean {
+        if (!active) return true
+        return step?.goal is Goal.Advance
+    }
+
+    fun allowsBudget(): Boolean {
+        if (!active) return true
+        return step?.goal is Goal.OpenBudget
+    }
+
+    /** 「つぎへ」で進むステップか。 */
+    fun awaitingContinue(): Boolean = active && step?.goal is Goal.Continue
+
+    // --- 進捗の通知 ---
+
+    fun onBuilt(kind: TileKind) {
+        val g = step?.goal ?: return
+        if (g is Goal.Place && g.kind == kind) {
+            progress++
+            if (progress >= g.count) advance()
+        }
+    }
+
+    fun onMonthPassed() {
+        val g = step?.goal ?: return
+        if (g is Goal.Advance) {
+            progress++
+            if (progress >= g.months) advance()
+        }
+    }
+
+    fun onBudgetOpened() {
+        if (step?.goal is Goal.OpenBudget) advance()
+    }
+
+    fun onContinuePressed() {
+        if (step?.goal is Goal.Continue) advance()
+    }
+
+    private fun advance() {
+        progress = 0
+        stepIndex++
+        if (stepIndex >= STEPS.size) {
+            active = false
+            finished = true
+        }
+    }
+
+    // --- 保存・復元 ---
+
+    fun saveState(): IntArray = intArrayOf(
+        if (active) 1 else 0,
+        stepIndex,
+        progress,
+        if (finished) 1 else 0,
+    )
+
+    fun restore(state: IntArray) {
+        if (state.size < 4) return
+        active = state[0] == 1
+        stepIndex = state[1].coerceIn(0, STEPS.size)
+        progress = state[2].coerceAtLeast(0)
+        finished = state[3] == 1
+    }
+}
