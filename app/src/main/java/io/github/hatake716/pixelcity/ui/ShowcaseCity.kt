@@ -2,6 +2,7 @@ package io.github.hatake716.pixelcity.ui
 
 import io.github.hatake716.pixelcity.game.City
 import io.github.hatake716.pixelcity.game.Monument
+import io.github.hatake716.pixelcity.game.Ordinance
 import io.github.hatake716.pixelcity.game.Terrain
 import io.github.hatake716.pixelcity.game.TileKind
 import kotlin.random.Random
@@ -191,7 +192,7 @@ object ShowcaseCity {
 
         scatter(city, rnd, TileKind.PARK, 46)
         scatter(city, rnd, TileKind.SCHOOL, 8)
-        scatter(city, rnd, TileKind.HOSPITAL, 8)
+        scatter(city, rnd, TileKind.HOSPITAL, 14)
         scatter(city, rnd, TileKind.POLICE, 8)
         scatter(city, rnd, TileKind.FIRE, 8)
         scatter(city, rnd, TileKind.POWER_SOLAR, 6)
@@ -200,8 +201,10 @@ object ShowcaseCity {
         scatter(city, rnd, TileKind.WATER_PLANT, 24)
         scatter(city, rnd, TileKind.WATER_TOWER, 6)
         scatter(city, rnd, TileKind.SEWAGE_PLANT, 6)
-        scatter(city, rnd, TileKind.INCINERATOR, 3)
-        scatter(city, rnd, TileKind.RECYCLING, 16)
+        // ゴミは毎月7,000ほど出る。焼却場400・リサイクル250なので、
+        // 足りるだけ置く（測って決めた数）。
+        scatter(city, rnd, TileKind.INCINERATOR, 14)
+        scatter(city, rnd, TileKind.RECYCLING, 12)
         scatter(city, rnd, TileKind.CLINIC, 12)
         scatter(city, rnd, TileKind.BUS_STOP, 24)
 
@@ -216,7 +219,10 @@ object ShowcaseCity {
             Monument.STATUE_OF_LIBERTY to (40 to 47),
         ))
 
-        return finish(city, funds = 250_000, month = 1_200, taxRate = 7)
+        // 条例で、ゴミと犯罪と電力を抑える。手本として、使い方も見せる。
+        city.ordinances.add(Ordinance.RECYCLING)
+        city.ordinances.add(Ordinance.PATROL)
+        return finish(city, funds = 250_000, month = 1_200, taxRate = 9)
     }
 
     // ------------------------------------------------------------------
@@ -291,7 +297,8 @@ object ShowcaseCity {
         scatter(city, rnd, TileKind.WATER_PLANT, 12)
         scatter(city, rnd, TileKind.WATER_TOWER, 4)
         scatter(city, rnd, TileKind.SEWAGE_PLANT, 3)
-        scatter(city, rnd, TileKind.RECYCLING, 5)
+        // 田園都市は焼却場を使わず、リサイクルだけでまかなう
+        scatter(city, rnd, TileKind.RECYCLING, 22)
         scatter(city, rnd, TileKind.CLINIC, 8)
         scatter(city, rnd, TileKind.BUS_STOP, 10)
 
@@ -301,7 +308,10 @@ object ShowcaseCity {
             Monument.LEANING_TOWER to (20 to 44),
         ))
 
-        return finish(city, funds = 180_000, month = 1_100, taxRate = 10)
+        // 環境の街らしく、リサイクルと公共交通の条例を入れる
+        // 環境の街らしく、リサイクルの条例だけ入れる
+        city.ordinances.add(Ordinance.RECYCLING)
+        return finish(city, funds = 180_000, month = 1_100, taxRate = 9)
     }
 
     // ------------------------------------------------------------------
@@ -333,14 +343,23 @@ object ShowcaseCity {
                     t.kind = TileKind.ZONE_C
                     t.stage = if (n < 86) 3 else 2
                 }
-                // その周りに労働者の住宅と、商業がまざる
-                d < 18 -> {
-                    t.kind = if (n < 42) TileKind.ZONE_C else TileKind.ZONE_R
+                // その周りは労働者の住宅が主。
+                // 工業を厚くしすぎると、働く人が足りずに工業需要が底を打つ。
+                d < 20 -> {
+                    t.kind = when {
+                        n < 26 -> TileKind.ZONE_C
+                        n < 40 -> TileKind.ZONE_I      // 中間にも軽工業を混ぜる
+                        else -> TileKind.ZONE_R
+                    }
                     t.stage = when { n < 56 -> 3; n < 88 -> 2; else -> 1 }
                 }
-                // 外周は一面の工業地帯
+                // 外周は工業地帯。住宅も混ぜて、働き手を近くに置く。
                 else -> {
-                    t.kind = if (n < 76) TileKind.ZONE_I else TileKind.ZONE_R
+                    t.kind = when {
+                        n < 62 -> TileKind.ZONE_I
+                        n < 72 -> TileKind.ZONE_C
+                        else -> TileKind.ZONE_R
+                    }
                     t.stage = when { n < 70 -> 3; n < 92 -> 2; else -> 1 }
                 }
             }
@@ -361,8 +380,8 @@ object ShowcaseCity {
         scatter(city, rnd, TileKind.WATER_PLANT, 20)
         scatter(city, rnd, TileKind.WATER_TOWER, 6)
         scatter(city, rnd, TileKind.SEWAGE_PLANT, 8)
-        scatter(city, rnd, TileKind.INCINERATOR, 4)
-        scatter(city, rnd, TileKind.RECYCLING, 18)
+        scatter(city, rnd, TileKind.INCINERATOR, 6)
+        scatter(city, rnd, TileKind.RECYCLING, 6)
         scatter(city, rnd, TileKind.CLINIC, 12)
         scatter(city, rnd, TileKind.SEAPORT, 2)
 
@@ -373,8 +392,11 @@ object ShowcaseCity {
             Monument.TOKYO_TOWER to (22 to 34),
         ))
 
-        // 財政が最も健全なので、資金を厚く持たせる
-        return finish(city, funds = 600_000, month = 1_300, taxRate = 11)
+        // 財政が最も健全なので、資金を厚く持たせる。
+        // 工業は電気を食うので、省エネ条例で支出を抑える。
+        city.ordinances.add(Ordinance.ENERGY_SAVING)
+        city.ordinances.add(Ordinance.RECYCLING)
+        return finish(city, funds = 600_000, month = 1_300, taxRate = 10)
     }
 
     // ------------------------------------------------------------------
