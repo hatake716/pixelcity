@@ -442,19 +442,32 @@ class GameView(
         text.draw(pixels, msg, x + 10, y + 4, 3)
     }
 
-    private fun drawPanel(title: String): Int {
+    /** いま開いているパネルの高さ。中身に合わせて決まる。 */
+    private var panelHeight = 0
+
+    /** パネルの上端。画面の中ほどに置く。 */
+    private fun panelTop(): Int = ((logicalH - panelHeight) / 2).coerceAtLeast(24)
+
+    /**
+     * パネルの枠を描き、本文を書き始める y を返す。
+     * [contentHeight] は見出しと閉じるボタンを除いた中身の高さ。
+     */
+    private fun drawPanel(title: String, contentHeight: Int): Int {
         val m = PANEL_MARGIN
-        pixels.fillRect(m, 24, LOGICAL_W - m * 2, logicalH - 68, 0)
-        pixels.drawRect(m, 24, LOGICAL_W - m * 2, logicalH - 68, 3)
-        pixels.drawRect(m + 1, 25, LOGICAL_W - m * 2 - 2, logicalH - 70, 3)
+        panelHeight = 44 + contentHeight + 40
+        val top = panelTop()
+        pixels.fillRect(m, top, LOGICAL_W - m * 2, panelHeight, 0)
+        pixels.drawRect(m, top, LOGICAL_W - m * 2, panelHeight, 3)
+        pixels.drawRect(m + 1, top + 1, LOGICAL_W - m * 2 - 2, panelHeight - 2, 3)
         text.textSize = 16
-        text.drawCentered(pixels, title, LOGICAL_W / 2, 30, 3)
-        pixels.fillRect(m + 8, 52, LOGICAL_W - m * 2 - 16, 2, 2)
-        return 60
+        text.drawCentered(pixels, title, LOGICAL_W / 2, top + 6, 3)
+        pixels.fillRect(m + 8, top + 28, LOGICAL_W - m * 2 - 16, 2, 2)
+        return top + 36
     }
 
     private fun drawBudget() {
-        var y = drawPanel("よさん")
+        val rows = 6 + if (city.tourismIncome > 0) 1 else 0
+        var y = drawPanel("よさん", 28 + rows * 20 + 40)
         text.textSize = 16
         text.draw(pixels, "ぜいりつ ${city.taxRate}%", 30, y, 3)
         // 税率の増減ボタン
@@ -476,13 +489,13 @@ class GameView(
         }
 
         text.textSize = 14
-        text.draw(pixels, "ぜいりつが たかいと", 30, logicalH - 96, 2)
-        text.draw(pixels, "ひとが でていきます", 30, logicalH - 78, 2)
+        text.draw(pixels, "ぜいりつが たかいと", 30, y + 4, 2)
+        text.draw(pixels, "ひとが でていきます", 30, y + 22, 2)
         drawCloseButton()
     }
 
     private fun drawMonuments() {
-        var y = drawPanel("せかいの けんちく")
+        var y = drawPanel("せかいの けんちく", Monument.entries.size * 20 + 28)
         text.textSize = 14
         val all = Monument.entries
         for (m in all) {
@@ -496,16 +509,17 @@ class GameView(
             val shade = if (built || unlocked) 3 else 2
             text.draw(pixels, label, 30, y, shade)
             y += 20
-            if (y > logicalH - 96) break
         }
-        text.draw(pixels, "えらんで マップを タップ", 30, logicalH - 88, 3)
+        text.draw(pixels, "えらんで マップを タップ", 30, y + 4, 3)
         drawCloseButton()
     }
 
     private fun drawMessage() {
-        var y = drawPanel(messageTitle)
         text.textSize = 15
-        for (line in text.wrap(message ?: "", LOGICAL_W - PANEL_MARGIN * 2 - 28)) {
+        val lines = text.wrap(message ?: "", LOGICAL_W - PANEL_MARGIN * 2 - 28)
+        var y = drawPanel(messageTitle, lines.size * 20)
+        text.textSize = 15
+        for (line in lines) {
             text.draw(pixels, line, 30, y, 3)
             y += 20
         }
@@ -524,8 +538,8 @@ class GameView(
         text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, RESTART_Y + 4, 3)
     }
 
-    /** とじるボタンの y。画面の高さで変わるので、判定と共有する。 */
-    private fun closeButtonY(): Int = logicalH - 72
+    /** とじるボタンの y。パネルの下端に合わせ、描画と判定で共有する。 */
+    private fun closeButtonY(): Int = panelTop() + panelHeight - 34
 
     private fun drawCloseButton() {
         val x = CLOSE_X
@@ -557,7 +571,8 @@ class GameView(
                 pointerDown = true
                 panning = false
                 strokeCancelled = false
-                draggingToolbar = ly >= logicalH - Hud.TOOLBAR_HEIGHT
+                // パネルを開いている間は、下のツールバーに触れさせない。
+                draggingToolbar = screen == Screen.PLAYING && ly >= logicalH - Hud.TOOLBAR_HEIGHT
                 // マップ上なら、押した時点から置き始める（なぞって敷けるように）
                 if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null) {
                     applyToolAt(lx, ly)
