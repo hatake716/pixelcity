@@ -10,18 +10,31 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * 都市の保存と復元。SharedPreferences に JSON で1スロットだけ持つ。
+ * 都市の保存と復元。SharedPreferences に JSON で持つ。
  *
- * タイルは1文字ずつの文字列にまとめて、32×32 でも小さく収まるようにしている。
+ * 保存先は [SLOT_COUNT] 個の「スロット」。遊んでいるスロットへ自動で保存し続け、
+ * タイトルの「つづきから」で選んで再開する。別のスロットを使えば、
+ * 前の街を消さずに新しい街を始められる。
+ *
+ * タイルは1文字ずつの文字列にまとめて、大きなマップでも小さく収まるようにしている。
  * 列挙の序数をそのまま保存しているので、[TileKind] と [Terrain] の
  * 既存の並びを変えてはいけない（追加は末尾に）。
  */
 object SaveGame {
     private const val PREFS = "pixelcity"
-    private const val KEY_CITY = "city"
-    private const val VERSION = 1
+    /** 保存できる街の数。 */
+    const val SLOT_COUNT = 10
+    private const val VERSION = 2
 
-    fun save(context: Context, city: City, tutorial: Tutorial, seed: Long) {
+    /** 旧版（1スロットだけだったころ）の保存先。読み込んで引き継ぐために残す。 */
+    private const val LEGACY_KEY = "city"
+
+    private fun key(slot: Int) = "city_$slot"
+
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    fun save(context: Context, slot: Int, city: City, tutorial: Tutorial, seed: Long) {
         val json = JSONObject().apply {
             put("version", VERSION)
             put("seed", seed)
@@ -57,30 +70,91 @@ object SaveGame {
             put("monuments", monuments)
 
             put("tutorial", JSONArray().apply { tutorial.saveState().forEach { put(it) } })
+
+            // 一覧に出すための要約。街全体を読まずに済ませる。
+            put("population", city.population)
+            put("savedAt", System.currentTimeMillis())
         }
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putString(KEY_CITY, json.toString()).apply()
+        prefs(context).edit().putString(key(slot), json.toString()).apply()
     }
 
-    fun hasSave(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains(KEY_CITY)
+    /** そのスロットに街があるか。 */
+    fun hasSave(context: Context, slot: Int): Boolean = prefs(context).contains(key(slot))
 
-    fun clear(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().remove(KEY_CITY).apply()
+    /** どれか1つでも街があるか。「つづきから」を出すかの判定に使う。 */
+    fun hasAnySave(context: Context): Boolean =
+        (0 until SLOT_COUNT).any { hasSave(context, it) }
+
+    fun clear(context: Context, slot: Int) {
+        prefs(context).edit().remove(key(slot)).apply()
+    }
+
+    /** 空いている最初のスロット。すべて埋まっていれば null。 */
+    fun firstEmptySlot(context: Context): Int? =
+        (0 until SLOT_COUNT).firstOrNull { !hasSave(context, it) }
+
+    /**
+     * 一覧に出すための、スロットの要約。
+     * 街の中身は読まないので、10個ぶん集めても軽い。
+     */
+    data class SlotInfo(
+        val slot: Int,
+        val population: Int,
+        val month: Int,
+        val funds: Int,
+        val savedAt: Long,
+        val tutorialActive: Boolean,
+    ) {
+        /** 「1905ねん7がつ」の形。 */
+        val dateLabel: String get() = "${1900 + month / 12}ねん${month % 12 + 1}がつ"
+    }
+
+    /** 全スロットの要約。街のないスロットは null。 */
+    fun listSlots(context: Context): List<SlotInfo?> =
+        (0 until SLOT_COUNT).map { slotInfo(context, it) }
+
+    fun slotInfo(context: Context, slot: Int): SlotInfo? {
+        val raw = prefs(context).getString(key(slot), null) ?: return null
+        return try {
+            val json = JSONObject(raw)
+            val ts = json.optJSONArray("tutorial")
+            SlotInfo(
+                slot = slot,
+                population = json.optInt("population", 0),
+                month = json.optInt("month", 0),
+                funds = json.optInt("funds", 0),
+                savedAt = json.optLong("savedAt", 0L),
+                tutorialActive = ts != null && ts.length() > 0 && ts.optInt(0) == 1,
+            )
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /** 読み込めなければ null。壊れた保存で落ちないようにする。 */
-    fun load(context: Context): Loaded? {
-        val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_CITY, null) ?: return null
+    fun load(context: Context, slot: Int): Loaded? {
+        val raw = prefs(context).getString(key(slot), null) ?: return null
         return try {
             parse(raw)
         } catch (e: Exception) {
             // 壊れた保存は捨てる。遊べなくなるより良い。
-            clear(context)
+            clear(context, slot)
             null
         }
+    }
+
+    /**
+     * 旧版（1スロットだけ）の保存を、スロット0へ移す。
+     * すでに移してあるか、旧版の保存がなければ何もしない。
+     * これがないと、更新した人の街が消えてしまう。
+     */
+    fun migrateLegacySave(context: Context) {
+        val p = prefs(context)
+        val legacy = p.getString(LEGACY_KEY, null) ?: return
+        if (!p.contains(key(0))) {
+            p.edit().putString(key(0), legacy).apply()
+        }
+        p.edit().remove(LEGACY_KEY).apply()
     }
 
     data class Loaded(val city: City, val tutorial: Tutorial, val seed: Long)
