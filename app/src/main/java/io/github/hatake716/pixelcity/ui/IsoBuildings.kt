@@ -120,7 +120,7 @@ object IsoBuildings {
 
     /** 小さな一戸建て。切妻屋根。 */
     val HOUSE_1 = box(
-        h = 10,
+        h = 8,
         roof = { x, y, d ->
             // 屋根を棟で二分して、片側を明るくする
             val dx = (x + 0.5f) - W / 2f
@@ -135,13 +135,13 @@ object IsoBuildings {
 
     /** 集合住宅。 */
     val HOUSE_2 = box(
-        h = 22,
+        h = 14,
         wall = windows(3, 3) { c, r -> hash(c, r, 11) % 5 != 0 },
     )
 
     /** 高層の集合住宅。 */
     val HOUSE_3 = box(
-        h = 38,
+        h = 24,
         roof = { _, _, d -> if (d > 0.86f) ROOF_EDGE else 3 },
         wall = windows(6, 3) { c, r -> hash(c, r, 23) % 4 != 0 },
     )
@@ -152,7 +152,7 @@ object IsoBuildings {
 
     /** 商店。日よけのある低い建物。 */
     val SHOP_1 = box(
-        h = 12,
+        h = 9,
         wall = { u, v, _ ->
             when {
                 v < 0.36f && u < 0.86f -> 2           // 大きなショーウィンドウ
@@ -164,7 +164,7 @@ object IsoBuildings {
 
     /** 雑居ビル。 */
     val SHOP_2 = box(
-        h = 26,
+        h = 17,
         wall = { u, v, side ->
             when {
                 v < 0.22f && u < 0.88f -> 2
@@ -175,7 +175,7 @@ object IsoBuildings {
 
     /** オフィスビル。窓が縦に連なる。 */
     val SHOP_3 = box(
-        h = 46,
+        h = 30,
         roof = { _, _, d -> if (d > 0.86f) ROOF_EDGE else 2 },
         wall = { u, v, side ->
             when {
@@ -198,7 +198,7 @@ object IsoBuildings {
 
     /** 小さな作業場。 */
     val FACTORY_1 = box(
-        h = 12,
+        h = 9,
         roof = { x, _, d ->
             // のこぎり屋根
             if (d > 0.9f) ROOF_EDGE else if (((x / 4) and 1) == 0) 5 else 3
@@ -208,7 +208,7 @@ object IsoBuildings {
 
     /** 工場。 */
     val FACTORY_2 = box(
-        h = 20,
+        h = 14,
         roof = { x, _, d -> if (d > 0.9f) ROOF_EDGE else if (((x / 3) and 1) == 0) 6 else 4 },
         wall = { u, v, _ ->
             when {
@@ -220,7 +220,7 @@ object IsoBuildings {
 
     /** 大きな工場。 */
     val FACTORY_3 = box(
-        h = 30,
+        h = 20,
         roof = { x, _, d -> if (d > 0.9f) ROOF_EDGE else if (((x / 3) and 1) == 0) 6 else 4 },
         wall = windows(3, 4) { c, r -> hash(c, r, 41) % 3 != 0 },
     )
@@ -231,14 +231,14 @@ object IsoBuildings {
 
     /** 火力発電所。煙突は別に重ねる。 */
     val POWER_COAL = box(
-        h = 24,
+        h = 16,
         roof = { _, _, d -> if (d > 0.9f) ROOF_EDGE else 5 },
         wall = { u, v, _ -> if (v < 0.28f && u < 0.7f) 12 else null },
     )
 
     /** 太陽光発電。低く、屋根がパネル。 */
     val POWER_SOLAR = box(
-        h = 8,
+        h = 6,
         roof = { x, y, d ->
             if (d > 0.9f) ROOF_EDGE
             else if (((x / 3) + (y / 2)) % 2 == 0) 11 else 9
@@ -247,7 +247,7 @@ object IsoBuildings {
 
     /** 公園。建物ではなく、地面に木を植える。 */
     val PARK = run {
-        val h = 14
+        val h = 10
         val height = h + TH
         val data = ByteArray(W * height) { Pix.TRANSPARENT }
         // 芝生の菱形
@@ -279,7 +279,7 @@ object IsoBuildings {
 
     /** 警察署。 */
     val POLICE = box(
-        h = 18,
+        h = 13,
         roof = { _, _, d -> if (d > 0.9f) ROOF_EDGE else 3 },
         wall = { u, v, _ ->
             when {
@@ -292,14 +292,14 @@ object IsoBuildings {
 
     /** 消防署。大きなシャッター。 */
     val FIRE = box(
-        h = 18,
+        h = 13,
         roof = { _, _, d -> if (d > 0.9f) ROOF_EDGE else 6 },
         wall = { u, v, _ -> if (v < 0.42f && u < 0.62f) 12 else null },
     )
 
     /** 学校。横に長い窓。 */
     val SCHOOL = box(
-        h = 20,
+        h = 13,
         wall = { u, v, _ ->
             if (u < 0.88f && (v in 0.30f..0.44f || v in 0.58f..0.72f)) 1 else null
         },
@@ -307,7 +307,7 @@ object IsoBuildings {
 
     /** 病院。十字の印。 */
     val HOSPITAL = box(
-        h = 24,
+        h = 16,
         roof = { x, y, d ->
             val dx = abs((x + 0.5f) - W / 2f)
             val dy = abs((y + 0.5f) - TH / 2f)
@@ -321,15 +321,16 @@ object IsoBuildings {
         wall = windows(3, 3) { c, r -> hash(c, r, 53) % 4 != 0 },
     )
 
-    /** 電気が来ていない印。建物の上に重ねる。 */
+    /**
+     * 電気が来ていない印。建物の上に小さく浮かべる。
+     * 大きいと街並みが見えなくなるので、稲妻の形だけにする。
+     */
     val NO_POWER = Pix.sprite(
-        "  @@@@  ",
-        " @....@ ",
-        "@..@@..@",
-        "@.@..@.@",
-        "@.@..@.@",
-        "@..@@..@",
-        " @....@ ",
-        "  @@@@  ",
+        "  @@  ",
+        " @..@ ",
+        "@@..@ ",
+        " @..@@",
+        " @..@ ",
+        "  @@  ",
     )
 }

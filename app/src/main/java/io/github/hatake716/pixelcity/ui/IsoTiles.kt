@@ -129,10 +129,12 @@ object IsoTiles {
     private fun zoneMarker(edgeLevel: Byte): Sprite = diamond { x, y, edge ->
         val n = noise(x, y, 3) % 100
         when {
-            edge > 0.82f -> edgeLevel      // 用途の色の枠
-            n < 8 -> 3                     // ならした土
-            n < 20 -> 2
-            else -> 1
+            // 縁だけで用途を示す。面を明るくしすぎると、
+            // 建っていない土地が街の中で浮いて見える。
+            edge > 0.90f -> edgeLevel
+            n < 10 -> 4
+            n < 26 -> 3
+            else -> 2
         }.toByte()
     }
 
