@@ -159,11 +159,15 @@ class City(
         tileOrNull(x, y + 1)?.let { add(it) }
     }
 
-    /** 4近傍に道路があるか。区分が育つための最低条件。 */
+    /**
+     * 4近傍に道路または線路があるか。区分が育つための最低条件。
+     * 鉄道も交通として数えるので、駅前に街をつくれる。
+     */
     fun touchesRoad(x: Int, y: Int): Boolean {
         var found = false
         forEachNeighbor4(x, y) { nx, ny ->
-            if (tileAt(nx, ny).kind == TileKind.ROAD) found = true
+            val k = tileAt(nx, ny).kind
+            if (k == TileKind.ROAD || k == TileKind.RAIL) found = true
         }
         return found
     }
@@ -323,7 +327,7 @@ class City(
             t.connected = true
             forEachNeighbor4(x, y) { nx, ny ->
                 val n = tileAt(nx, ny)
-                if (n.kind == TileKind.ROAD && !visited[index(nx, ny)]) {
+                if (isTransport(n.kind) && !visited[index(nx, ny)]) {
                     visited[index(nx, ny)] = true
                     queue.add(index(nx, ny))
                 }
@@ -339,7 +343,7 @@ class City(
             val y = i / width
             forEachNeighbor4(x, y) { nx, ny ->
                 val ni = index(nx, ny)
-                if (tiles[ni].kind == TileKind.ROAD && !visited[ni]) {
+                if (isTransport(tiles[ni].kind) && !visited[ni]) {
                     visited[ni] = true
                     queue.add(ni)
                 }
@@ -349,16 +353,20 @@ class City(
         // 繋がった道路に隣接する区分・建物を、繋がっているとみなす。
         for (y in 0 until height) for (x in 0 until width) {
             val t = tileAt(x, y)
-            if (t.kind == TileKind.ROAD || t.kind == TileKind.EMPTY) continue
+            if (isTransport(t.kind) || t.kind == TileKind.EMPTY) continue
             if (t.connected) continue
             var touching = false
             forEachNeighbor4(x, y) { nx, ny ->
                 val n = tileAt(nx, ny)
-                if (n.kind == TileKind.ROAD && n.connected) touching = true
+                if (isTransport(n.kind) && n.connected) touching = true
             }
             t.connected = touching
         }
     }
+
+    /** 道路か線路か。どちらも網としてつながる。 */
+    private fun isTransport(kind: TileKind): Boolean =
+        kind == TileKind.ROAD || kind == TileKind.RAIL
 
     private inline fun forEachNeighbor4(x: Int, y: Int, body: (Int, Int) -> Unit) {
         if (x > 0) body(x - 1, y)
@@ -441,6 +449,12 @@ class City(
                 TileKind.SCHOOL -> spread(x, y, 10) { n, f -> n.education += (26 * f).toInt() }
                 TileKind.HOSPITAL -> spread(x, y, 10) { n, f -> n.health += (26 * f).toInt() }
                 TileKind.POWER_COAL -> spread(x, y, 5) { n, f -> n.pollution += (26 * f).toInt(); n.landValue -= (8 * f).toInt() }
+                // 農地は公害を吸い、まわりを少しだけ気持ちよくする。
+                TileKind.FARM -> spread(x, y, 3) { n, f -> n.pollution -= (8 * f).toInt(); n.landValue += (2 * f).toInt() }
+                // 風力は静かで、景色をわずかに良くする。
+                TileKind.POWER_WIND -> spread(x, y, 3) { n, f -> n.landValue += (3 * f).toInt() }
+                // 駅前は地価が上がる。
+                TileKind.RAIL -> spread(x, y, 4) { n, f -> n.landValue += (6 * f).toInt() }
                 TileKind.ZONE_I -> if (t.stage > 0) {
                     spread(x, y, 3) { n, f -> n.pollution += (7 * t.stage * f).toInt(); n.landValue -= (3 * t.stage * f).toInt() }
                 }

@@ -393,6 +393,9 @@ class GameView(
                 TileKind.FIRE -> IsoBuildings.FIRE
                 TileKind.SCHOOL -> IsoBuildings.SCHOOL
                 TileKind.HOSPITAL -> IsoBuildings.HOSPITAL
+                TileKind.FARM -> IsoTiles.FARM
+                TileKind.POWER_WIND -> IsoBuildings.POWER_WIND
+                TileKind.RAIL -> IsoTiles.RAIL_X
                 else -> null
             }
             if (sprite != null) {

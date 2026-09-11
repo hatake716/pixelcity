@@ -20,13 +20,24 @@ enum class TileKind {
     FIRE,
     SCHOOL,
     HOSPITAL,
-    MONUMENT;
+    MONUMENT,
+    // ここから下は v0.4 で追加。保存は序数なので、必ず末尾に足すこと。
+    /** 農地。食料を供給し、公害を吸う。 */
+    FARM,
+    /** 風力発電。公害なしだが出力は小さい。 */
+    POWER_WIND,
+    /** 鉄道。道路より輸送力が高く、公害を減らす。 */
+    RAIL;
 
     val isZone: Boolean get() = this == ZONE_R || this == ZONE_C || this == ZONE_I
-    val isPowerPlant: Boolean get() = this == POWER_COAL || this == POWER_SOLAR
+    val isPowerPlant: Boolean
+        get() = this == POWER_COAL || this == POWER_SOLAR || this == POWER_WIND
+
+    /** 道路と同じように、線路として繋がるもの。 */
+    val isTrack: Boolean get() = this == RAIL
     /** 道路網に繋がる必要があり、維持費を払う建造物か。 */
     val isBuilding: Boolean
-        get() = this != EMPTY && this != ROAD
+        get() = this != EMPTY && this != ROAD && this != RAIL
 }
 
 /** 建てられる世界の有名建築。1都市につき各1つ。 */
@@ -103,6 +114,9 @@ object BuildCost {
         TileKind.FIRE -> 300
         TileKind.SCHOOL -> 400
         TileKind.HOSPITAL -> 500
+        TileKind.FARM -> 30
+        TileKind.POWER_WIND -> 700
+        TileKind.RAIL -> 40
         TileKind.EMPTY, TileKind.MONUMENT -> 0
     }
 
@@ -118,18 +132,25 @@ object BuildCost {
         TileKind.FIRE -> 20
         TileKind.SCHOOL -> 30
         TileKind.HOSPITAL -> 35
+        TileKind.FARM -> 2
+        TileKind.POWER_WIND -> 18
+        TileKind.RAIL -> 3
         else -> 0
     }
 
     fun powerOutput(kind: TileKind): Int = when (kind) {
         TileKind.POWER_COAL -> 2_000
         TileKind.POWER_SOLAR -> 1_600
+        // 風力は出力が小さいかわりに安く、公害も出さない。
+        TileKind.POWER_WIND -> 900
         else -> 0
     }
 
-    /** 太陽光発電は人口3000から解禁。 */
+    /** 一部の施設は人口で解禁する。 */
     fun isUnlocked(kind: TileKind, population: Int): Boolean = when (kind) {
         TileKind.POWER_SOLAR -> population >= 3_000
+        TileKind.POWER_WIND -> population >= 1_000
+        TileKind.RAIL -> population >= 2_000
         else -> true
     }
 }

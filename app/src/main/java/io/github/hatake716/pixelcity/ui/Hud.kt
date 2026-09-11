@@ -26,6 +26,9 @@ object Hud {
         Tool(TileKind.FIRE, "しょうぼう"),
         Tool(TileKind.SCHOOL, "がっこう"),
         Tool(TileKind.HOSPITAL, "びょういん"),
+        Tool(TileKind.FARM, "のうち"),
+        Tool(TileKind.POWER_WIND, "ふうりょく"),
+        Tool(TileKind.RAIL, "せんろ"),
         Tool(TileKind.EMPTY, "こわす"),
     )
 

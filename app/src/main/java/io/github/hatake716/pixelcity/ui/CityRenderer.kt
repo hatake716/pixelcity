@@ -54,6 +54,13 @@ class CityRenderer {
         forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
             val tile = city.tileAt(tx, ty)
             val ground = when {
+                tile.kind == TileKind.RAIL -> IsoTiles.railFor(
+                    alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.RAIL ||
+                        city.tileOrNull(tx + 1, ty)?.kind == TileKind.RAIL,
+                    alongY = city.tileOrNull(tx, ty - 1)?.kind == TileKind.RAIL ||
+                        city.tileOrNull(tx, ty + 1)?.kind == TileKind.RAIL,
+                )
+                tile.kind == TileKind.FARM -> IsoTiles.FARM
                 tile.kind == TileKind.ROAD -> IsoTiles.roadFor(
                     alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.ROAD ||
                         city.tileOrNull(tx + 1, ty)?.kind == TileKind.ROAD,
@@ -159,6 +166,7 @@ class CityRenderer {
         else -> when (tile.kind) {
             TileKind.POWER_COAL -> IsoBuildings.POWER_COAL
             TileKind.POWER_SOLAR -> IsoBuildings.POWER_SOLAR
+            TileKind.POWER_WIND -> IsoBuildings.POWER_WIND
             TileKind.PARK -> IsoBuildings.PARK
             TileKind.POLICE -> IsoBuildings.POLICE
             TileKind.FIRE -> IsoBuildings.FIRE

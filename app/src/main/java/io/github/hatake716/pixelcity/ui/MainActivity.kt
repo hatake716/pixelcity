@@ -38,8 +38,56 @@ class MainActivity : Activity() {
         title.onStartTutorial = { chooseSlotForNewGame(withTutorial = true) }
         title.onSkipTutorial = { chooseSlotForNewGame(withTutorial = false) }
         title.onContinue = { showContinue() }
+        title.onShowcase = { showShowcasePicker() }
         title.onLicenses = { showLicenses() }
         setRoot(title)
+    }
+
+    /** お手本の街を選び、その続きから遊ぶ。 */
+    private fun showShowcasePicker() {
+        val picker = ShowcasePickerView(this)
+        picker.onBack = { showTitle() }
+        picker.onChosen = { kind -> chooseSlotForShowcase(kind) }
+        setRoot(picker)
+    }
+
+    /** お手本をどの枠に入れるか選ぶ。 */
+    private fun chooseSlotForShowcase(kind: ShowcaseCity.Kind) {
+        val empty = SaveGame.firstEmptySlot(this)
+        if (empty != null && !SaveGame.hasAnySave(this)) {
+            startShowcase(empty, kind)
+            return
+        }
+        val view = SlotView(this, allowEmpty = true, title = "どの まちに いれる？")
+        view.onSlotChosen = { chosen, hasCity ->
+            if (hasCity) {
+                AlertDialog.Builder(this)
+                    .setTitle("${chosen + 1}ばんの まちを けしますか？")
+                    .setMessage("${kind.label}を いれます。いまの まちは きえます。")
+                    .setPositiveButton("いれる") { _, _ -> startShowcase(chosen, kind) }
+                    .setNegativeButton("やめる", null)
+                    .show()
+            } else {
+                startShowcase(chosen, kind)
+            }
+        }
+        view.onBack = { showShowcasePicker() }
+        view.onDeleteRequested = { target -> confirmDelete(target) { view.refresh() } }
+        setRoot(view)
+    }
+
+    private fun startShowcase(targetSlot: Int, kind: ShowcaseCity.Kind) {
+        slot = targetSlot
+        seed = kind.seed
+        city = ShowcaseCity.build(kind)
+        tutorial = Tutorial().apply { skip() }
+        SaveGame.clear(this, slot)
+        startGame()
+        AlertDialog.Builder(this)
+            .setTitle(kind.label)
+            .setMessage("${kind.summary}\n\nここから じゆうに そだててください。")
+            .setPositiveButton("はじめる", null)
+            .show()
     }
 
     /** 保存した街から選んで再開する。 */

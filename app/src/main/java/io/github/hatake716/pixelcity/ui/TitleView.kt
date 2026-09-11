@@ -36,6 +36,7 @@ class TitleView(
     var onStartTutorial: (() -> Unit)? = null
     var onSkipTutorial: (() -> Unit)? = null
     var onContinue: (() -> Unit)? = null
+    var onShowcase: (() -> Unit)? = null
     var onLicenses: (() -> Unit)? = null
 
     /** ボタンの位置（論理座標）。描画と当たり判定で同じ値を使う。 */
@@ -44,7 +45,7 @@ class TitleView(
     private fun buttons(): List<Button> = buildList {
         // ロゴとビル群のあいだに、中央寄りで積む。
         val bottom = logicalH - skylineHeight() - 40
-        val count = if (hasSave) 4 else 3
+        val count = if (hasSave) 5 else 4
         var y = bottom - count * (BUTTON_H + 12)
         // 画面が高いときは、上に寄りすぎないよう中ほどへ寄せる
         val minY = logicalH / 2 - 20
@@ -56,6 +57,8 @@ class TitleView(
         add(Button(y, "はじめから") { onStartTutorial?.invoke() })
         y += BUTTON_H + 10
         add(Button(y, "チュートリアルを とばす") { onSkipTutorial?.invoke() })
+        y += BUTTON_H + 10
+        add(Button(y, "おてほんから はじめる") { onShowcase?.invoke() })
         y += BUTTON_H + 10
         add(Button(y, "ライセンス") { onLicenses?.invoke() })
     }

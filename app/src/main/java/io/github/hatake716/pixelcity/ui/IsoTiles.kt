@@ -123,6 +123,61 @@ object IsoTiles {
     }
 
     /**
+     * 線路。枕木とレールを2本。道路と同じく向きで描き分ける。
+     */
+    private fun rail(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
+        val cx = (x + 0.5f) - W / 2f
+        val cy = (y + 0.5f) - H / 2f
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+
+        // その向きに沿った「線路方向の座標」と「横断方向の座標」
+        val along = if (alongX) u else v
+        val across = if (alongX) v else u
+
+        val n = noise(x, y, 13) % 100
+        when {
+            edge > 0.93f -> Palette.SAND_DARK
+            // レール2本
+            abs(abs(across) - 0.16f) < 0.045f -> Palette.METAL_LIT
+            // 枕木
+            ((along * 16f).toInt() and 1) == 0 && abs(across) < 0.30f -> Palette.TRUNK
+            // 砂利
+            n < 24 -> Palette.STONE_DARK
+            n < 50 -> Palette.SAND_DARK
+            else -> Palette.STONE
+        }
+    }
+
+    val RAIL_X = rail(alongX = true, alongY = false)
+    val RAIL_Y = rail(alongX = false, alongY = true)
+
+    fun railFor(alongX: Boolean, alongY: Boolean): Sprite =
+        if (alongY && !alongX) RAIL_Y else RAIL_X
+
+    /**
+     * 農地。畝を引いた畑。季節で色が変わるように見せるため、
+     * 位置によって作物の色を少し変える。
+     */
+    val FARM = diamond { x, y, edge ->
+        val cx = (x + 0.5f) - W / 2f
+        val cy = (y + 0.5f) - H / 2f
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+        val row = ((v * 22f).toInt())
+        val n = noise(x, y, 17) % 100
+        when {
+            edge > 0.93f -> Palette.SAND_DARK
+            // 畝のあいだの土
+            (row and 1) == 0 -> if (n < 30) Palette.SAND_DARK else Palette.SAND
+            // 作物
+            n < 18 -> Palette.TREE_LIT
+            n < 40 -> Palette.TREE_DARK
+            else -> Palette.TREE
+        }
+    }
+
+    /**
      * 区分を指定しただけで、まだ建っていない土地。
      * ならした地面に、用途の色で杭を打った縁をつける。
      */

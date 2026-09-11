@@ -340,6 +340,61 @@ object IsoBuildings {
         },
     )
 
+    /**
+     * 風力発電。細い塔と3枚の羽根。
+     * 箱ではないので、地面の菱形の上へ直接組み立てる。
+     */
+    val POWER_WIND: Sprite = run {
+        val h = 78
+        val height = h + TH
+        val data = ByteArray(W * height) { Pix.TRANSPARENT }
+        fun set(x: Int, y: Int, c: Int) {
+            if (x in 0 until W && y in 0 until height) data[y * W + x] = c.toByte()
+        }
+
+        // 基礎の菱形
+        for (y in 0 until TH) for (x in 0 until W) {
+            val dx = (x + 0.5f) - W / 2f
+            val dy = (y + 0.5f) - TH / 2f
+            val d = abs(dx) / (W / 2f) + abs(dy) / (TH / 2f)
+            if (d > 0.55f) continue
+            set(x, y + h, if (d > 0.45f) Palette.STONE_DARK else Palette.STONE)
+        }
+
+        val cx = W / 2
+        val baseY = h + TH / 2
+        val topY = 16
+        // 塔。下が太く上が細い。
+        for (y in topY..baseY) {
+            val t = (baseY - y).toFloat() / (baseY - topY)
+            val half = ((1f - t) * 2.4f + 1.2f).toInt()
+            for (x in -half..half) {
+                set(cx + x, y, if (x < 0) Palette.WHITE else Palette.METAL)
+            }
+            set(cx - half, y, Palette.METAL_DARK)
+            set(cx + half, y, Palette.METAL_DARK)
+        }
+        // 軸
+        for (y in topY - 3..topY + 2) for (x in -3..3) set(cx + x, y, Palette.METAL)
+
+        // 羽根3枚。120度ずつ。
+        val hub = topY
+        for (k in 0 until 3) {
+            val a = Math.toRadians(90.0 + k * 120.0)
+            for (r in 4..30) {
+                val bx = cx + (Math.cos(a) * r).toInt()
+                val by = hub - (Math.sin(a) * r * 0.62).toInt()
+                // 根元を太く、先を細く
+                val w = if (r < 14) 2 else 1
+                for (o in -w..w) {
+                    set(bx, by + o, Palette.WHITE)
+                }
+                set(bx, by - w - 1, Palette.METAL_DARK)
+            }
+        }
+        Sprite(W, height, data)
+    }
+
     /** 公園。芝生と木立、小径。 */
     val PARK: Sprite = run {
         val h = 22
