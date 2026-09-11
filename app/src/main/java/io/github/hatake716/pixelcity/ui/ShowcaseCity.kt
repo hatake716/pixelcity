@@ -66,12 +66,16 @@ object ShowcaseCity {
             val n = rnd.nextInt(100)
 
             when {
-                // 中心部: 高層の商業
-                d < 9 -> { t.kind = TileKind.ZONE_C; t.stage = 3 }
+                // 中心部: 高層の商業。同じ高さが並ぶと壁のように見えるので、
+                // ところどころ低い建物を混ぜて、街並みに起伏をつける。
+                d < 9 -> {
+                    t.kind = if (n < 82) TileKind.ZONE_C else TileKind.ZONE_R
+                    t.stage = when { n < 58 -> 3; n < 86 -> 2; else -> 1 }
+                }
                 // その周り: 商業と住宅が混ざる
                 d < 15 -> {
-                    t.kind = if (n < 55) TileKind.ZONE_C else TileKind.ZONE_R
-                    t.stage = if (n < 80) 3 else 2
+                    t.kind = if (n < 50) TileKind.ZONE_C else TileKind.ZONE_R
+                    t.stage = when { n < 45 -> 3; n < 82 -> 2; else -> 1 }
                 }
                 // 住宅街
                 d < 23 -> {

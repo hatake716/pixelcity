@@ -71,15 +71,15 @@ class GameView(
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
         private const val BODY_SIZE = 15
 
-        // 画面まわりの色。16階調のどこを使うかをここにまとめる。
+        // 画面まわりの色。どのパレット索引を使うかをここにまとめる。
         /** パネルや帯の下地。 */
-        private const val C_BG = 1
+        private const val C_BG = Palette.UI_BG
         /** 罫線・枠。 */
-        private const val C_LINE = 11
+        private const val C_LINE = Palette.UI_LINE
         /** 本文の文字。 */
-        private const val C_TEXT = 15
+        private const val C_TEXT = Palette.UI_TEXT
         /** 補助的な文字。 */
-        private const val C_DIM = 9
+        private const val C_DIM = Palette.UI_DIM
         /** モニュメント一覧の行の高さ。 */
         private const val MONUMENT_ROW_H = 20
         private const val CLOSE_X = LOGICAL_W - 84
@@ -256,11 +256,11 @@ class GameView(
 
         // パレット索引を色へ変換して転送する
         for (i in pixels.pixels.indices) {
-            frameRow[i] = GbPalette.of(pixels.pixels[i].toInt())
+            frameRow[i] = Palette.of(pixels.pixels[i].toInt())
         }
         frame.setPixels(frameRow, 0, LOGICAL_W, 0, 0, LOGICAL_W, logicalH)
 
-        canvas.drawColor(GbPalette.BEZEL)
+        canvas.drawColor(Palette.BEZEL)
         canvas.drawBitmap(frame, null, dst, blitPaint)
         tick()
     }

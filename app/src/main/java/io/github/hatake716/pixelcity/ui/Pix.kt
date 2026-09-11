@@ -1,69 +1,39 @@
 package io.github.hatake716.pixelcity.ui
 
 /**
- * ドット絵の記法。
+ * ドット絵の画素。
  *
- * 高精細なスプライトを文字列で書くために、16階調を1文字ずつに割り当てている。
- * 明るい側から暗い側へ:
- *
- * ```
- *   ' ' 透明（描かない）
- *   '.' 0   最も明るい
- *   ',' 1
- *   '-' 2
- *   '~' 3
- *   ':' 4
- *   ';' 5
- *   '+' 6
- *   '=' 7
- *   '*' 8
- *   'o' 9
- *   'O' 10
- *   '&' 11
- *   '%' 12
- *   '#' 13
- *   '@' 14
- *   '█' 15  最も暗い
- * ```
- *
- * 透明は -1 として保持する。
+ * 画素は [Palette] の索引を1バイトで持つ。-1 は透明。
+ * 色そのものではなく索引を持つことで、
+ *  - スプライトは「屋根の色」とだけ書けばよく、配色を後から変えられる
+ *  - 1画素1バイトで済み、大きな絵でも軽い
+ * という利点がある。当時の実機がパレット方式だったのと同じ考え方。
  */
 object Pix {
     const val TRANSPARENT: Byte = -1
 
-    private val CHARS = ".,-~:;+=*oO&%#@█"
-
-    fun level(ch: Char): Byte = when (ch) {
-        ' ' -> TRANSPARENT
-        else -> {
-            val i = CHARS.indexOf(ch)
-            require(i >= 0) { "unknown pixel char '$ch'" }
-            i.toByte()
-        }
-    }
-
     /**
-     * 文字列の行からスプライトを作る。行の長さは揃っていること。
-     * 返り値は幅×高さの配列で、-1 は透明。
+     * 色の索引からスプライトを組み立てる補助。
+     * [w]×[h] の大きさで、[fill] が各画素の [Palette] 索引を返す。
+     * 透明にしたい画素では [TRANSPARENT] を返す。
      */
-    fun sprite(vararg rows: String): Sprite {
-        require(rows.isNotEmpty()) { "sprite needs at least one row" }
-        val h = rows.size
-        val w = rows[0].length
+    inline fun build(w: Int, h: Int, fill: (x: Int, y: Int) -> Int): Sprite {
         val data = ByteArray(w * h)
-        rows.forEachIndexed { y, row ->
-            require(row.length == w) { "row $y is ${row.length} wide, expected $w" }
-            row.forEachIndexed { x, ch -> data[y * w + x] = level(ch) }
+        for (y in 0 until h) for (x in 0 until w) {
+            data[y * w + x] = fill(x, y).toByte()
         }
         return Sprite(w, h, data)
     }
 }
 
-/** 幅・高さつきのドット絵。 */
+/** 幅・高さつきのドット絵。画素は [Palette] の索引。 */
 class Sprite(val width: Int, val height: Int, val data: ByteArray) {
     fun at(x: Int, y: Int): Byte =
         if (x < 0 || y < 0 || x >= width || y >= height) Pix.TRANSPARENT else data[y * width + x]
 
     /** 描いた画素の数。空のスプライトを見つけるために使う。 */
     val inkCount: Int get() = data.count { it != Pix.TRANSPARENT }
+
+    /** 使われている色の種類。のっぺりした絵を見つけるために使う。 */
+    val colourCount: Int get() = data.filter { it != Pix.TRANSPARENT }.toSet().size
 }

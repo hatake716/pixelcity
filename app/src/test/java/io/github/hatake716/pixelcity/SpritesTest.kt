@@ -4,6 +4,7 @@ import io.github.hatake716.pixelcity.game.Monument
 import io.github.hatake716.pixelcity.ui.Iso
 import io.github.hatake716.pixelcity.ui.IsoBuildings
 import io.github.hatake716.pixelcity.ui.MonumentSprites
+import io.github.hatake716.pixelcity.ui.Palette
 import io.github.hatake716.pixelcity.ui.Pix
 import io.github.hatake716.pixelcity.ui.Sprite
 import org.junit.Assert.assertEquals
@@ -44,25 +45,28 @@ class SpritesTest {
     }
 
     @Test
-    fun `every sprite uses only valid palette levels`() {
+    fun `every sprite uses only colours that exist in the palette`() {
         val all = buildings() + Monument.entries.map { it.name to MonumentSprites.of(it) }
         for ((name, s) in all) {
             for (v in s.data) {
-                assertTrue("$name has level $v", v == Pix.TRANSPARENT || v in 0..15)
+                assertTrue(
+                    "$name uses colour $v, outside the palette",
+                    v == Pix.TRANSPARENT || v.toInt() in 0 until Palette.SIZE,
+                )
             }
             assertTrue("$name is blank", s.inkCount > 30)
         }
     }
 
     /**
-     * 立体に見えるには、面ごとに明るさが違う必要がある。
-     * 使われている階調が1〜2種類しかないと、のっぺりした板になる。
+     * 立体に見えるには、面ごとに色が違う必要がある。
+     * 使われている色が1〜2種類しかないと、のっぺりした板になる。
+     * 高精細にしたぶん、以前より多くの色を使っているはず。
      */
     @Test
-    fun `buildings are shaded with several levels`() {
+    fun `buildings are shaded with several colours`() {
         for ((name, s) in buildings()) {
-            val levels = s.data.filter { it != Pix.TRANSPARENT }.toSet()
-            assertTrue("$name uses only ${levels.size} levels", levels.size >= 3)
+            assertTrue("$name uses only ${s.colourCount} colours", s.colourCount >= 4)
         }
     }
 
@@ -72,8 +76,7 @@ class SpritesTest {
             val s = MonumentSprites.of(m)
             assertEquals("${m.name} width", MonumentSprites.W, s.width)
             assertTrue("${m.name} is too short (${s.height})", s.height >= Iso.TILE_H * 2)
-            val levels = s.data.filter { it != Pix.TRANSPARENT }.toSet()
-            assertTrue("${m.name} uses only ${levels.size} levels", levels.size >= 3)
+            assertTrue("${m.name} uses only ${s.colourCount} colours", s.colourCount >= 3)
         }
     }
 

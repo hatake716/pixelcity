@@ -35,8 +35,13 @@ class CityRenderer {
         highlight: IntArray? = null,
         suggest: ((Int, Int) -> Boolean)? = null,
         suggestOn: Boolean = false,
+        /** 下地を塗るか。呼び出し側が空などを描いてあるときは false にする。 */
+        clearBackground: Boolean = true,
     ) {
-        canvas.fillRect(0, viewTop, canvas.width, viewHeight, 1)
+        // 地面の外側は空の色。街が浮いて見えるようにする。
+        if (clearBackground) {
+            canvas.fillRect(0, viewTop, canvas.width, viewHeight, Palette.SKY)
+        }
 
         // カメラの位置を画面の中央に置く
         val originX = canvas.width / 2 - Iso.screenX2(camX, camY).toInt() * zoomNum / zoomDen
@@ -82,7 +87,7 @@ class CityRenderer {
         // --- 3周目: 置ける場所の目印 ---
         if (suggest != null && suggestOn) {
             forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
-                if (suggest(tx, ty)) outlineDiamond(canvas, sx, sy, zoomNum, zoomDen, 15, clipTop, clipBottom)
+                if (suggest(tx, ty)) outlineDiamond(canvas, sx, sy, zoomNum, zoomDen, Palette.UI_ACCENT, clipTop, clipBottom)
             }
         }
 
@@ -119,7 +124,7 @@ class CityRenderer {
             for (dy in 0 until span) for (dx in 0 until span) {
                 val hx = originX + Iso.screenX(highlight[0] + dx, highlight[1] + dy) * zoomNum / zoomDen
                 val hy = originY + Iso.screenY(highlight[0] + dx, highlight[1] + dy) * zoomNum / zoomDen
-                outlineDiamond(canvas, hx, hy, zoomNum, zoomDen, 15, clipTop, clipBottom)
+                outlineDiamond(canvas, hx, hy, zoomNum, zoomDen, Palette.WHITE, clipTop, clipBottom)
             }
         }
     }
@@ -237,8 +242,16 @@ class CityRenderer {
                 val dx = (xx - w / 2f) / (w / 2f)
                 val dy = (yy - h / 2f) / (h / 2f)
                 if (Math.abs(dx) + Math.abs(dy) > 1f) continue
+                // 濃さに応じた色で市松に塗る。地の色に足すのではなく、
+                // 決まった色を置くことで、どの地面の上でも同じ見え方にする。
                 if ((tx + ty) % 2 == 0) {
-                    canvas.set(tx, ty, (canvas.get(tx, ty) + level).coerceAtMost(15))
+                    val c = when {
+                        level >= 4 -> Palette.RED
+                        level >= 3 -> Palette.GOLD
+                        level >= 2 -> Palette.WINDOW_LIT
+                        else -> Palette.WHITE
+                    }
+                    canvas.set(tx, ty, c)
                 }
             }
         }

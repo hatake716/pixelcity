@@ -100,19 +100,19 @@ class TitleView(
             val edge = minOf(y - bandTop, bandTop + bandH - 1 - y)
             for (x in 0 until GameView.LOGICAL_W) {
                 if (edge < 6 && ((x + y) and 1) == 0) continue
-                pixels.set(x, y, 1)
+                pixels.set(x, y, Palette.UI_BG)
             }
         }
-        pixels.fillRect(0, bandTop, GameView.LOGICAL_W, 2, 11)
-        pixels.fillRect(0, bandTop + bandH - 2, GameView.LOGICAL_W, 2, 11)
+        pixels.fillRect(0, bandTop, GameView.LOGICAL_W, 2, Palette.UI_LINE)
+        pixels.fillRect(0, bandTop + bandH - 2, GameView.LOGICAL_W, 2, Palette.UI_LINE)
         text.textSize = 58
-        text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2 + 3, logoY + 3, 12)
-        text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2, logoY, 15)
+        text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2 + 3, logoY + 3, Palette.BLACK)
+        text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2, logoY, Palette.UI_ACCENT)
 
         text.textSize = 18
         text.drawCentered(
             pixels, "としを そだてる しちょうの しごと",
-            GameView.LOGICAL_W / 2, logoY + 74, 12,
+            GameView.LOGICAL_W / 2, logoY + 74, Palette.UI_TEXT,
         )
 
         text.textSize = 18
@@ -120,19 +120,46 @@ class TitleView(
             val w = text.measure(b.label) + 36
             val x = (GameView.LOGICAL_W - w) / 2
             // 街が透けないよう、しっかり塗ってから枠と文字を置く
-            pixels.fillRect(x, b.y, w, BUTTON_H, 1)
-            pixels.drawRect(x, b.y, w, BUTTON_H, 14)
-            pixels.drawRect(x + 1, b.y + 1, w - 2, BUTTON_H - 2, 11)
+            pixels.fillRect(x, b.y, w, BUTTON_H, Palette.UI_BG)
+            pixels.drawRect(x, b.y, w, BUTTON_H, Palette.UI_LINE)
+            pixels.drawRect(x + 1, b.y + 1, w - 2, BUTTON_H - 2, Palette.UI_BG_LIGHT)
             // 影で浮かせる
-            pixels.fillRect(x + 2, b.y + BUTTON_H, w, 2, 13)
-            pixels.fillRect(x + w, b.y + 2, 2, BUTTON_H, 13)
-            text.drawCentered(pixels, b.label, GameView.LOGICAL_W / 2, b.y + 6, 14)
+            pixels.fillRect(x + 2, b.y + BUTTON_H, w, 2, Palette.BLACK)
+            pixels.fillRect(x + w, b.y + 2, 2, BUTTON_H, Palette.BLACK)
+            text.drawCentered(pixels, b.label, GameView.LOGICAL_W / 2, b.y + 6, Palette.UI_TEXT)
         }
 
-        for (i in pixels.pixels.indices) buffer[i] = GbPalette.of(pixels.pixels[i].toInt())
+        for (i in pixels.pixels.indices) buffer[i] = Palette.of(pixels.pixels[i].toInt())
         frame.setPixels(buffer, 0, GameView.LOGICAL_W, 0, 0, GameView.LOGICAL_W, logicalH)
-        canvas.drawColor(GbPalette.BEZEL)
+        canvas.drawColor(Palette.BEZEL)
         canvas.drawBitmap(frame, null, dst, paint)
+    }
+
+    /**
+     * 空。上を濃く、下を淡くして奥行きを出し、雲をいくつか浮かべる。
+     * 街だけだと画面の上下が寂しくなるため。
+     */
+    private fun drawSky() {
+        for (y in 0 until logicalH) {
+            val t = y.toFloat() / logicalH
+            val c = if (t < 0.55f) Palette.SKY_DEEP else Palette.SKY
+            pixels.fillRect(0, y, GameView.LOGICAL_W, 1, c)
+        }
+        // 雲。横に長い塊をいくつか。
+        fun cloud(cx: Int, cy: Int, w: Int, h: Int) {
+            for (y in -h..h) for (x in -w..w) {
+                val d = (x * x).toFloat() / (w * w) + (y * y).toFloat() / (h * h)
+                if (d > 1f) continue
+                val c = if (y < 0 && d < 0.6f) Palette.WHITE else Palette.GLASS_LIT
+                pixels.set(cx + x, cy + y, c)
+            }
+        }
+        cloud(90, 70, 46, 11)
+        cloud(150, 88, 30, 7)
+        cloud(360, 108, 52, 12)
+        cloud(300, 126, 26, 6)
+        cloud(120, logicalH - 120, 40, 9)
+        cloud(390, logicalH - 92, 34, 8)
     }
 
     /** 背景の大都市。作るのは一度きりで、以後は使い回す。 */
@@ -146,11 +173,13 @@ class TitleView(
      * 「この街づくりの行き着く先」をそのまま見せることになる。
      */
     private fun drawShowcase() {
+        drawSky()
         cityRenderer.draw(
             pixels, showcase,
             camX = 31f, camY = 31f,
-            zoomNum = 1, zoomDen = 1,
+            zoomNum = 1, zoomDen = 3,
             viewTop = 0, viewHeight = logicalH,
+            clearBackground = false,
         )
     }
 

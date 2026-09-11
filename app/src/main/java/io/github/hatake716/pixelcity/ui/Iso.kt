@@ -19,13 +19,18 @@ package io.github.hatake716.pixelcity.ui
  * に来る。x が右下へ、y が左下へ伸びる並びになる。
  */
 object Iso {
-    /** 菱形の幅（論理ピクセル）。 */
-    const val TILE_W = 32
+    /**
+     * 菱形の幅（論理ピクセル）。
+     *
+     * 64×32 は、従来の 32×16 の縦横2倍＝面積4倍。
+     * 窓・屋根・看板といった細部を描き込めるだけの面積を確保している。
+     */
+    const val TILE_W = 64
     /** 菱形の高さ。幅の半分にすると、いわゆる2:1のクォータービューになる。 */
-    const val TILE_H = 16
+    const val TILE_H = 32
 
     /** 建物の1段ぶんの高さ。段数を掛けて持ち上げる。 */
-    const val LEVEL_H = 8
+    const val LEVEL_H = 16
 
     /**
      * 斜めに置いた街全体の、画面上の大きさ。

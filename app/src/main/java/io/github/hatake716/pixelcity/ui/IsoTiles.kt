@@ -1,15 +1,16 @@
 package io.github.hatake716.pixelcity.ui
 
+import io.github.hatake716.pixelcity.game.Terrain
 import kotlin.math.abs
 
 /**
- * 地面のタイル。32×16 の菱形。
+ * 地面のタイル。64×32 の菱形。
  *
- * 菱形は手で書くと1行ずつ幅がずれて壊れやすいので、
- * **菱形の式から生成する**。どの行も必ず正しい幅になり、
- * 外側は透明、内側だけが塗られることが保証される。
+ * 菱形は手で書くと1行ずつ幅がずれて壊れやすいので、**菱形の式から生成する**。
+ * どの行も必ず正しい幅になり、外側は透明、内側だけが塗られることが保証される。
  *
- * 模様は「そのタイルの何色を置くか」を決める関数として渡す。
+ * 色は [Palette] の索引で持つ。スプライトは「草の明るい色」とだけ書けばよく、
+ * 実際の色をあとから変えても絵は壊れない。
  */
 object IsoTiles {
 
@@ -20,14 +21,13 @@ object IsoTiles {
      * 菱形を作る。[shade] にはタイル内の座標と、
      * 菱形の中心からの正規化距離（0=中心, 1=縁）が渡る。
      */
-    private fun diamond(shade: (x: Int, y: Int, edge: Float) -> Byte): Sprite {
+    private fun diamond(shade: (x: Int, y: Int, edge: Float) -> Int): Sprite {
         val data = ByteArray(W * H) { Pix.TRANSPARENT }
         for (y in 0 until H) for (x in 0 until W) {
-            // 画素の中心で判定する
             val dx = (x + 0.5f) - W / 2f
             val dy = (y + 0.5f) - H / 2f
             val d = abs(dx) / (W / 2f) + abs(dy) / (H / 2f)
-            if (d <= 1f) data[y * W + x] = shade(x, y, d)
+            if (d <= 1f) data[y * W + x] = shade(x, y, d).toByte()
         }
         return Sprite(W, H, data)
     }
@@ -39,56 +39,52 @@ object IsoTiles {
         return (h xor (h shr 16)) and 0x7fffffff
     }
 
-    /** 草地。細かな粒で土と草の質感を出す。 */
+    /** 草地。草むらの粒と、ところどころの濃い茂み。 */
     val GRASS = diamond { x, y, edge ->
         val n = noise(x, y, 1) % 100
+        // 草の房を、少し大きめの塊で散らす
+        val clump = noise(x / 3, y / 2, 5) % 100
         when {
-            edge > 0.94f -> 4            // 縁をわずかに締める
-            n < 6 -> 3                   // ところどころ濃い草
-            n < 18 -> 2
-            n < 34 -> 1
-            else -> 0
-        }.toByte()
-    }
-
-    /** 水面。横縞で波を出し、奥ほどわずかに暗くする。 */
-    val WATER = diamond { x, y, _ ->
-        val wave = ((x / 2) + (y * 3)) % 7
-        val base = when {
-            wave < 2 -> 11
-            wave < 4 -> 10
-            else -> 9
+            edge > 0.96f -> Palette.GRASS_EDGE
+            clump < 12 && n < 60 -> Palette.GRASS_DARK
+            n < 14 -> Palette.GRASS_LIT
+            n < 30 -> Palette.GRASS_DARK
+            else -> Palette.GRASS
         }
-        // 上（奥）をすこし暗くして水面の奥行きを出す
-        (base + if (y < H / 3) 1 else 0).coerceAtMost(13).toByte()
     }
 
-    /** 砂浜。水際の明るい帯。 */
+    /** 水面。横長の波と、ちらつく反射。 */
+    val WATER = diamond { x, y, edge ->
+        val wave = ((x / 3) + (y * 2)) % 11
+        val sparkle = noise(x, y, 9) % 100
+        when {
+            edge > 0.96f -> Palette.WATER_DARK
+            sparkle < 4 && wave < 4 -> Palette.WATER_FOAM
+            wave < 3 -> Palette.WATER_LIT
+            wave < 7 -> Palette.WATER
+            else -> Palette.WATER_DARK
+        }
+    }
+
+    /** 砂浜。粒の粗い砂。 */
     val SHORE = diamond { x, y, edge ->
         val n = noise(x, y, 7) % 100
         when {
-            edge > 0.9f -> 3
-            n < 12 -> 2
-            n < 30 -> 1
-            else -> 0
-        }.toByte()
+            edge > 0.94f -> Palette.SAND_DARK
+            n < 16 -> Palette.SAND_LIT
+            n < 34 -> Palette.SAND_DARK
+            else -> Palette.SAND
+        }
     }
 
     // --- 道路 ---
-
-    /** 舗装の基本色と縁。 */
-    private const val PAVE: Byte = 7
-    private const val PAVE_DARK: Byte = 8
-    private const val KERB: Byte = 11
-    private const val LINE: Byte = 3
 
     /**
      * 道路。[alongX] と [alongY] で、どちらの向きに車線を引くかを決める。
      * 交差点は両方 true。
      */
     private fun road(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
-        // 縁石
-        if (edge > 0.88f) return@diamond KERB
+        if (edge > 0.93f) return@diamond Palette.KERB
 
         val cx = (x + 0.5f) - W / 2f
         val cy = (y + 0.5f) - H / 2f
@@ -97,17 +93,21 @@ object IsoTiles {
         val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f   // y方向（左下）
 
         // 中央線。交差点では中心を空ける。
-        val onXLine = alongX && abs(v) < 0.12f && (!alongY || abs(u) > 0.30f)
-        val onYLine = alongY && abs(u) < 0.12f && (!alongX || abs(v) > 0.30f)
-        // 破線にする
-        val dashX = ((u * 6f).toInt() and 1) == 0
-        val dashY = ((v * 6f).toInt() and 1) == 0
+        val onXLine = alongX && abs(v) < 0.07f && (!alongY || abs(u) > 0.32f)
+        val onYLine = alongY && abs(u) < 0.07f && (!alongX || abs(v) > 0.32f)
+        val dashX = ((u * 7f).toInt() and 1) == 0
+        val dashY = ((v * 7f).toInt() and 1) == 0
+
+        // 舗装のざらつき
+        val grain = noise(x, y, 3) % 100
 
         when {
-            onXLine && dashX -> LINE
-            onYLine && dashY -> LINE
-            edge > 0.7f -> PAVE_DARK
-            else -> PAVE
+            onXLine && dashX -> Palette.ROAD_LINE
+            onYLine && dashY -> Palette.ROAD_LINE
+            edge > 0.78f -> Palette.ROAD_DARK
+            grain < 10 -> Palette.ROAD_LIT
+            grain < 22 -> Palette.ROAD_DARK
+            else -> Palette.ROAD
         }
     }
 
@@ -124,28 +124,26 @@ object IsoTiles {
 
     /**
      * 区分を指定しただけで、まだ建っていない土地。
-     * 縁に色をつけて用途が分かるようにする。
+     * ならした地面に、用途の色で杭を打った縁をつける。
      */
-    private fun zoneMarker(edgeLevel: Byte): Sprite = diamond { x, y, edge ->
-        val n = noise(x, y, 3) % 100
+    private fun zoneMarker(edgeColor: Int): Sprite = diamond { x, y, edge ->
+        val n = noise(x, y, 11) % 100
         when {
-            // 縁だけで用途を示す。面を明るくしすぎると、
-            // 建っていない土地が街の中で浮いて見える。
-            edge > 0.90f -> edgeLevel
-            n < 10 -> 4
-            n < 26 -> 3
-            else -> 2
-        }.toByte()
+            // 縁に等間隔の杭を打つ
+            edge > 0.90f -> if (((x / 4) + (y / 2)) % 3 == 0) edgeColor else Palette.SAND_DARK
+            n < 12 -> Palette.SAND_LIT
+            n < 28 -> Palette.SAND_DARK
+            else -> Palette.SAND
+        }
     }
 
-    val ZONE_R_EMPTY = zoneMarker(6)
-    val ZONE_C_EMPTY = zoneMarker(9)
-    val ZONE_I_EMPTY = zoneMarker(12)
+    val ZONE_R_EMPTY = zoneMarker(Palette.HOUSE_ROOF)
+    val ZONE_C_EMPTY = zoneMarker(Palette.OFFICE_LEFT)
+    val ZONE_I_EMPTY = zoneMarker(Palette.FACTORY_LEFT)
 
-    fun terrainTile(terrain: io.github.hatake716.pixelcity.game.Terrain): Sprite =
-        when (terrain) {
-            io.github.hatake716.pixelcity.game.Terrain.WATER -> WATER
-            io.github.hatake716.pixelcity.game.Terrain.SHORE -> SHORE
-            io.github.hatake716.pixelcity.game.Terrain.LAND -> GRASS
-        }
+    fun terrainTile(terrain: Terrain): Sprite = when (terrain) {
+        Terrain.WATER -> WATER
+        Terrain.SHORE -> SHORE
+        Terrain.LAND -> GRASS
+    }
 }
