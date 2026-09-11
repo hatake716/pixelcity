@@ -47,7 +47,16 @@ android {
     }
     testOptions {
         animationsDisabled = true
-        unitTests { isReturnDefaultValues = true }
+        unitTests {
+            isReturnDefaultValues = true
+            // 絵を確かめる書き出し先を、テストの JVM まで渡す。
+            all {
+                it.systemProperty(
+                    "pixelcity.preview",
+                    providers.gradleProperty("pixelcity.preview").getOrElse(""),
+                )
+            }
+        }
     }
 }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }

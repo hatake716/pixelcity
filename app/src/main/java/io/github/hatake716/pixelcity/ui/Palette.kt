@@ -162,6 +162,53 @@ object Palette {
     const val JP_WALL = 85
     const val JP_WALL_DARK = 86
 
+    // --- 世界の有名建築（v5） ---
+    //
+    // モニュメントはドームや像など曲面が多い。既存の石・砂の4段では
+    // 段差が目立つので、素材ごとに5〜6段の階調を用意する。
+    /** 白大理石。タージ・マハル、ピサの斜塔。 */
+    const val MARBLE_HI = 87
+    const val MARBLE_LIT = 88
+    const val MARBLE = 89
+    const val MARBLE_MID = 90
+    const val MARBLE_DARK = 91
+    const val MARBLE_EDGE = 92
+    /** 銅の緑青。自由の女神。 */
+    const val PATINA_HI = 93
+    const val PATINA_LIT = 94
+    const val PATINA = 95
+    const val PATINA_DARK = 96
+    const val PATINA_EDGE = 97
+    /** 石灰岩（トラバーチン）。コロッセオ、凱旋門。 */
+    const val TRAVERTINE_HI = 98
+    const val TRAVERTINE_LIT = 99
+    const val TRAVERTINE = 100
+    const val TRAVERTINE_DARK = 101
+    const val TRAVERTINE_EDGE = 102
+    /** ピラミッドの石灰岩。日に焼けた砂の色。 */
+    const val LIMESTONE_HI = 103
+    const val LIMESTONE_LIT = 104
+    const val LIMESTONE = 105
+    const val LIMESTONE_DARK = 106
+    const val LIMESTONE_EDGE = 107
+    /** 東京タワーの鉄骨。朱色（インターナショナルオレンジ）と白。 */
+    const val TOWER_ORANGE_LIT = 108
+    const val TOWER_ORANGE = 109
+    const val TOWER_ORANGE_DARK = 110
+    const val TOWER_WHITE = 111
+    /** ロンドンの砂岩。ビッグ・ベンの塔。 */
+    const val LONDON_LIT = 112
+    const val LONDON = 113
+    const val LONDON_DARK = 114
+    const val LONDON_EDGE = 115
+    /** 金。時計の文字盤や尖塔の飾り。 */
+    const val GILT_LIT = 116
+    const val GILT = 117
+    const val GILT_DARK = 118
+    /** 影。地面に落ちる影と、窪んだ開口部。 */
+    const val SHADOW = 119
+    const val OPENING = 120
+
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
         // 地面
@@ -225,6 +272,28 @@ object Palette {
         // 日本の地方都市: いぶし銀の瓦と白い壁
         q(0xFF6E7480.toInt()), q(0xFF484E58.toInt()),
         q(0xFFF0EEE8.toInt()), q(0xFFC8C4BC.toInt()),
+        // 白大理石（6段）
+        q(0xFFFFFDF6.toInt()), q(0xFFF2ECDE.toInt()), q(0xFFDED6C2.toInt()),
+        q(0xFFC0B69E.toInt()), q(0xFF988E78.toInt()), q(0xFF6C6354.toInt()),
+        // 銅の緑青（5段）
+        q(0xFFA6DEC6.toInt()), q(0xFF7AC2A4.toInt()), q(0xFF4E9C7E.toInt()),
+        q(0xFF34785E.toInt()), q(0xFF1E4C3C.toInt()),
+        // 石灰岩・トラバーチン（5段）
+        q(0xFFF0DFB4.toInt()), q(0xFFD8C294.toInt()), q(0xFFBCA273.toInt()),
+        q(0xFF917A52.toInt()), q(0xFF5E4E34.toInt()),
+        // ピラミッドの石灰岩（5段）
+        q(0xFFF4DFA8.toInt()), q(0xFFE0C486.toInt()), q(0xFFC4A462.toInt()),
+        q(0xFF9C7E46.toInt()), q(0xFF6B5430.toInt()),
+        // 東京タワーの鉄骨（朱と白）
+        q(0xFFF07038.toInt()), q(0xFFD2451C.toInt()), q(0xFF8E2A10.toInt()),
+        q(0xFFF4F2EC.toInt()),
+        // ロンドンの砂岩（4段）
+        q(0xFFEAD8A8.toInt()), q(0xFFCEB684.toInt()),
+        q(0xFFA48C5E.toInt()), q(0xFF6E5C3C.toInt()),
+        // 金（3段）
+        q(0xFFFFE080.toInt()), q(0xFFE0AE30.toInt()), q(0xFF9C7418.toInt()),
+        // 影と開口部
+        q(0xFF2A2620.toInt()), q(0xFF1C1A18.toInt()),
     )
 
     fun of(index: Int): Int =
