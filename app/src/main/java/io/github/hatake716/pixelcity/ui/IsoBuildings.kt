@@ -53,11 +53,12 @@ object IsoBuildings {
         Palette.HOUSE_LEFT to Palette.RURAL_WALL,
         Palette.HOUSE_RIGHT to Palette.RURAL_WALL_DARK,
         Palette.RED_DARK to Palette.RURAL_ROOF_DARK,
-        Palette.OFFICE_ROOF to Palette.RURAL_WALL,
+        Palette.WALL_ROOF to Palette.RURAL_WALL,
+        Palette.OFFICE_ROOF to Palette.RURAL_ROOF,
         Palette.OFFICE_LEFT to Palette.RURAL_WALL,
         Palette.OFFICE_RIGHT to Palette.RURAL_WALL_DARK,
         Palette.GLASS to Palette.RURAL_WALL_DARK,
-        Palette.GLASS_LIT to Palette.SAND_LIT,
+        Palette.GLASS_LIT to Palette.RURAL_WALL,
     )
 
     /** 工業都市の色づかい。すすけたレンガとトタン。 */
@@ -70,7 +71,8 @@ object IsoBuildings {
         Palette.OFFICE_LEFT to Palette.GRIT_WALL,
         Palette.OFFICE_RIGHT to Palette.GRIT_WALL_DARK,
         Palette.GLASS to Palette.GRIT_WALL_DARK,
-        Palette.GLASS_LIT to Palette.SAND_DARK,
+        Palette.GLASS_LIT to Palette.GRIT_WALL,
+        Palette.WALL_ROOF to Palette.GRIT_WALL,
     )
 
     /** 大都市の色づかい。白い石と、青みの強いガラス。 */
@@ -82,6 +84,97 @@ object IsoBuildings {
         Palette.GLASS_LIT to Palette.GLASS_LIT,
         Palette.HOUSE_LEFT to Palette.PRIME_ROOF,
         Palette.HOUSE_RIGHT to Palette.PRIME_LEFT,
+    )
+
+    /** 古代都市。日干しレンガと石灰岩。屋根も壁も砂の色にそろえる。 */
+    private val ANCIENT_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.ANCIENT_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.ANCIENT_ROOF_DARK,
+        Palette.HOUSE_LEFT to Palette.ANCIENT_WALL,
+        Palette.HOUSE_RIGHT to Palette.ANCIENT_WALL_DARK,
+        Palette.RED_DARK to Palette.ANCIENT_ROOF_DARK,
+        Palette.OFFICE_ROOF to Palette.ANCIENT_ROOF,
+        Palette.OFFICE_LEFT to Palette.ANCIENT_WALL,
+        Palette.OFFICE_RIGHT to Palette.ANCIENT_WALL_DARK,
+        Palette.GLASS to Palette.ANCIENT_WALL_DARK,
+        Palette.GLASS_LIT to Palette.ANCIENT_WALL,
+        Palette.WALL_ROOF to Palette.ANCIENT_ROOF,
+        Palette.WALL_LEFT to Palette.ANCIENT_WALL,
+        Palette.WALL_RIGHT to Palette.ANCIENT_WALL_DARK,
+        Palette.FACTORY_ROOF to Palette.ANCIENT_ROOF_DARK,
+        Palette.FACTORY_LEFT to Palette.ANCIENT_WALL,
+        Palette.FACTORY_RIGHT to Palette.ANCIENT_WALL_DARK,
+        // 窓は小さな暗い穴に
+        Palette.WINDOW_LIT to Palette.GOLD_DARK,
+        Palette.WINDOW_DARK to Palette.STONE_EDGE,
+    )
+
+    /** 未来都市。白い躯体に、青く発光する帯。 */
+    private val FUTURE_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.FUTURE_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.FUTURE_WALL_DARK,
+        Palette.HOUSE_LEFT to Palette.FUTURE_WALL,
+        Palette.HOUSE_RIGHT to Palette.FUTURE_WALL_DARK,
+        Palette.RED_DARK to Palette.FUTURE_GLOW,
+        Palette.OFFICE_ROOF to Palette.FUTURE_ROOF,
+        Palette.OFFICE_LEFT to Palette.FUTURE_WALL,
+        Palette.OFFICE_RIGHT to Palette.FUTURE_WALL_DARK,
+        Palette.GLASS to Palette.FUTURE_WALL_DARK,
+        Palette.GLASS_LIT to Palette.FUTURE_GLOW,
+        Palette.WALL_ROOF to Palette.FUTURE_ROOF,
+        Palette.WALL_LEFT to Palette.FUTURE_WALL,
+        Palette.WALL_RIGHT to Palette.FUTURE_WALL_DARK,
+        Palette.FACTORY_ROOF to Palette.FUTURE_WALL_DARK,
+        Palette.FACTORY_LEFT to Palette.FUTURE_WALL,
+        Palette.FACTORY_RIGHT to Palette.FUTURE_WALL_DARK,
+        // 窓はすべて発光させる
+        Palette.WINDOW_LIT to Palette.FUTURE_GLOW,
+        Palette.WINDOW_DARK to Palette.SKY_DEEP,
+    )
+
+    /** ヨーロッパ。赤茶の瓦と、クリーム色の石壁。 */
+    private val EUROPE_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.EURO_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.EURO_ROOF_DARK,
+        Palette.HOUSE_LEFT to Palette.EURO_WALL,
+        Palette.HOUSE_RIGHT to Palette.EURO_WALL_DARK,
+        Palette.RED_DARK to Palette.EURO_ROOF_DARK,
+        Palette.OFFICE_ROOF to Palette.EURO_ROOF,
+        Palette.OFFICE_LEFT to Palette.EURO_WALL,
+        Palette.OFFICE_RIGHT to Palette.EURO_WALL_DARK,
+        // ガラスも石造りに置き換える。ここを残すと、どの様式でも
+        // 同じ青いオフィスビルが並んでしまう。
+        Palette.GLASS to Palette.EURO_WALL_DARK,
+        Palette.GLASS_LIT to Palette.EURO_WALL,
+        Palette.OFFICE_ROOF to Palette.EURO_ROOF,
+        Palette.WALL_ROOF to Palette.EURO_ROOF,
+        Palette.WALL_LEFT to Palette.EURO_WALL,
+        Palette.WALL_RIGHT to Palette.EURO_WALL_DARK,
+        Palette.FACTORY_ROOF to Palette.EURO_ROOF_DARK,
+        Palette.FACTORY_LEFT to Palette.EURO_WALL,
+        Palette.FACTORY_RIGHT to Palette.EURO_WALL_DARK,
+        Palette.WALL_ROOF to Palette.EURO_WALL,
+    )
+
+    /** 日本の地方都市。いぶし銀の瓦と白い壁。 */
+    private val JAPAN_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.JP_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.JP_ROOF_DARK,
+        Palette.HOUSE_LEFT to Palette.JP_WALL,
+        Palette.HOUSE_RIGHT to Palette.JP_WALL_DARK,
+        Palette.RED_DARK to Palette.JP_ROOF_DARK,
+        Palette.OFFICE_ROOF to Palette.JP_ROOF,
+        Palette.OFFICE_LEFT to Palette.JP_WALL,
+        Palette.OFFICE_RIGHT to Palette.JP_WALL_DARK,
+        Palette.GLASS to Palette.JP_WALL_DARK,
+        Palette.GLASS_LIT to Palette.JP_WALL,
+        Palette.WALL_ROOF to Palette.JP_ROOF,
+        Palette.WALL_LEFT to Palette.JP_WALL,
+        Palette.WALL_RIGHT to Palette.JP_WALL_DARK,
+        Palette.FACTORY_ROOF to Palette.JP_ROOF_DARK,
+        Palette.FACTORY_LEFT to Palette.JP_WALL,
+        Palette.FACTORY_RIGHT to Palette.JP_WALL_DARK,
+        Palette.WALL_ROOF to Palette.JP_WALL,
     )
 
     private val recolourCache = HashMap<Pair<Sprite, City.Style>, Sprite>()
@@ -96,7 +189,11 @@ object IsoBuildings {
                     City.Style.RURAL -> RURAL_MAP
                     City.Style.GRITTY -> GRITTY_MAP
                     City.Style.PRIME -> PRIME_MAP
-                    else -> emptyMap()
+                    City.Style.ANCIENT -> ANCIENT_MAP
+                    City.Style.FUTURE -> FUTURE_MAP
+                    City.Style.EUROPE -> EUROPE_MAP
+                    City.Style.JAPAN -> JAPAN_MAP
+                    City.Style.STANDARD -> emptyMap()
                 },
             )
         }

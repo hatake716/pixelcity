@@ -1008,6 +1008,20 @@ class GameView(
         }
         // 推移グラフの項目
         info.seriesAt(lx, ly)?.let { info.series = it; invalidate(); return }
+        // 街並みの様式
+        info.styleAt(lx, ly, logicalH)?.let { st ->
+            city.style = st
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
+        // 災害の多さ
+        info.disasterAt(lx, ly)?.let { lv ->
+            city.disasterLevel = lv
+            onStateChanged?.invoke()
+            invalidate()
+            return
+        }
         // 条例
         info.ordinanceAt(lx, ly, logicalH)?.let { o ->
             if (o in city.ordinances) {

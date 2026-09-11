@@ -43,6 +43,14 @@ class PaletteTest {
             Palette.GRIT_WALL, Palette.GRIT_WALL_DARK,
             Palette.PRIME_ROOF, Palette.PRIME_LEFT,
             Palette.PRIME_RIGHT, Palette.PRIME_GLASS,
+            Palette.ANCIENT_ROOF, Palette.ANCIENT_ROOF_DARK,
+            Palette.ANCIENT_WALL, Palette.ANCIENT_WALL_DARK,
+            Palette.FUTURE_ROOF, Palette.FUTURE_WALL,
+            Palette.FUTURE_WALL_DARK, Palette.FUTURE_GLOW,
+            Palette.EURO_ROOF, Palette.EURO_ROOF_DARK,
+            Palette.EURO_WALL, Palette.EURO_WALL_DARK,
+            Palette.JP_ROOF, Palette.JP_ROOF_DARK,
+            Palette.JP_WALL, Palette.JP_WALL_DARK,
         )
         // 名前の数だけ色があること（並びがずれていない）
         assertEquals("palette size", named.size, Palette.SIZE)

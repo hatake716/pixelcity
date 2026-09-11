@@ -19,6 +19,7 @@ class InfoPanel(private val text: GbText) {
         BUDGET("しゅうし"),
         MAP("データマップ"),
         ORDINANCE("じょうれい"),
+        SETTINGS("せってい"),
     }
 
     var tab: Tab = Tab.SUMMARY
@@ -43,6 +44,8 @@ class InfoPanel(private val text: GbText) {
         const val MARGIN = 12
         const val TAB_H = 24
         const val ROW = 19
+        /** 様式の1行の高さ。 */
+        const val STYLE_ROW_H = 32
     }
 
     /** 見出しの帯の位置。判定と描画で共有する。 */
@@ -88,6 +91,7 @@ class InfoPanel(private val text: GbText) {
             Tab.BUDGET -> drawBudget(pixels, city, logicalH)
             Tab.MAP -> drawMapList(pixels, logicalH)
             Tab.ORDINANCE -> drawOrdinances(pixels, city, logicalH)
+            Tab.SETTINGS -> drawSettings(pixels, city, logicalH)
         }
 
         drawCloseButton(pixels, logicalH)
@@ -379,6 +383,97 @@ class InfoPanel(private val text: GbText) {
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * せってい。街並みの様式と、災害の多さを選ぶ。
+     *
+     * 様式は見た目だけを変えるもので、シミュレーションには関わらない。
+     * 同じ街でも、古代風にすれば砂漠の都に、未来風にすれば発光する都市に見える。
+     */
+    private fun drawSettings(pixels: PixelCanvas, city: City, logicalH: Int) {
+        var y = rowY(0)
+        text.textSize = 14
+        text.draw(pixels, "まちなみの ようしき", MARGIN + 6, y, Palette.UI_ACCENT)
+        y += ROW
+
+        text.textSize = 11
+        text.draw(pixels, "みためだけが かわります。まちの なかみは そのままです。", MARGIN + 6, y, Palette.UI_DIM)
+        y += 16
+
+        for (st in City.Style.entries) {
+            val on = st == city.style
+            val h = STYLE_ROW_H
+            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h,
+                if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h, Palette.UI_LINE)
+            text.textSize = 13
+            text.draw(pixels, st.label, MARGIN + 8, y + 3,
+                if (on) Palette.UI_BG else Palette.UI_TEXT)
+            text.textSize = 10
+            text.draw(pixels, st.detail, MARGIN + 8, y + 18,
+                if (on) Palette.UI_BG else Palette.UI_DIM)
+            // 色の見本を右に並べる
+            val swatchX = GameView.LOGICAL_W - MARGIN - 52
+            for ((i, c) in swatchesFor(st).withIndex()) {
+                pixels.fillRect(swatchX + i * 12, y + 8, 10, 14, c)
+                pixels.drawRect(swatchX + i * 12, y + 8, 10, 14, Palette.BLACK)
+            }
+            y += h + 3
+            if (y > logicalH - 130) break
+        }
+
+        y += 6
+        text.textSize = 14
+        text.draw(pixels, "さいがいの おおさ", MARGIN + 6, y, Palette.UI_ACCENT)
+        y += ROW
+        settingsDisasterY = y
+        for (lv in City.DisasterLevel.entries) {
+            val on = lv == city.disasterLevel
+            val w = (GameView.LOGICAL_W - MARGIN * 2) / City.DisasterLevel.entries.size
+            val x = MARGIN + lv.ordinal * w
+            pixels.fillRect(x, y, w - 2, 22, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+            pixels.drawRect(x, y, w - 2, 22, Palette.UI_LINE)
+            text.textSize = 12
+            text.drawCentered(pixels, lv.label, x + w / 2, y + 5,
+                if (on) Palette.UI_BG else Palette.UI_TEXT)
+        }
+    }
+
+    /** その様式の代表的な3色。一覧で見分けるために出す。 */
+    private fun swatchesFor(style: City.Style): IntArray = when (style) {
+        City.Style.STANDARD -> intArrayOf(Palette.HOUSE_ROOF, Palette.HOUSE_LEFT, Palette.GLASS_LIT)
+        City.Style.PRIME -> intArrayOf(Palette.PRIME_ROOF, Palette.PRIME_LEFT, Palette.PRIME_GLASS)
+        City.Style.RURAL -> intArrayOf(Palette.RURAL_ROOF, Palette.RURAL_WALL, Palette.TREE)
+        City.Style.GRITTY -> intArrayOf(Palette.GRIT_ROOF, Palette.GRIT_WALL, Palette.METAL_DARK)
+        City.Style.ANCIENT -> intArrayOf(Palette.ANCIENT_ROOF, Palette.ANCIENT_WALL, Palette.SAND_LIT)
+        City.Style.FUTURE -> intArrayOf(Palette.FUTURE_ROOF, Palette.FUTURE_WALL, Palette.FUTURE_GLOW)
+        City.Style.EUROPE -> intArrayOf(Palette.EURO_ROOF, Palette.EURO_WALL, Palette.SAND_LIT)
+        City.Style.JAPAN -> intArrayOf(Palette.JP_ROOF, Palette.JP_WALL, Palette.TREE_DARK)
+    }
+
+    /** 災害の段の y。描いたときに覚えて、判定で使う。 */
+    private var settingsDisasterY = 0
+
+    /** せっていの一覧で、その座標にある様式。 */
+    fun styleAt(lx: Int, ly: Int, logicalH: Int): City.Style? {
+        if (tab != Tab.SETTINGS) return null
+        var y = rowY(0) + ROW + 16
+        for (st in City.Style.entries) {
+            if (ly >= y && ly < y + STYLE_ROW_H) return st
+            y += STYLE_ROW_H + 3
+            if (y > logicalH - 130) break
+        }
+        return null
+    }
+
+    /** せっていの一覧で、その座標にある災害の段。 */
+    fun disasterAt(lx: Int, ly: Int): City.DisasterLevel? {
+        if (tab != Tab.SETTINGS) return null
+        if (ly < settingsDisasterY || ly > settingsDisasterY + 22) return null
+        val w = (GameView.LOGICAL_W - MARGIN * 2) / City.DisasterLevel.entries.size
+        val i = (lx - MARGIN) / w
+        return City.DisasterLevel.entries.getOrNull(i)
+    }
 
     fun closeButtonY(logicalH: Int): Int = logicalH - 46
 

@@ -140,6 +140,28 @@ object Palette {
     const val PRIME_RIGHT = 69
     const val PRIME_GLASS = 70
 
+    // --- 様式を増やす（v4） ---
+    /** 古代都市: 日干しレンガと石灰岩。砂漠の色。 */
+    const val ANCIENT_ROOF = 71
+    const val ANCIENT_ROOF_DARK = 72
+    const val ANCIENT_WALL = 73
+    const val ANCIENT_WALL_DARK = 74
+    /** 未来都市: 発光する青と、白い合成素材。 */
+    const val FUTURE_ROOF = 75
+    const val FUTURE_WALL = 76
+    const val FUTURE_WALL_DARK = 77
+    const val FUTURE_GLOW = 78
+    /** ヨーロッパ: 石畳の街。赤茶の瓦とクリーム色の石。 */
+    const val EURO_ROOF = 79
+    const val EURO_ROOF_DARK = 80
+    const val EURO_WALL = 81
+    const val EURO_WALL_DARK = 82
+    /** 日本の地方都市: 灰色の瓦と、白い壁。 */
+    const val JP_ROOF = 83
+    const val JP_ROOF_DARK = 84
+    const val JP_WALL = 85
+    const val JP_WALL_DARK = 86
+
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
         // 地面
@@ -191,6 +213,18 @@ object Palette {
         // 大都市: 白い石と、青みの強いガラス
         q(0xFFE8ECF0.toInt()), q(0xFFC0CAD6.toInt()),
         q(0xFF8E9AAA.toInt()), q(0xFF4A8EC8.toInt()),
+        // 古代: 日干しレンガと石灰岩
+        q(0xFFC89A5E.toInt()), q(0xFF96703E.toInt()),
+        q(0xFFE0C48E.toInt()), q(0xFFB4966A.toInt()),
+        // 未来: 白い合成素材と、光る青
+        q(0xFFF4F8FC.toInt()), q(0xFFD0DCE8.toInt()),
+        q(0xFF8CA0B8.toInt()), q(0xFF40E0E0.toInt()),
+        // ヨーロッパ: 赤茶の瓦とクリーム色の石
+        q(0xFFB05038.toInt()), q(0xFF7C3624.toInt()),
+        q(0xFFEEE0C0.toInt()), q(0xFFC4B294.toInt()),
+        // 日本の地方都市: いぶし銀の瓦と白い壁
+        q(0xFF6E7480.toInt()), q(0xFF484E58.toInt()),
+        q(0xFFF0EEE8.toInt()), q(0xFFC8C4BC.toInt()),
     )
 
     fun of(index: Int): Int =
