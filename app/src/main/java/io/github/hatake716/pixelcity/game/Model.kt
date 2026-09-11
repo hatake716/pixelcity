@@ -27,14 +27,74 @@ enum class TileKind {
     /** 風力発電。公害なしだが出力は小さい。 */
     POWER_WIND,
     /** 鉄道。道路より輸送力が高く、公害を減らす。 */
-    RAIL;
+    RAIL,
+
+    // --- v2: 交通 ---
+    /** 大通り。道路より輸送力が高い。 */
+    AVENUE,
+    /** 高速道路。輸送力は最大だが、区分は直接つながらない。 */
+    HIGHWAY,
+    /** 地下鉄。用地を取らず、地価を下げない。 */
+    SUBWAY,
+    /** バス停。まわりの交通量を減らす。 */
+    BUS_STOP,
+    /** 地下鉄の駅。 */
+    SUBWAY_STATION,
+    /** 空港。商業需要を押し上げるが、公害と騒音を出す。 */
+    AIRPORT,
+    /** 港。工業需要を押し上げる。水辺に要接続。 */
+    SEAPORT,
+
+    // --- v2: 環境 ---
+    /** 給水塔。 */
+    WATER_TOWER,
+    /** 浄水場。 */
+    WATER_PLANT,
+    /** 下水処理場。 */
+    SEWAGE_PLANT,
+    /** 埋立地。容量があり、満杯になると機能しない。 */
+    LANDFILL,
+    /** 焼却場。 */
+    INCINERATOR,
+    /** リサイクル施設。 */
+    RECYCLING,
+    /** 送電線。 */
+    POWER_LINE,
+
+    // --- v2: 保健 ---
+    /** 診療所。安価で広く配れる。 */
+    CLINIC;
 
     val isZone: Boolean get() = this == ZONE_R || this == ZONE_C || this == ZONE_I
     val isPowerPlant: Boolean
         get() = this == POWER_COAL || this == POWER_SOLAR || this == POWER_WIND
 
     /** 道路と同じように、線路として繋がるもの。 */
-    val isTrack: Boolean get() = this == RAIL
+    val isTrack: Boolean get() = this == RAIL || this == SUBWAY
+
+    /** 交通網としてつながるもの。 */
+    val isTransport: Boolean
+        get() = this == ROAD || this == AVENUE || this == HIGHWAY ||
+            this == RAIL || this == SUBWAY
+
+    /** 区分が直接つながれる道か。高速道路と地下鉄は出入口が要る。 */
+    val isLocalRoad: Boolean
+        get() = this == ROAD || this == AVENUE || this == RAIL
+
+    /** その道の輸送力。 */
+    val capacity: Int
+        get() = when (this) {
+            ROAD -> 100
+            AVENUE -> 300
+            HIGHWAY -> 800
+            RAIL -> 600
+            SUBWAY -> 900
+            else -> 0
+        }
+
+    /** 電気を通すもの。 */
+    val carriesPower: Boolean
+        get() = this == POWER_LINE || isPowerPlant || isBuilding
     /** 道路網に繋がる必要があり、維持費を払う建造物か。 */
     val isBuilding: Boolean
         get() = this != EMPTY && this != ROAD && this != RAIL
@@ -92,6 +152,22 @@ class Tile {
     var connected: Boolean = false
     var powered: Boolean = false
 
+    // --- v2 ---
+    /** そのタイルを通る交通量。容量を超えると渋滞する。 */
+    var traffic: Int = 0
+    /** 犯罪の起きやすさ 0..100。 */
+    var crime: Int = 0
+    /** 水が来ているか。 */
+    var watered: Boolean = false
+    /** 埋立地に溜まったゴミ。満杯になると受け入れられない。 */
+    var landfillFill: Int = 0
+    /** 公共交通による交通量の軽減 0..100(%)。 */
+    var transitRelief: Int = 0
+
+    /** 渋滞しているか。容量に対して交通量が多い。 */
+    val congested: Boolean
+        get() = kind.capacity > 0 && traffic > kind.capacity
+
     fun clearForBulldoze() {
         kind = TileKind.EMPTY
         stage = 0
@@ -117,6 +193,24 @@ object BuildCost {
         TileKind.FARM -> 30
         TileKind.POWER_WIND -> 700
         TileKind.RAIL -> 40
+        // v2: 交通
+        TileKind.AVENUE -> 24
+        TileKind.HIGHWAY -> 60
+        TileKind.SUBWAY -> 90
+        TileKind.BUS_STOP -> 120
+        TileKind.SUBWAY_STATION -> 400
+        TileKind.AIRPORT -> 3_000
+        TileKind.SEAPORT -> 2_000
+        // v2: 環境
+        TileKind.WATER_TOWER -> 300
+        TileKind.WATER_PLANT -> 800
+        TileKind.SEWAGE_PLANT -> 900
+        TileKind.LANDFILL -> 200
+        TileKind.INCINERATOR -> 1_200
+        TileKind.RECYCLING -> 1_500
+        TileKind.POWER_LINE -> 20
+        // v2: 保健
+        TileKind.CLINIC -> 250
         TileKind.EMPTY, TileKind.MONUMENT -> 0
     }
 
@@ -135,6 +229,21 @@ object BuildCost {
         TileKind.FARM -> 2
         TileKind.POWER_WIND -> 18
         TileKind.RAIL -> 3
+        TileKind.AVENUE -> 3
+        TileKind.HIGHWAY -> 6
+        TileKind.SUBWAY -> 8
+        TileKind.BUS_STOP -> 8
+        TileKind.SUBWAY_STATION -> 25
+        TileKind.AIRPORT -> 120
+        TileKind.SEAPORT -> 80
+        TileKind.WATER_TOWER -> 20
+        TileKind.WATER_PLANT -> 45
+        TileKind.SEWAGE_PLANT -> 50
+        TileKind.LANDFILL -> 15
+        TileKind.INCINERATOR -> 60
+        TileKind.RECYCLING -> 70
+        TileKind.POWER_LINE -> 1
+        TileKind.CLINIC -> 18
         else -> 0
     }
 
@@ -146,11 +255,39 @@ object BuildCost {
         else -> 0
     }
 
+    /** 給水できる量。人口に対して足りないと区分が育たない。 */
+    fun waterOutput(kind: TileKind): Int = when (kind) {
+        TileKind.WATER_TOWER -> 1_200
+        TileKind.WATER_PLANT -> 4_000
+        else -> 0
+    }
+
+    /** 1か月に処理できるゴミの量。 */
+    fun garbageCapacity(kind: TileKind): Int = when (kind) {
+        TileKind.LANDFILL -> 60
+        TileKind.INCINERATOR -> 400
+        TileKind.RECYCLING -> 250
+        else -> 0
+    }
+
+    /** 埋立地が受け入れられる総量。満杯になると機能しない。 */
+    const val LANDFILL_TOTAL = 12_000
+
     /** 一部の施設は人口で解禁する。 */
     fun isUnlocked(kind: TileKind, population: Int): Boolean = when (kind) {
         TileKind.POWER_SOLAR -> population >= 3_000
         TileKind.POWER_WIND -> population >= 1_000
         TileKind.RAIL -> population >= 2_000
+        TileKind.AVENUE -> population >= 500
+        TileKind.HIGHWAY -> population >= 5_000
+        TileKind.SUBWAY, TileKind.SUBWAY_STATION -> population >= 8_000
+        TileKind.BUS_STOP -> population >= 800
+        TileKind.AIRPORT -> population >= 10_000
+        TileKind.SEAPORT -> population >= 4_000
+        TileKind.WATER_PLANT -> population >= 2_000
+        TileKind.SEWAGE_PLANT -> population >= 3_000
+        TileKind.INCINERATOR -> population >= 2_500
+        TileKind.RECYCLING -> population >= 5_000
         else -> true
     }
 }

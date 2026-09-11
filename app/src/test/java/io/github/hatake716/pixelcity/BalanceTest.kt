@@ -21,13 +21,20 @@ class BalanceTest {
             this.funds = funds
         }
 
-    /** 碁盤の目の道路と、需要をまかなう発電所を敷く。 */
+    /**
+     * 碁盤の目の道路と、需要をまかなう発電所・給水を敷く。
+     * v2 から、段階2より上へ育つには水道が要る。
+     */
     private fun layGrid(c: City) {
         for (y in 4..28 step 4) for (x in 2..29) c.build(x, y, TileKind.ROAD)
         for (x in 2..29 step 6) for (y in 4..28) c.build(x, y, TileKind.ROAD)
         for (i in 0..3) {
             c.build(3 + i * 7, 2, TileKind.POWER_COAL)
             c.build(3 + i * 7, 3, TileKind.ROAD)
+        }
+        // 給水塔を散らして、街全体に水を届ける
+        for (y in 6..26 step 10) for (x in 6..26 step 10) {
+            c.build(x, y, TileKind.WATER_TOWER)
         }
     }
 

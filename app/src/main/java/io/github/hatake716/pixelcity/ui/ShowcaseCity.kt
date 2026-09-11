@@ -189,13 +189,21 @@ object ShowcaseCity {
             }
         }
 
-        scatter(city, rnd, TileKind.PARK, 22)
+        scatter(city, rnd, TileKind.PARK, 46)
         scatter(city, rnd, TileKind.SCHOOL, 8)
         scatter(city, rnd, TileKind.HOSPITAL, 8)
         scatter(city, rnd, TileKind.POLICE, 8)
         scatter(city, rnd, TileKind.FIRE, 8)
         scatter(city, rnd, TileKind.POWER_SOLAR, 6)
-        scatter(city, rnd, TileKind.POWER_COAL, 16)
+        scatter(city, rnd, TileKind.POWER_COAL, 26)
+        // 上下水道とゴミ処理。v2 の仕組みを備えた模範的な街にする。
+        scatter(city, rnd, TileKind.WATER_PLANT, 24)
+        scatter(city, rnd, TileKind.WATER_TOWER, 6)
+        scatter(city, rnd, TileKind.SEWAGE_PLANT, 6)
+        scatter(city, rnd, TileKind.INCINERATOR, 3)
+        scatter(city, rnd, TileKind.RECYCLING, 16)
+        scatter(city, rnd, TileKind.CLINIC, 12)
+        scatter(city, rnd, TileKind.BUS_STOP, 24)
 
         monuments(city, listOf(
             Monument.TOKYO_TOWER to (26 to 22),
@@ -269,14 +277,23 @@ object ShowcaseCity {
         }
 
         // 緑と公共サービスを厚く
-        scatter(city, rnd, TileKind.PARK, 60)
-        scatter(city, rnd, TileKind.SCHOOL, 10)
-        scatter(city, rnd, TileKind.HOSPITAL, 10)
-        scatter(city, rnd, TileKind.POLICE, 8)
-        scatter(city, rnd, TileKind.FIRE, 8)
+        scatter(city, rnd, TileKind.PARK, 46)
+        scatter(city, rnd, TileKind.SCHOOL, 6)
+        scatter(city, rnd, TileKind.HOSPITAL, 5)
+        scatter(city, rnd, TileKind.POLICE, 5)
+        scatter(city, rnd, TileKind.FIRE, 5)
         // 電力は太陽光と風力だけ。火力は1つも置かない。
-        scatter(city, rnd, TileKind.POWER_SOLAR, 22)
-        scatter(city, rnd, TileKind.POWER_WIND, 26)
+        // 電力は太陽光と風力だけ。人口に見合う数に留める。
+        scatter(city, rnd, TileKind.POWER_SOLAR, 16)
+        scatter(city, rnd, TileKind.POWER_WIND, 18)
+        // 田園都市は環境が売り。水とゴミの処理も行き届かせる。
+        // 浄水場は半径14と広いので、少ない数で街全体に水を届けられる。
+        scatter(city, rnd, TileKind.WATER_PLANT, 12)
+        scatter(city, rnd, TileKind.WATER_TOWER, 4)
+        scatter(city, rnd, TileKind.SEWAGE_PLANT, 3)
+        scatter(city, rnd, TileKind.RECYCLING, 5)
+        scatter(city, rnd, TileKind.CLINIC, 8)
+        scatter(city, rnd, TileKind.BUS_STOP, 10)
 
         monuments(city, listOf(
             Monument.TAJ_MAHAL to (24 to 26),
@@ -284,7 +301,7 @@ object ShowcaseCity {
             Monument.LEANING_TOWER to (20 to 44),
         ))
 
-        return finish(city, funds = 180_000, month = 1_100, taxRate = 8)
+        return finish(city, funds = 180_000, month = 1_100, taxRate = 10)
     }
 
     // ------------------------------------------------------------------
@@ -330,14 +347,24 @@ object ShowcaseCity {
         }
 
         // 公害対策を厚めに
-        scatter(city, rnd, TileKind.PARK, 34)
+        // 公害を抑えるため、緑を厚く取る
+        scatter(city, rnd, TileKind.PARK, 70)
+        scatter(city, rnd, TileKind.FARM, 40)
         scatter(city, rnd, TileKind.HOSPITAL, 14)
         scatter(city, rnd, TileKind.FIRE, 12)
         scatter(city, rnd, TileKind.POLICE, 10)
         scatter(city, rnd, TileKind.SCHOOL, 8)
         // 工業は電気を食うので、火力を多めに
-        scatter(city, rnd, TileKind.POWER_COAL, 20)
+        scatter(city, rnd, TileKind.POWER_COAL, 28)
         scatter(city, rnd, TileKind.POWER_SOLAR, 6)
+        // 工業は水を食い、ゴミも多い。処理を厚くする。
+        scatter(city, rnd, TileKind.WATER_PLANT, 20)
+        scatter(city, rnd, TileKind.WATER_TOWER, 6)
+        scatter(city, rnd, TileKind.SEWAGE_PLANT, 8)
+        scatter(city, rnd, TileKind.INCINERATOR, 4)
+        scatter(city, rnd, TileKind.RECYCLING, 18)
+        scatter(city, rnd, TileKind.CLINIC, 12)
+        scatter(city, rnd, TileKind.SEAPORT, 2)
 
         monuments(city, listOf(
             Monument.COLOSSEUM to (26 to 24),

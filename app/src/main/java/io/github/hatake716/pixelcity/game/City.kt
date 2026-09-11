@@ -25,6 +25,12 @@ class City(
          */
         const val DEFAULT_SIZE = 128
         const val STARTING_FUNDS = 20_000
+
+        /** 推移グラフに残す月数。 */
+        const val HISTORY_MONTHS = 120
+
+        /** 溜められるゴミの上限。これ以上は増えない。 */
+        const val GARBAGE_BACKLOG_MAX = 12_000
         const val DEFAULT_TAX_RATE = 7
 
         /** 需要が1か月に動ける幅。大きいほど街が振動しやすい。 */
@@ -63,6 +69,75 @@ class City(
     var gameOver: Boolean = false
 
     val builtMonuments: MutableSet<Monument> = mutableSetOf()
+
+    // ------------------------------------------------------------------
+    // v2: 水・ゴミ・犯罪・疫病・交通・条例・統計
+    // ------------------------------------------------------------------
+
+    var waterSupply: Int = 0
+    var waterDemand: Int = 0
+
+    /** 毎月出るゴミと、処理できる量。 */
+    var garbageProduced: Int = 0
+    var garbageCapacity: Int = 0
+    /** 処理しきれずに溜まったゴミ。街の地価と健康を下げる。 */
+    var garbageBacklog: Int = 0
+
+    /** 街全体の感染度 0..100。高いと人口が減る。 */
+    var infection: Int = 0
+
+    /** 渋滞しているタイルの割合 0..100。 */
+    var congestionRate: Int = 0
+
+    /** 失業率 0..100。 */
+    var unemployment: Int = 0
+
+    /** 有効にしている条例。 */
+    val ordinances: MutableSet<Ordinance> = mutableSetOf()
+
+    /** 災害の起きやすさ。 */
+    var disasterLevel: DisasterLevel = DisasterLevel.NORMAL
+
+    /** 直近に起きた災害の知らせ。UIが読んで消す。 */
+    var lastDisaster: String? = null
+
+    var lastIncomeBreakdown: Income = Income()
+    var lastSpending: Spending = Spending()
+
+    /** 過去の推移。古いものから捨てる。 */
+    val history: MutableList<MonthlyStat> = mutableListOf()
+
+    /** 乱数。災害などに使う。同じ街から同じ結果が出るよう、月から作る。 */
+    private fun monthlyRandom(salt: Int): Random = Random(month * 7919L + salt)
+
+    val waterRatio: Float
+        get() = if (waterDemand <= 0) 1f else min(1f, waterSupply.toFloat() / waterDemand)
+
+    /** 平均の値。統計と助言に使う。 */
+    val averagePollution: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.pollution } / tiles.size
+    val averageCrime: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.crime } / tiles.size
+    val averageLandValue: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.landValue } / tiles.size
+    val averageHealth: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.health } / tiles.size
+
+    /**
+     * 市民の満足度 0..100。街の良し悪しをひとつの数にまとめたもの。
+     * 助言や、遊ぶ人が自分の街を測る目安に使う。
+     */
+    val approval: Int
+        get() {
+            var v = 50
+            v += (averageLandValue - 30) / 2
+            v -= averagePollution / 2
+            v -= averageCrime / 2
+            v -= unemployment / 2
+            v -= infection / 3
+            v -= congestionRate / 4
+            if (powerRatio < 1f) v -= 20
+            if (waterRatio < 1f) v -= 20
+            if (garbageBacklog > 2_000) v -= 15
+            if (funds < 0) v -= 15
+            return v.coerceIn(0, 100)
+        }
 
     fun index(x: Int, y: Int): Int = y * width + x
     fun inBounds(x: Int, y: Int): Boolean = x in 0 until width && y in 0 until height
@@ -297,17 +372,439 @@ class City(
     }
 
     /** 1か月進める。順序は docs/SPEC.md §5 のとおり。 */
+    /**
+     * 1か月進める。
+     *
+     * 順序には意味がある。交通は人口と雇用から決まり、犯罪と疫病は
+     * 地価や公害の結果に依る。ここを入れ替えると街の挙動が変わるので、
+     * 変更するときは docs/SPEC_V2.md とテストを合わせて直すこと。
+     */
     fun step() {
         if (gameOver) return
         month++
         updateConnectivity()
         updatePower()
+        updateWater()
+        updateTraffic()
         updateLocalValues()
+        updateCrime()
+        updateGarbage()
+        updateInfection()
         updateDemand()
         updateZoneStages()
         tallyPopulation()
         applyBudget()
+        runDisasters()
+        recordHistory()
         checkBankruptcy()
+    }
+
+
+    // ------------------------------------------------------------------
+    // v2: 水
+    // ------------------------------------------------------------------
+
+    /**
+     * 水の需給。電力と同じく、足りないぶんのタイルには水が来ない。
+     * 給水は施設の半径で表す（水道管を引かせると操作が増えすぎるため）。
+     */
+    private fun updateWater() {
+        var supply = 0
+        var demand = 0
+        for (t in tiles) {
+            supply += BuildCost.waterOutput(t.kind)
+            demand += waterNeedOf(t)
+        }
+        waterSupply = supply
+        waterDemand = demand
+
+        // まず全部を「水なし」にしてから、給水施設の届く範囲を塗る
+        for (t in tiles) t.watered = false
+        var remaining = supply
+        for (y in 0 until height) for (x in 0 until width) {
+            val t = tileAt(x, y)
+            val r = when (t.kind) {
+                TileKind.WATER_TOWER -> 10
+                TileKind.WATER_PLANT -> 14
+                else -> continue
+            }
+            spread(x, y, r) { n, _ ->
+                val need = waterNeedOf(n)
+                if (!n.watered && need > 0 && remaining >= need) {
+                    n.watered = true
+                    remaining -= need
+                }
+            }
+        }
+        // 施設そのものは自前でまかなう
+        for (t in tiles) {
+            if (t.kind == TileKind.WATER_TOWER || t.kind == TileKind.WATER_PLANT) t.watered = true
+        }
+    }
+
+    private fun waterNeedOf(t: Tile): Int = when {
+        t.kind.isZone -> 6 + t.stage * 10
+        t.kind == TileKind.FARM -> 8
+        t.kind.isBuilding -> 8
+        else -> 0
+    }
+
+    // ------------------------------------------------------------------
+    // v2: 交通
+    // ------------------------------------------------------------------
+
+    /**
+     * 交通量を求める。
+     *
+     * 一人ひとりの経路を追うのは重すぎるので、
+     *  1. 住宅から「通勤の量」を出す
+     *  2. 交通網を幅優先でたどり、距離で減衰させながら配る
+     * という近似をとる。渋滞の起きる場所（幹線と交差点）は、これで十分に再現できる。
+     */
+    private fun updateTraffic() {
+        for (t in tiles) {
+            t.traffic = 0
+            t.transitRelief = 0
+        }
+
+        // 公共交通の効き目を先に塗る
+        for (y in 0 until height) for (x in 0 until width) {
+            val t = tileAt(x, y)
+            val (r, relief) = when (t.kind) {
+                TileKind.BUS_STOP -> 6 to 25
+                TileKind.SUBWAY_STATION -> 8 to 40
+                else -> continue
+            }
+            spread(x, y, r) { n, f ->
+                n.transitRelief = max(n.transitRelief, (relief * f).toInt())
+            }
+        }
+
+        // 住宅から通勤の量を流す
+        val queue = ArrayDeque<Int>()
+        val load = IntArray(tiles.size)
+        for (y in 0 until height) for (x in 0 until width) {
+            val t = tileAt(x, y)
+            if (t.kind != TileKind.ZONE_R || t.stage == 0) continue
+            val commuters = t.stage * 14
+            forEachNeighbor4(x, y) { nx, ny ->
+                if (tileAt(nx, ny).kind.isTransport) {
+                    val i = index(nx, ny)
+                    if (load[i] == 0) queue.add(i)
+                    load[i] += commuters
+                }
+            }
+        }
+
+        // 網をたどって広げる。距離で減っていく。
+        var guard = 0
+        val maxSteps = tiles.size * 4
+        while (queue.isNotEmpty() && guard++ < maxSteps) {
+            val i = queue.poll()
+            val amount = load[i]
+            if (amount <= 0) continue
+            load[i] = 0
+            val t = tiles[i]
+            t.traffic += amount
+
+            // 減衰。半分ずつ隣へ渡す。
+            val pass = amount / 2
+            if (pass < 8) continue
+            val x = i % width
+            val y = i / width
+            val next = mutableListOf<Int>()
+            forEachNeighbor4(x, y) { nx, ny ->
+                if (tileAt(nx, ny).kind.isTransport) next.add(index(nx, ny))
+            }
+            if (next.isEmpty()) continue
+            val each = pass / next.size
+            if (each < 4) continue
+            for (ni in next) {
+                if (tiles[ni].traffic > tiles[ni].kind.capacity * 3) continue
+                if (load[ni] == 0) queue.add(ni)
+                load[ni] += each
+            }
+        }
+
+        // 公共交通と条例で交通量を減らす
+        val subsidy = if (Ordinance.TRANSIT_SUBSIDY in ordinances) 15 else 0
+        var congested = 0
+        var roads = 0
+        for (t in tiles) {
+            if (t.kind.capacity <= 0) continue
+            val cut = (t.transitRelief + subsidy).coerceAtMost(70)
+            t.traffic = t.traffic * (100 - cut) / 100
+            roads++
+            if (t.congested) congested++
+        }
+        congestionRate = if (roads == 0) 0 else congested * 100 / roads
+    }
+
+    // ------------------------------------------------------------------
+    // v2: 犯罪
+    // ------------------------------------------------------------------
+
+    /**
+     * 犯罪の起きやすさ。人口密度・失業・低い地価が上げ、
+     * 警察と教育と地価が下げる。
+     */
+    private fun updateCrime() {
+        for (t in tiles) {
+            if (!t.kind.isZone || t.stage == 0) {
+                t.crime = 0
+                continue
+            }
+            var c = 22 + t.stage * 8
+            c += unemployment / 2
+            c -= t.landValue / 3
+            c -= t.education / 4
+            c -= t.safety / 2
+            t.crime = c.coerceIn(0, 100)
+        }
+        if (Ordinance.PATROL in ordinances) {
+            for (t in tiles) t.crime = t.crime * 80 / 100
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // v2: ゴミ
+    // ------------------------------------------------------------------
+
+    /**
+     * ゴミの需給。処理しきれないと溜まり、街の地価と健康を下げる。
+     * 埋立地は容量があり、満杯になると受け入れられなくなる。
+     */
+    private fun updateGarbage() {
+        var produced = 0
+        for (t in tiles) {
+            produced += when {
+                t.kind == TileKind.ZONE_R -> t.stage * 3
+                t.kind == TileKind.ZONE_C -> t.stage * 2
+                t.kind == TileKind.ZONE_I -> t.stage * 5
+                else -> 0
+            }
+        }
+        if (Ordinance.RECYCLING in ordinances) produced = produced * 75 / 100
+        garbageProduced = produced
+
+        var capacity = 0
+        for (t in tiles) {
+            when (t.kind) {
+                TileKind.LANDFILL -> {
+                    // 満杯になったら受け入れない
+                    if (t.landfillFill < BuildCost.LANDFILL_TOTAL) {
+                        capacity += BuildCost.garbageCapacity(t.kind)
+                    }
+                }
+                TileKind.INCINERATOR, TileKind.RECYCLING ->
+                    capacity += BuildCost.garbageCapacity(t.kind)
+                else -> {}
+            }
+        }
+        garbageCapacity = capacity
+
+        val overflow = produced - capacity
+        // 溜まる量には上限を置く。青天井にすると、ゴミ処理を知らないうちに
+        // 街が壊れてしまう（処理しないと不便、という程度に留める）。
+        garbageBacklog = (garbageBacklog + overflow).coerceIn(0, GARBAGE_BACKLOG_MAX)
+
+        // 埋立地に溜める
+        var toBury = min(produced, capacity)
+        for (t in tiles) {
+            if (t.kind != TileKind.LANDFILL) continue
+            if (t.landfillFill >= BuildCost.LANDFILL_TOTAL) continue
+            val take = min(toBury, BuildCost.garbageCapacity(TileKind.LANDFILL))
+            t.landfillFill += take
+            toBury -= take
+            if (toBury <= 0) break
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // v2: 疫病
+    // ------------------------------------------------------------------
+
+    /**
+     * 感染の広がり。人口密度・ゴミ・公害・水不足が上げ、
+     * 病院と診療所と公園が下げる。
+     */
+    private fun updateInfection() {
+        var risk = 0
+        risk += (population / 1_200).coerceAtMost(30)
+        risk += (garbageBacklog / 1_500).coerceAtMost(18)
+        risk += averagePollution / 3
+        if (waterRatio < 1f) risk += ((1f - waterRatio) * 40).toInt()
+
+        var care = averageHealth / 3
+        if (Ordinance.FREE_CLINIC in ordinances) care += 15
+        care += tiles.count { it.kind == TileKind.PARK } / 4
+
+        val target = (risk - care).coerceIn(0, 100)
+        // 急に変わらないよう、じわじわ近づける
+        infection += ((target - infection) / 3).coerceIn(-8, 8)
+        infection = infection.coerceIn(0, 100)
+    }
+
+    // ------------------------------------------------------------------
+    // v2: 災害
+    // ------------------------------------------------------------------
+
+    enum class DisasterLevel(val label: String, val chancePerMonth: Int) {
+        NONE("なし", 0),
+        LOW("ひかえめ", 1),
+        NORMAL("ふつう", 3),
+        HIGH("おおい", 7),
+    }
+
+    /** 災害を起こすか判定し、起きたら被害を出す。 */
+    private fun runDisasters() {
+        lastDisaster = null
+        if (disasterLevel == DisasterLevel.NONE) return
+        if (month < 24) return   // 始めたばかりの街は見逃す
+        val rnd = monthlyRandom(13)
+        if (rnd.nextInt(100) >= disasterLevel.chancePerMonth) return
+
+        when (rnd.nextInt(4)) {
+            0 -> fire(rnd)
+            1 -> earthquake(rnd)
+            2 -> flood(rnd)
+            else -> tornado(rnd)
+        }
+    }
+
+    /** 火事。消防署から遠いところほど燃え広がる。 */
+    private fun fire(rnd: Random) {
+        val candidates = tiles.indices.filter {
+            val t = tiles[it]
+            t.kind.isZone && t.stage > 0
+        }
+        if (candidates.isEmpty()) return
+        val at = candidates[rnd.nextInt(candidates.size)]
+        val x = at % width
+        val y = at / width
+        // 消防が近いほど小さく収まる
+        val protection = tileAt(x, y).safety
+        val radius = (4 - protection / 30).coerceIn(1, 4)
+        var burned = 0
+        spread(x, y, radius) { t, f ->
+            if (t.kind.isZone && t.stage > 0 && rnd.nextInt(100) < (70 * f).toInt()) {
+                t.stage = 0
+                burned++
+            }
+        }
+        if (burned > 0) lastDisaster = "かじが おきました（${burned}けん しょうしつ）"
+    }
+
+    private fun earthquake(rnd: Random) {
+        val cx = rnd.nextInt(width)
+        val cy = rnd.nextInt(height)
+        var broken = 0
+        spread(cx, cy, 8) { t, f ->
+            if (rnd.nextInt(100) < (55 * f).toInt()) {
+                when {
+                    t.kind.isZone && t.stage > 0 -> { t.stage = 0; broken++ }
+                    t.kind.isTransport -> { t.clearForBulldoze(); broken++ }
+                }
+            }
+        }
+        if (broken > 0) lastDisaster = "じしんが おきました（${broken}かしょ ひがい）"
+    }
+
+    private fun flood(rnd: Random) {
+        // 水辺のタイルを探す
+        val shore = tiles.indices.filter { tiles[it].terrain == Terrain.SHORE }
+        if (shore.isEmpty()) return
+        val at = shore[rnd.nextInt(shore.size)]
+        var washed = 0
+        spread(at % width, at / width, 5) { t, f ->
+            if (t.kind.isZone && t.stage > 0 && rnd.nextInt(100) < (60 * f).toInt()) {
+                t.stage = 0
+                washed++
+            }
+        }
+        if (washed > 0) lastDisaster = "こうずいが おきました（${washed}けん ひがい）"
+    }
+
+    private fun tornado(rnd: Random) {
+        var x = rnd.nextInt(width)
+        var y = rnd.nextInt(height)
+        var destroyed = 0
+        repeat(24) {
+            spread(x, y, 2) { t, _ ->
+                if (t.kind.isZone && t.stage > 0 && rnd.nextInt(100) < 60) {
+                    t.stage = 0
+                    destroyed++
+                }
+            }
+            x = (x + rnd.nextInt(3) - 1).coerceIn(0, width - 1)
+            y = (y + 1).coerceIn(0, height - 1)
+        }
+        if (destroyed > 0) lastDisaster = "たつまきが はっせいしました（${destroyed}けん ひがい）"
+    }
+
+    // ------------------------------------------------------------------
+    // v2: 統計
+    // ------------------------------------------------------------------
+
+    private fun recordHistory() {
+        history.add(
+            MonthlyStat(
+                month = month,
+                population = population,
+                funds = funds,
+                balance = lastIncome - lastUpkeep,
+                pollution = averagePollution,
+                crime = averageCrime,
+                unemployment = unemployment,
+                health = averageHealth,
+                traffic = congestionRate,
+            ),
+        )
+        while (history.size > HISTORY_MONTHS) history.removeAt(0)
+    }
+
+    /** いま街が困っていること。深刻な順に返す。 */
+    fun advice(): List<Advice> {
+        val out = mutableListOf<Advice>()
+        if (powerRatio < 1f) {
+            val short = powerDemand - powerSupply
+            val plants = (short + 1_999) / 2_000
+            out.add(Advice("でんりょくが たりません。はつでんしょが あと${plants}き ひつようです。", 100))
+        }
+        if (waterRatio < 1f) {
+            out.add(Advice("みずが たりません。きゅうすいとうを ふやしてください。", 95))
+        }
+        if (funds < 0) {
+            out.add(Advice("ざいせいが あかじです。ぜいりつを みなおしてください。", 90))
+        }
+        if (garbageBacklog > 2_000) {
+            out.add(Advice("ゴミが あふれています。しょりしせつを ふやしてください。", 80))
+        }
+        if (infection > 40) {
+            out.add(Advice("かんせんしょうが ひろがっています。びょういんを ふやしてください。", 78))
+        }
+        if (averageCrime > 45) {
+            out.add(Advice("はんざいが ふえています。けいさつしょを ふやしてください。", 70))
+        }
+        if (congestionRate > 35) {
+            out.add(Advice("じゅうたいが ひどいです。おおどおりや こうきょうこうつうを。", 65))
+        }
+        if (unemployment > 25) {
+            out.add(Advice("しつぎょうが おおいです。しょうぎょう・こうぎょうを ふやしてください。", 60))
+        }
+        if (averagePollution > 40) {
+            out.add(Advice("こうがいが ひどいです。こうえんや のうちを ふやしてください。", 55))
+        }
+        if (demandR > 60 && population > 100) {
+            out.add(Advice("じゅうたくの じゅようが たかいです。", 30))
+        }
+        if (demandC > 60 && population > 100) {
+            out.add(Advice("しょうぎょうの じゅようが たかいです。", 28))
+        }
+        if (out.isEmpty()) {
+            out.add(Advice("まちは おちついています。このちょうしで。", 0))
+        }
+        return out.sortedByDescending { it.severity }
     }
 
     /**
@@ -364,6 +861,13 @@ class City(
         }
     }
 
+    /** 4近傍に渋滞した道があるか。区分の成長を鈍らせる。 */
+    private fun nearCongestion(x: Int, y: Int): Boolean {
+        var found = false
+        forEachNeighbor4(x, y) { nx, ny -> if (tileAt(nx, ny).congested) found = true }
+        return found
+    }
+
     /** 道路か線路か。どちらも網としてつながる。 */
     private fun isTransport(kind: TileKind): Boolean =
         kind == TileKind.ROAD || kind == TileKind.RAIL
@@ -395,7 +899,7 @@ class City(
             demand += powerNeedOf(t)
         }
         powerSupply = supply
-        powerDemand = demand
+        powerDemand = if (Ordinance.ENERGY_SAVING in ordinances) demand * 85 / 100 else demand
 
         var remaining = supply
         for (t in tiles) {
@@ -455,6 +959,27 @@ class City(
                 TileKind.POWER_WIND -> spread(x, y, 3) { n, f -> n.landValue += (3 * f).toInt() }
                 // 駅前は地価が上がる。
                 TileKind.RAIL -> spread(x, y, 4) { n, f -> n.landValue += (6 * f).toInt() }
+                // v2 の施設
+                TileKind.SUBWAY_STATION -> spread(x, y, 8) { n, f -> n.landValue += (10 * f).toInt() }
+                TileKind.BUS_STOP -> spread(x, y, 5) { n, f -> n.landValue += (3 * f).toInt() }
+                TileKind.CLINIC -> spread(x, y, 8) { n, f -> n.health += (18 * f).toInt() }
+                TileKind.LANDFILL -> spread(x, y, 6) { n, f ->
+                    n.landValue -= (20 * f).toInt(); n.pollution += (14 * f).toInt()
+                }
+                TileKind.INCINERATOR -> spread(x, y, 6) { n, f ->
+                    n.pollution += (22 * f).toInt(); n.landValue -= (10 * f).toInt()
+                }
+                TileKind.RECYCLING -> spread(x, y, 4) { n, f -> n.landValue -= (4 * f).toInt() }
+                TileKind.SEWAGE_PLANT -> spread(x, y, 6) { n, f ->
+                    n.pollution -= (10 * f).toInt(); n.landValue -= (6 * f).toInt()
+                }
+                TileKind.AIRPORT -> spread(x, y, 10) { n, f ->
+                    n.pollution += (16 * f).toInt(); n.landValue -= (8 * f).toInt()
+                }
+                TileKind.SEAPORT -> spread(x, y, 8) { n, f -> n.pollution += (10 * f).toInt() }
+                TileKind.HIGHWAY -> spread(x, y, 3) { n, f ->
+                    n.pollution += (8 * f).toInt(); n.landValue -= (6 * f).toInt()
+                }
                 TileKind.ZONE_I -> if (t.stage > 0) {
                     spread(x, y, 3) { n, f -> n.pollution += (7 * t.stage * f).toInt(); n.landValue -= (3 * t.stage * f).toInt() }
                 }
@@ -469,7 +994,19 @@ class City(
             }
         }
 
+        // 溜まったゴミは街全体の地価を下げ、公害を増やす。
+        // 罰は控えめにする。これだけで街が消えるようでは、遊びにならない。
+        val garbagePenalty = (garbageBacklog / 2_000).coerceAtMost(8)
+        // 教育の条例
+        val eduBonus = if (Ordinance.EDUCATION in ordinances) 15 else 0
+        val healthBonus = if (Ordinance.FREE_CLINIC in ordinances) 15 else 0
         for (t in tiles) {
+            t.pollution += garbagePenalty / 2
+            t.landValue -= garbagePenalty
+            t.education += eduBonus
+            t.health += healthBonus
+            // 渋滞している道のまわりは公害が増える
+            if (t.congested) t.pollution += 6
             t.pollution = t.pollution.coerceIn(0, 100)
             t.landValue = (t.landValue - t.pollution / 5).coerceIn(0, 255)
             t.safety = t.safety.coerceIn(0, 100)
@@ -517,15 +1054,28 @@ class City(
         val wantI = (pop * 0.34f).toInt()
         val targetI = (30 + (wantI - industrialJobs) / 3).coerceIn(-100, 100)
 
+        // 空港は商業を、港は工業を押し上げる
+        val airports = tiles.count { it.kind == TileKind.AIRPORT }
+        val ports = tiles.count { it.kind == TileKind.SEAPORT }
+
         // 税率の影響。7%を基準に、高いほど需要が落ちる。
         val taxPenalty = (taxRate - DEFAULT_TAX_RATE) * 6
 
         // 電力が足りていなければ、どの需要も伸びない。
         val powerCut = if (powerRatio < 1f) ((1f - powerRatio) * 70).toInt() else 0
 
-        demandR = approach(demandR, targetR - taxPenalty - powerCut)
-        demandC = approach(demandC, targetC - taxPenalty - powerCut)
-        demandI = approach(demandI, targetI - taxPenalty - powerCut)
+        // 水の不足は「段階の上限」で表しているので、需要までは潰さない。
+        // ただし、水道を敷いたのに足りていない街には、軽い重しをかける。
+        val waterCut = if (waterSupply > 0 && waterRatio < 1f) {
+            ((1f - waterRatio) * 25).toInt()
+        } else {
+            0
+        }
+        val cut = powerCut + waterCut
+
+        demandR = approach(demandR, targetR - taxPenalty - cut)
+        demandC = approach(demandC, targetC - taxPenalty - cut + airports * 20)
+        demandI = approach(demandI, targetI - taxPenalty - cut + ports * 20)
     }
 
     /** 現在値を目標へ [DEMAND_STEP] だけ近づける。振動を抑えるための平滑化。 */
@@ -572,11 +1122,26 @@ class City(
                 continue
             }
 
+            // 水は「大きく育つための条件」。いきなり必須にすると、
+            // 水道を知らないうちから街が壊れてしまう。
+            // 水がなければ段階1までしか育たない。
+            val waterCap = if (t.watered) 3 else 1
+
             // 住宅は公害を嫌い、地価が要る。工業は気にしない。
+            // 犯罪と渋滞は、住みたさ・商売のしやすさを下げる。
+            //
+            // ただし、平常時の犯罪率（20〜40）でも引いてしまうと、
+            // どの街も成長の敷居（8/20/34）に届かなくなって衰退する。
+            // 「ひどいときだけ効く」ようにして、普通の街は今までどおり育つようにする。
+            val crimePenalty = ((t.crime - 45) / 3).coerceAtLeast(0)
+            val trafficPenalty = if (nearCongestion(x, y)) 6 else 0
             val quality = when (t.kind) {
-                TileKind.ZONE_R -> t.landValue - t.pollution / 2 + t.safety / 3 + t.education / 3 + t.health / 3
-                TileKind.ZONE_C -> t.landValue - t.pollution / 2 + t.safety / 4
-                else -> t.landValue / 2 + 20
+                TileKind.ZONE_R ->
+                    t.landValue - t.pollution / 2 + t.safety / 3 + t.education / 3 +
+                        t.health / 3 - crimePenalty - trafficPenalty
+                TileKind.ZONE_C ->
+                    t.landValue - t.pollution / 2 + t.safety / 4 - crimePenalty - trafficPenalty
+                else -> t.landValue / 2 + 20 - trafficPenalty / 2
             }
 
             // タイルごとの癖。位置から決まるので、同じ街なら毎月同じ値になる。
@@ -593,7 +1158,7 @@ class City(
             val demandToGrow = t.stage * 20 + jitter
 
             when {
-                t.stage < 3 && quality >= required && demand > demandToGrow -> t.stage++
+                t.stage < waterCap && quality >= required && demand > demandToGrow -> t.stage++
                 // 質が大きく欠けるか、需要が強く落ち込んだときだけ衰退する。
                 t.stage > 0 && (quality < required / 2 || demand < -30 + jitter) -> t.stage--
             }
@@ -612,32 +1177,96 @@ class City(
                 else -> {}
             }
         }
+        // 感染が広がると人が減る。ただし、じわじわ効く程度に留める。
+        // ここを強くすると、病院を建てる前に街が消えてしまう。
+        if (infection > 50) {
+            pop = pop * (100 - (infection - 50) / 5) / 100
+        }
         population = pop
         commercialJobs = cJobs
         industrialJobs = iJobs
         jobs = cJobs + iJobs
+
+        // 失業率。働ける人に対して職がどれだけ足りないか。
+        val employable = (pop * 0.55f).toInt()
+        unemployment = if (employable <= 0) 0
+        else ((employable - jobs).coerceAtLeast(0) * 100 / employable).coerceIn(0, 100)
     }
 
     /** 税収と維持費を資金に反映する。 */
     private fun applyBudget() {
         var taxable = 0
+        var taxableR = 0
+        var taxableC = 0
+        var taxableI = 0
         var upkeep = 0
         for (t in tiles) {
             if (t.kind.isZone && t.stage > 0) {
                 // 評価額は段階と地価から。商業が最も稼ぐ。
                 val base = t.stage * (t.landValue + 20)
-                taxable += when (t.kind) {
+                val v = when (t.kind) {
                     TileKind.ZONE_C -> (base * 1.4f).toInt()
                     TileKind.ZONE_I -> (base * 1.1f).toInt()
                     else -> base
+                }
+                taxable += v
+                when (t.kind) {
+                    TileKind.ZONE_R -> taxableR += v
+                    TileKind.ZONE_C -> taxableC += v
+                    else -> taxableI += v
                 }
             }
             upkeep += BuildCost.upkeep(t.kind)
         }
         val income = (taxable * taxRate / 100f).toInt() + tourismIncome
+
+        // 条例の費用は人口に比例する
+        val ordinanceCost = ordinances.sumOf { (population * it.costPerCitizen).toInt() }
+        val totalUpkeep = upkeep + ordinanceCost
+
         lastIncome = income
-        lastUpkeep = upkeep
-        funds += income - upkeep
+        lastUpkeep = totalUpkeep
+        lastIncomeBreakdown = Income(
+            residential = (taxableR * taxRate / 100f).toInt(),
+            commercial = (taxableC * taxRate / 100f).toInt(),
+            industrial = (taxableI * taxRate / 100f).toInt(),
+            tourism = tourismIncome,
+        )
+        lastSpending = spendingBreakdown(ordinanceCost)
+        funds += income - totalUpkeep
+    }
+
+    /** 支出の内訳。何にお金がかかっているかを見せるため。 */
+    private fun spendingBreakdown(ordinanceCost: Int): Spending {
+        var transport = 0
+        var power = 0
+        var water = 0
+        var garbage = 0
+        var safety = 0
+        var health = 0
+        var education = 0
+        var parks = 0
+        for (t in tiles) {
+            val u = BuildCost.upkeep(t.kind)
+            if (u == 0) continue
+            when (t.kind) {
+                TileKind.ROAD, TileKind.AVENUE, TileKind.HIGHWAY, TileKind.RAIL,
+                TileKind.SUBWAY, TileKind.BUS_STOP, TileKind.SUBWAY_STATION,
+                TileKind.AIRPORT, TileKind.SEAPORT -> transport += u
+                TileKind.POWER_COAL, TileKind.POWER_SOLAR, TileKind.POWER_WIND,
+                TileKind.POWER_LINE -> power += u
+                TileKind.WATER_TOWER, TileKind.WATER_PLANT, TileKind.SEWAGE_PLANT -> water += u
+                TileKind.LANDFILL, TileKind.INCINERATOR, TileKind.RECYCLING -> garbage += u
+                TileKind.POLICE, TileKind.FIRE -> safety += u
+                TileKind.HOSPITAL, TileKind.CLINIC -> health += u
+                TileKind.SCHOOL -> education += u
+                TileKind.PARK, TileKind.FARM -> parks += u
+                else -> {}
+            }
+        }
+        return Spending(
+            transport, power, water, garbage, safety, health, education, parks, ordinanceCost,
+        )
     }
 
     private fun checkBankruptcy() {

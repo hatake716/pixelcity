@@ -188,6 +188,8 @@ class TutorialTest {
         // 手順9: 公園2つ
         c.build(12, 13, TileKind.PARK); t.onBuilt(TileKind.PARK)
         c.build(9, 10, TileKind.PARK); t.onBuilt(TileKind.PARK)
+        // v2: 水道がないと段階1までしか育たないので、給水塔を置く
+        c.build(10, 14, TileKind.WATER_TOWER)
         // 手順10: 予算を開く
         t.onBudgetOpened()
         // 手順11: 卒業
