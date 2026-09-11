@@ -191,15 +191,20 @@ class CityRenderer {
 
         // --- 4周目: 情報の重ね表示 ---
         //
-        // 建物の**上**に重ねる。地面の上・建物の下に描くと、
-        // 育った街では建物にすっかり隠れて、何も見えない。
-        // 「地図に重ねて見る」ものなので、建物ごと染めるのが正しい。
+        // 2段構えにする。
+        //  1. 街ぜんたいを灰色に落とす
+        //  2. その上に、情報の色をべた塗りで乗せる
+        //
+        // 街の色のまま重ねると、赤い屋根や青いガラスと混ざって
+        // 何が何だか分からない。いちど色を抜いてしまえば、
+        // 画面に見えている色は「情報の色」だけになる。
         if (overlay != Overlay.NONE) {
+            desaturate(canvas, clipTop, clipBottom)
             forEachVisibleTile(
                 city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom,
             ) { tx, ty, sx, sy ->
                 val tile = city.tileAt(tx, ty)
-                // 0（薄い）〜5（濃い）。値が大きいほど目立つ。
+                // 0（塗らない）〜5（最も濃い）
                 val level = levelFor(overlay, tile)
                 if (level > 0) {
                     tintTile(
@@ -383,6 +388,24 @@ class CityRenderer {
 
     /** 菱形の内側を市松で暗くする。情報の重ね表示に使う。 */
     /**
+     * 見えている範囲の色を抜いて、灰色に落とす。
+     *
+     * 明るさだけを残す。どの色だったかは分からなくなるが、
+     * 建物の形と道の走りは残るので、どこの話かは分かる。
+     */
+    private fun desaturate(canvas: PixelCanvas, clipTop: Int, clipBottom: Int) {
+        val top = clipTop.coerceAtLeast(0)
+        val bottom = clipBottom.coerceAtMost(canvas.height)
+        for (y in top until bottom) {
+            for (x in 0 until canvas.width) {
+                val v = canvas.get(x, y)
+                if (v < 0 || v >= Palette.SIZE) continue
+                canvas.set(x, y, DIMMED[v])
+            }
+        }
+    }
+
+    /**
      * そのマスを、建物ごと染める。
      *
      * 地面の菱形だけを塗ると、育った街では建物に隠れて見えない。
@@ -469,6 +492,27 @@ class CityRenderer {
 
     companion object {
         /**
+         * 各色を、明るさだけ残した灰色へ置き換える表。
+         *
+         * 毎回その場で計算すると、画面いっぱいぶんの画素で重くなる。
+         * 色の数は決まっているので、最初に一度だけ作る。
+         */
+        private val DIMMED: IntArray = IntArray(Palette.SIZE) { i ->
+            val c = Palette.COLORS[i]
+            val r = (c shr 16) and 0xFF
+            val g = (c shr 8) and 0xFF
+            val b = c and 0xFF
+            // 目の感じ方に合わせた重みで明るさを出す
+            val luma = (r * 30 + g * 59 + b * 11) / 100
+            when {
+                luma >= 190 -> Palette.DIM_HI
+                luma >= 130 -> Palette.DIM_LIT
+                luma >= 70 -> Palette.DIM
+                else -> Palette.DIM_DARK
+            }
+        }
+
+        /**
          * そのマスの、その情報の濃さ。0（塗らない）〜5（最も濃い）。
          *
          * 区分の育ち具合は段（0〜3）なので、そのままでは差が出ない。
@@ -521,23 +565,25 @@ class CityRenderer {
          * 濃さに対する色。一覧に見本を並べるため、外からも引けるようにしてある。
          */
         fun colourOf(overlay: Overlay, level: Int): Int =
-        if (!overlay.good) {
-            when {
-                level >= 5 -> Palette.RED_DARK
-                level >= 4 -> Palette.RED
-                level >= 3 -> Palette.GOLD
-                level >= 2 -> Palette.WINDOW_LIT
-                else -> Palette.WHITE
+            if (!overlay.good) {
+                // 悪いものは、黄 → 橙 → 赤 → 暗い赤
+                when {
+                    level >= 5 -> Palette.RED_DARK
+                    level >= 4 -> Palette.RED
+                    level >= 3 -> Palette.TOWER_ORANGE
+                    level >= 2 -> Palette.GOLD
+                    else -> Palette.WINDOW_LIT
+                }
+            } else {
+                // 良いものは、黄緑 → 緑 → 水 → 濃い青
+                when {
+                    level >= 5 -> Palette.SKY_DEEP
+                    level >= 4 -> Palette.WATER
+                    level >= 3 -> Palette.TREE
+                    level >= 2 -> Palette.TREE_LIT
+                    else -> Palette.GRASS_LIT
+                }
             }
-        } else {
-            when {
-                level >= 5 -> Palette.SKY_DEEP
-                level >= 4 -> Palette.WATER
-                level >= 3 -> Palette.TREE
-                level >= 2 -> Palette.TREE_LIT
-                else -> Palette.WHITE
-            }
-        }
     }
 
     /** 菱形の縁をなぞる。 */

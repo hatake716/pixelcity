@@ -4,6 +4,7 @@ import io.github.hatake716.pixelcity.game.City
 import io.github.hatake716.pixelcity.game.Terrain
 import io.github.hatake716.pixelcity.game.TileKind
 import io.github.hatake716.pixelcity.ui.CityRenderer
+import io.github.hatake716.pixelcity.ui.Palette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -116,6 +117,60 @@ class OverlayTest {
             levelOf(CityRenderer.Overlay.RESIDENTIAL, grown) >
                 levelOf(CityRenderer.Overlay.RESIDENTIAL, young),
         )
+    }
+
+    /**
+     * 情報の色が、下地の灰色とはっきり違うこと。
+     *
+     * 重ねるときは、街をいちど灰色に落としてから色を乗せる。
+     * 情報の色が灰色に近いと、下地に埋もれて見えない。
+     */
+    @Test
+    fun `the overlay colours stand out from the grey background`() {
+        val greys = intArrayOf(
+            Palette.DIM_HI, Palette.DIM_LIT, Palette.DIM, Palette.DIM_DARK,
+        ).map { Palette.COLORS[it] }
+
+        for (o in CityRenderer.Overlay.entries) {
+            if (o == CityRenderer.Overlay.NONE) continue
+            for (level in 1..5) {
+                val c = Palette.COLORS[CityRenderer.colourOf(o, level)]
+                // 灰色は R=G=B に近い。情報の色は、どこかの色味が偏っているはず。
+                val r = (c shr 16) and 0xFF
+                val g = (c shr 8) and 0xFF
+                val b = c and 0xFF
+                val spread = maxOf(r, g, b) - minOf(r, g, b)
+                assertTrue(
+                    "${o.name} level $level is too grey (spread $spread)",
+                    spread >= 40,
+                )
+                // どの灰色とも、十分に離れていること
+                for (grey in greys) {
+                    val gr = (grey shr 16) and 0xFF
+                    val gg = (grey shr 8) and 0xFF
+                    val gb = grey and 0xFF
+                    val d = Math.abs(r - gr) + Math.abs(g - gg) + Math.abs(b - gb)
+                    assertTrue(
+                        "${o.name} level $level is too close to the background",
+                        d >= 60,
+                    )
+                }
+            }
+        }
+    }
+
+    /** 下地の灰色が、色味を持たないこと。 */
+    @Test
+    fun `the background really is grey`() {
+        for (i in intArrayOf(
+            Palette.DIM_HI, Palette.DIM_LIT, Palette.DIM, Palette.DIM_DARK,
+        )) {
+            val c = Palette.COLORS[i]
+            val r = (c shr 16) and 0xFF
+            val g = (c shr 8) and 0xFF
+            val b = c and 0xFF
+            assertTrue("the background has a colour cast", maxOf(r, g, b) - minOf(r, g, b) <= 16)
+        }
     }
 
     /** 実際に描くときと同じ式で確かめる。 */

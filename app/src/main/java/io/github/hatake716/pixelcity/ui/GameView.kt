@@ -1517,6 +1517,11 @@ class GameView(
         // データマップ
         info.overlayAt(lx, ly)?.let {
             info.overlay = it
+            // 選んだら地図へ戻る。重ねて見るためのものなので、
+            // いちいち閉じさせるより、そのまま見せたほうが早い。
+            screen = Screen.PLAYING
+            audio.play(if (it == CityRenderer.Overlay.NONE) Sfx.CLOSE else Sfx.OPEN)
+            onStateChanged?.invoke()
             invalidate()
             return
         }

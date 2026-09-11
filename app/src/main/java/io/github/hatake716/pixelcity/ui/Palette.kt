@@ -212,6 +212,18 @@ object Palette {
     const val SELECT = 121
     const val SELECT_EDGE = 122
 
+    /**
+     * 地図に情報を重ねるときの、下地の灰色（4段）。
+     *
+     * 街の色そのままの上に重ねると、赤い屋根や青いガラスと
+     * 混ざって何が何だか分からない。いちど灰色に落としてから
+     * 情報の色を乗せると、色の違いがそのまま情報の違いになる。
+     */
+    const val DIM_HI = 123
+    const val DIM_LIT = 124
+    const val DIM = 125
+    const val DIM_DARK = 126
+
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
         // 地面
@@ -299,6 +311,9 @@ object Palette {
         q(0xFF2A2620.toInt()), q(0xFF1C1A18.toInt()),
         // 選んでいるマス（濃い青と、その縁）
         q(0xFF1858C8.toInt()), q(0xFF68C0FF.toInt()),
+        // 情報を重ねるときの下地（4段の灰色）
+        q(0xFFB0B0B8.toInt()), q(0xFF8A8A92.toInt()),
+        q(0xFF62626A.toInt()), q(0xFF3E3E46.toInt()),
     )
 
     fun of(index: Int): Int =
