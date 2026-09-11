@@ -46,6 +46,11 @@ class TutorialTest {
         assertFalse(t.allowsBudget())
     }
 
+    /** その手順が求める設置数。数を変えてもテストが追随するように定義から読む。 */
+    private fun requiredCount(kind: TileKind): Int =
+        Tutorial.STEPS.mapNotNull { it.goal as? Tutorial.Goal.Place }
+            .first { it.kind == kind }.count
+
     @Test
     fun `building the required count advances the step`() {
         val t = Tutorial()
@@ -53,7 +58,7 @@ class TutorialTest {
         t.onContinuePressed()
         t.onContinuePressed()
         val before = t.stepIndex
-        repeat(6) { t.onBuilt(TileKind.ROAD) }
+        repeat(requiredCount(TileKind.ROAD)) { t.onBuilt(TileKind.ROAD) }
         assertEquals(before + 1, t.stepIndex)
     }
 
@@ -66,7 +71,7 @@ class TutorialTest {
         val step = t.stepIndex
         repeat(5) { t.onBuilt(TileKind.ZONE_R) }
         assertEquals(step, t.stepIndex)
-        assertEquals(6, t.remaining())
+        assertEquals(requiredCount(TileKind.ROAD), t.remaining())
     }
 
     @Test
@@ -92,6 +97,20 @@ class TutorialTest {
         assertTrue(t.allowsBudget())
     }
 
+    /** 求められた数だけ置いたら、その先は数えないこと（remaining が 0 で止まる）。 */
+    @Test
+    fun `remaining stops at zero and the step advances exactly once`() {
+        val t = Tutorial()
+        t.start()
+        t.onContinuePressed()
+        t.onContinuePressed()
+        val step = t.stepIndex
+        repeat(requiredCount(TileKind.ROAD)) { t.onBuilt(TileKind.ROAD) }
+        assertEquals(step + 1, t.stepIndex)
+        // 次のステップの目標に、前のステップの分が持ち越されていない
+        assertEquals(requiredCount(TileKind.POWER_COAL), t.remaining())
+    }
+
     @Test
     fun `state survives save and restore`() {
         val t = Tutorial()
@@ -110,6 +129,29 @@ class TutorialTest {
     }
 
     /**
+     * チュートリアルが要求する設置数が、自分で敷かせた道路の周りに収まること。
+     *
+     * 道路6マスに対して区分16マスを求めていた時期があり、指示どおりに進めると
+     * 置く場所が足りなくなって、そこから先へ進めなくなっていた。
+     */
+    @Test
+    fun `the tutorial asks for no more tiles than its own road can host`() {
+        var roads = 0
+        var needed = 0
+        for (step in Tutorial.STEPS) {
+            val goal = step.goal
+            if (goal !is Tutorial.Goal.Place) continue
+            if (goal.kind == TileKind.ROAD) roads += goal.count else needed += goal.count
+        }
+        // 一直線の道路に接するマス: 上下に roads ずつ、両端に1つずつ
+        val hostable = roads * 2 + 2
+        assertTrue(
+            "needs $needed tiles but a $roads-tile road hosts only $hostable",
+            needed <= hostable,
+        )
+    }
+
+    /**
      * 仕様の要: チュートリアルを完走したら、そのまま回り始める街が残ること。
      * 手順どおりに建てた街を実際にシミュレートして確かめる。
      */
@@ -123,33 +165,29 @@ class TutorialTest {
         t.onContinuePressed()
         t.onContinuePressed()
 
-        // 手順3: 道路を6マス
-        for (x in 8..13) { assertTrue(c.build(x, 12, TileKind.ROAD)); t.onBuilt(TileKind.ROAD) }
+        // 手順3: 道路を10マス
+        for (x in 8..17) { assertTrue(c.build(x, 12, TileKind.ROAD)); t.onBuilt(TileKind.ROAD) }
         // 手順4: 発電所
         assertTrue(c.build(8, 10, TileKind.POWER_COAL)); t.onBuilt(TileKind.POWER_COAL)
         assertTrue(c.build(8, 11, TileKind.ROAD))
-        // 手順5: 住宅8マス
-        for (x in 9..12) {
+        // 手順5: 住宅6マス
+        for (x in 9..11) {
             c.build(x, 11, TileKind.ZONE_R); t.onBuilt(TileKind.ZONE_R)
             c.build(x, 13, TileKind.ZONE_R); t.onBuilt(TileKind.ZONE_R)
         }
-        // 手順6: 商業4マス
-        for (x in 14..15) {
-            c.build(x, 12, TileKind.ROAD)
+        // 手順6: 商業3マス
+        for (x in 12..14) {
             c.build(x, 11, TileKind.ZONE_C); t.onBuilt(TileKind.ZONE_C)
-            c.build(x, 13, TileKind.ZONE_C); t.onBuilt(TileKind.ZONE_C)
         }
-        // 手順7: 工業4マス（住宅から離す）
-        for (x in 16..17) {
-            c.build(x, 12, TileKind.ROAD)
-            c.build(x, 11, TileKind.ZONE_I); t.onBuilt(TileKind.ZONE_I)
+        // 手順7: 工業3マス（住宅から離す）
+        for (x in 15..17) {
             c.build(x, 13, TileKind.ZONE_I); t.onBuilt(TileKind.ZONE_I)
         }
         // 手順8: 3か月
         repeat(3) { c.step(); t.onMonthPassed() }
         // 手順9: 公園2つ
-        c.build(10, 10, TileKind.PARK); t.onBuilt(TileKind.PARK)
-        c.build(11, 14, TileKind.PARK); t.onBuilt(TileKind.PARK)
+        c.build(12, 13, TileKind.PARK); t.onBuilt(TileKind.PARK)
+        c.build(9, 10, TileKind.PARK); t.onBuilt(TileKind.PARK)
         // 手順10: 予算を開く
         t.onBudgetOpened()
         // 手順11: 卒業

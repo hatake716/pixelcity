@@ -52,8 +52,8 @@ class Tutorial {
             ),
             Step(
                 title = "まずは どうろ",
-                body = "たてものは どうろが ないと そだちません。した の「どうろ」を えらんで、マップを なぞって 6マス ひいてみましょう。",
-                goal = Goal.Place(TileKind.ROAD, 6),
+                body = "たてものは どうろが ないと そだちません。したの「どうろ」を えらんで、マップを よこに なぞり、10マス ひいてみましょう。",
+                goal = Goal.Place(TileKind.ROAD, 10),
                 highlightTool = TileKind.ROAD,
             ),
             Step(
@@ -64,20 +64,20 @@ class Tutorial {
             ),
             Step(
                 title = "じゅうたくを おく",
-                body = "ひとが すむ ばしょです。「じゅうたく」を えらんで、どうろの となりに 8マス おきましょう。かってに はってんします。",
-                goal = Goal.Place(TileKind.ZONE_R, 8),
+                body = "ひとが すむ ばしょです。「じゅうたく」を えらんで、どうろの となりに 6マス おきましょう。かってに はってんします。",
+                goal = Goal.Place(TileKind.ZONE_R, 6),
                 highlightTool = TileKind.ZONE_R,
             ),
             Step(
                 title = "しょうぎょうを おく",
-                body = "しごとが ないと ひとは すみつきません。「しょうぎょう」を どうろの となりに 4マス。しょうぎょうは ぜいしゅうの ちゅうしんです。",
-                goal = Goal.Place(TileKind.ZONE_C, 4),
+                body = "しごとが ないと ひとは すみつきません。「しょうぎょう」を どうろの となりに 3マス。しょうぎょうは ぜいしゅうの ちゅうしんです。",
+                goal = Goal.Place(TileKind.ZONE_C, 3),
                 highlightTool = TileKind.ZONE_C,
             ),
             Step(
                 title = "こうぎょうを おく",
-                body = "こうぎょうも しごとを うみます。ただし こうがいを だすので、じゅうたくから はなして 4マス おきましょう。",
-                goal = Goal.Place(TileKind.ZONE_I, 4),
+                body = "こうぎょうも しごとを うみます。ただし こうがいを だすので、じゅうたくから はなして 3マス おきましょう。",
+                goal = Goal.Place(TileKind.ZONE_I, 3),
                 highlightTool = TileKind.ZONE_I,
             ),
             Step(

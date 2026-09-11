@@ -785,6 +785,13 @@ class GameView(
         val blocker = city.buildBlocker(tx, ty, selectedTool)
         if (blocker != null) { showToast(blocker); return }
 
+        // 求められた数を超えて置かせない。余分な設置は資金と土地の無駄になり、
+        // 「あと N」の意味も分からなくなる。
+        if (tutorial.active && tutorial.remaining() <= 0 && tutorial.step?.highlightTool != null) {
+            showToast("つぎの ステップへ すすみます")
+            return
+        }
+
         // チュートリアル中は、道路に接していない区分・発電所を断る。
         // 置けてしまうと「電気の来ない街」ができて、
         // 何が悪いのか分からないまま詰んでしまう。
