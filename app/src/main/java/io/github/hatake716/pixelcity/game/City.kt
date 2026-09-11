@@ -83,22 +83,19 @@ class City(
         val rnd = Random(seed)
         for (t in tiles) { t.terrain = Terrain.LAND; t.clearForBulldoze() }
 
-        // 左下の隅を海にする。境界は少し揺らす。
-        val seaBase = height - 4 - rnd.nextInt(3)
+        // 下の端を海にする。建設できる土地を十分に残すため、浅くとる。
+        val seaBase = height - 3 - rnd.nextInt(2)
         for (x in 0 until width) {
-            val edge = seaBase + ((x * 3 + rnd.nextInt(3)) % 5) - 2 + (x / 12)
+            val edge = seaBase + ((x * 3 + rnd.nextInt(3)) % 3) - 1
             for (y in max(0, edge) until height) tileAt(x, y).terrain = Terrain.WATER
         }
 
-        // 上から下へ蛇行する川を一本引く。
-        var cx = width / 3 + rnd.nextInt(width / 3)
+        // 上から下へ蛇行する川を一本引く。幅1で、街を分断しすぎないようにする。
+        var cx = width / 4 + rnd.nextInt(width / 2)
         for (y in 0 until height) {
-            for (dx in 0..1) {
-                val x = cx + dx
-                if (inBounds(x, y)) tileAt(x, y).terrain = Terrain.WATER
-            }
+            if (inBounds(cx, y)) tileAt(cx, y).terrain = Terrain.WATER
             cx += rnd.nextInt(3) - 1
-            cx = cx.coerceIn(2, width - 4)
+            cx = cx.coerceIn(2, width - 3)
         }
 
         markShores()

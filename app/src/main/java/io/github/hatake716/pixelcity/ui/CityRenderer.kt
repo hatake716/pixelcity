@@ -17,24 +17,31 @@ class CityRenderer {
      * [city] を [canvas] へ描く。[camX]/[camY] は左上に来るタイル座標（小数可）。
      * [tileSize] は1タイルの論理ピクセル数。
      */
+    /**
+     * [city] を [canvas] の (0, [viewTop]) から高さ [viewHeight] の帯へ描く。
+     * [camX]/[camY] はその帯の左上に来るタイル座標。
+     */
     fun draw(
         canvas: PixelCanvas,
         city: City,
         camX: Float,
         camY: Float,
         tileSize: Int,
+        viewTop: Int,
+        viewHeight: Int,
         overlay: Overlay = Overlay.NONE,
         highlight: IntArray? = null,
     ) {
-        canvas.clear(0)
+        // 帯の外に描かないよう、地面で塗りつぶしてから描く。
+        canvas.fillRect(0, viewTop, canvas.width, viewHeight, 0)
 
         val originX = -((camX * tileSize).toInt())
-        val originY = -((camY * tileSize).toInt())
+        val originY = viewTop - ((camY * tileSize).toInt())
 
         val firstX = maxOf(0, camX.toInt())
         val firstY = maxOf(0, camY.toInt())
         val lastX = minOf(city.width - 1, ((camX * tileSize + canvas.width) / tileSize).toInt() + 1)
-        val lastY = minOf(city.height - 1, ((camY * tileSize + canvas.height) / tileSize).toInt() + 1)
+        val lastY = minOf(city.height - 1, ((camY * tileSize + viewHeight) / tileSize).toInt() + 1)
 
         // 1周目: 地形と道路と区分
         for (ty in firstY..lastY) {
