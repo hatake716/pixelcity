@@ -101,6 +101,14 @@ class City(
     /** 直近に起きた災害の知らせ。UIが読んで消す。 */
     var lastDisaster: String? = null
 
+    /**
+     * 街並みの様式。建物の色づかいを変えるだけで、計算には関わらない。
+     * お手本の街を見分けやすくするために使う。
+     */
+    enum class Style { STANDARD, RURAL, GRITTY, PRIME }
+
+    var style: Style = Style.STANDARD
+
     var lastIncomeBreakdown: Income = Income()
     var lastSpending: Spending = Spending()
 

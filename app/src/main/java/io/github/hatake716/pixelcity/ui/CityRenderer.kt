@@ -157,7 +157,9 @@ class CityRenderer {
                 val ty = depth - tx
                 if (ty >= city.height) { tx--; continue }
                 val tile = city.tileAt(tx, ty)
-                val sprite = buildingFor(city, tx, ty, tile)
+                val raw = buildingFor(city, tx, ty, tile)
+                // 街の様式にあわせて色を変える。形は同じまま。
+                val sprite = raw?.let { IsoBuildings.styled(it, city.style) }
                 if (sprite != null) {
                     val sx = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
                     // 建物の下端が、そのタイルの菱形に重なるよう持ち上げる

@@ -71,13 +71,10 @@ object ShowcaseCity {
             val d = (x - bayX) * (x - bayX) + (y - bayY) * (y - bayY)
             if (d < bayR) city.tileAt(x, y).terrain = Terrain.WATER
         }
-        // 川
+        // 川。幅は1で、街を分断しすぎないようにする。
         var rx = 10
         for (y in 0 until 46) {
-            for (dx in 0..1) {
-                val x = rx + dx
-                if (city.inBounds(x, y)) city.tileAt(x, y).terrain = Terrain.WATER
-            }
+            if (city.inBounds(rx, y)) city.tileAt(rx, y).terrain = Terrain.WATER
             rx += rnd.nextInt(3) - 1
             rx = rx.coerceIn(4, 14)
         }
@@ -142,7 +139,14 @@ object ShowcaseCity {
     }
 
     /** 仕上げ。電力と地価を計算し、遊べる状態にする。 */
-    private fun finish(city: City, funds: Int, month: Int, taxRate: Int): City {
+    private fun finish(
+        city: City,
+        funds: Int,
+        month: Int,
+        taxRate: Int,
+        style: City.Style = City.Style.STANDARD,
+    ): City {
+        city.style = style
         city.funds = funds
         city.month = month
         city.taxRate = taxRate
@@ -160,8 +164,13 @@ object ShowcaseCity {
      * 公共施設をひととおり備え、税率は標準のままで黒字になる。
      */
     private fun metropolis(): City {
-        val (city, rnd) = blank(Kind.METROPOLIS.seed, 50, 57, 70)
-        grid(city, step = 3, cross = 4)
+        // 湾に面した都市。水際まで街が迫る。
+        val (city, rnd) = blank(Kind.METROPOLIS.seed, 55, 60, 60)
+        // 細かい碁盤の目。街区を小さく取ると、びっしり建て込んで見える。
+        grid(city, step = 3, cross = 3)
+        // 大通りを十字に通す。都心の骨格になる。
+        for (x in 2 until 58) place(city, x, 28, TileKind.AVENUE)
+        for (y in 3 until 57) place(city, 30, y, TileKind.AVENUE)
 
         val cx = 30
         val cy = 28
@@ -190,7 +199,7 @@ object ShowcaseCity {
             }
         }
 
-        scatter(city, rnd, TileKind.PARK, 46)
+        scatter(city, rnd, TileKind.PARK, 30)
         scatter(city, rnd, TileKind.SCHOOL, 8)
         scatter(city, rnd, TileKind.HOSPITAL, 14)
         scatter(city, rnd, TileKind.POLICE, 8)
@@ -222,7 +231,7 @@ object ShowcaseCity {
         // 条例で、ゴミと犯罪と電力を抑える。手本として、使い方も見せる。
         city.ordinances.add(Ordinance.RECYCLING)
         city.ordinances.add(Ordinance.PATROL)
-        return finish(city, funds = 250_000, month = 1_200, taxRate = 9)
+        return finish(city, funds = 250_000, month = 1_200, taxRate = 9, style = City.Style.PRIME)
     }
 
     // ------------------------------------------------------------------
@@ -235,9 +244,21 @@ object ShowcaseCity {
      * 人口は大都市に及ばないが、公害がほとんどない。
      */
     private fun garden(): City {
-        val (city, rnd) = blank(Kind.GARDEN.seed, 48, 55, 90)
-        // 道路は広めの間隔。街区をゆったりとる。
-        grid(city, step = 4, cross = 6)
+        // 小さな湖と、いくつもの川。水と緑の街。
+        val (city, rnd) = blank(Kind.GARDEN.seed, 14, 48, 40)
+        // 区画はゆったり。ただし、どの区分も道に接するようにする。
+        grid(city, step = 4, cross = 5)
+
+        // 川をもう1本。水と緑が この街の見た目を決める。
+        run {
+            var rx = 44
+            for (y in 0 until city.height) {
+                if (city.inBounds(rx, y)) city.tileAt(rx, y).terrain = Terrain.WATER
+                rx += rnd.nextInt(3) - 1
+                rx = rx.coerceIn(40, 50)
+            }
+        }
+        markShores(city)
 
         // 鉄道を2本通す。駅前に街ができるよう、道路網と交差させる。
         for (x in 4 until 56) {
@@ -254,51 +275,49 @@ object ShowcaseCity {
             val d = Math.hypot((x - cx).toDouble(), (y - cy).toDouble())
             val n = rnd.nextInt(100)
             when {
-                // 駅のまわりに、職のある低中層の街。
-                // 農地は職を生まないので、商業を厚くしないと住民が出ていく。
-                d < 13 -> {
-                    t.kind = if (n < 66) TileKind.ZONE_C else TileKind.ZONE_R
-                    t.stage = when { n < 34 -> 3; n < 80 -> 2; else -> 1 }
+                // 駅前だけが、ささやかな中心部。それでも3階建てまで。
+                // 高層ビルを建てないことが、この街の見た目の特徴になる。
+                d < 10 -> {
+                    t.kind = if (n < 60) TileKind.ZONE_C else TileKind.ZONE_R
+                    t.stage = if (n < 70) 2 else 1
                 }
-                d < 21 -> {
-                    t.kind = when {
-                        n < 34 -> TileKind.ZONE_C
-                        n < 44 -> TileKind.ZONE_I     // 農産物を扱う軽工業
-                        else -> TileKind.ZONE_R
+                // そのまわりは、ひくい住宅と商店が、緑にまぎれて建つ
+                d < 20 -> {
+                    when {
+                        n < 26 -> { t.kind = TileKind.ZONE_C; t.stage = 2 }
+                        n < 34 -> { t.kind = TileKind.ZONE_I; t.stage = 1 }
+                        n < 52 -> { t.kind = TileKind.FARM; t.stage = 1 }
+                        else -> { t.kind = TileKind.ZONE_R; t.stage = if (n < 76) 2 else 1 }
                     }
-                    t.stage = when { n < 28 -> 3; n < 74 -> 2; else -> 1 }
                 }
-                // 外は農地と、ところどころの住宅
+                // 外はほとんど農地。ぽつぽつと家が建つ。
                 else -> {
                     when {
-                        n < 52 -> { t.kind = TileKind.FARM; t.stage = 1 }
-                        n < 64 -> { t.kind = TileKind.ZONE_C; t.stage = 2 }
-                        else -> {
-                            t.kind = TileKind.ZONE_R
-                            t.stage = if (n < 84) 2 else 1
-                        }
+                        n < 74 -> { t.kind = TileKind.FARM; t.stage = 1 }
+                        n < 80 -> { t.kind = TileKind.ZONE_C; t.stage = 1 }
+                        else -> { t.kind = TileKind.ZONE_R; t.stage = 1 }
                     }
                 }
             }
         }
 
         // 緑と公共サービスを厚く
-        scatter(city, rnd, TileKind.PARK, 46)
+        scatter(city, rnd, TileKind.PARK, 30)
         scatter(city, rnd, TileKind.SCHOOL, 6)
         scatter(city, rnd, TileKind.HOSPITAL, 5)
         scatter(city, rnd, TileKind.POLICE, 5)
         scatter(city, rnd, TileKind.FIRE, 5)
         // 電力は太陽光と風力だけ。火力は1つも置かない。
         // 電力は太陽光と風力だけ。人口に見合う数に留める。
-        scatter(city, rnd, TileKind.POWER_SOLAR, 16)
-        scatter(city, rnd, TileKind.POWER_WIND, 18)
+        scatter(city, rnd, TileKind.POWER_SOLAR, 12)
+        scatter(city, rnd, TileKind.POWER_WIND, 12)
         // 田園都市は環境が売り。水とゴミの処理も行き届かせる。
         // 浄水場は半径14と広いので、少ない数で街全体に水を届けられる。
         scatter(city, rnd, TileKind.WATER_PLANT, 12)
         scatter(city, rnd, TileKind.WATER_TOWER, 4)
         scatter(city, rnd, TileKind.SEWAGE_PLANT, 3)
         // 田園都市は焼却場を使わず、リサイクルだけでまかなう
-        scatter(city, rnd, TileKind.RECYCLING, 22)
+        scatter(city, rnd, TileKind.RECYCLING, 14)
         scatter(city, rnd, TileKind.CLINIC, 8)
         scatter(city, rnd, TileKind.BUS_STOP, 10)
 
@@ -311,7 +330,7 @@ object ShowcaseCity {
         // 環境の街らしく、リサイクルと公共交通の条例を入れる
         // 環境の街らしく、リサイクルの条例だけ入れる
         city.ordinances.add(Ordinance.RECYCLING)
-        return finish(city, funds = 180_000, month = 1_100, taxRate = 9)
+        return finish(city, funds = 180_000, month = 1_100, taxRate = 9, style = City.Style.RURAL)
     }
 
     // ------------------------------------------------------------------
@@ -323,8 +342,12 @@ object ShowcaseCity {
      * そのかわり公害が多く、公園と病院で押さえこんでいる。
      */
     private fun industrial(): City {
-        val (city, rnd) = blank(Kind.INDUSTRIAL.seed, 50, 56, 80)
-        grid(city, step = 3, cross = 4)
+        // 港に面した平地。工業用地を広く取る。
+        val (city, rnd) = blank(Kind.INDUSTRIAL.seed, 54, 54, 110)
+        // 工業用地らしく、たてよこに太い直線。区画は横長にとる。
+        grid(city, step = 4, cross = 3)
+        // 貨物を運ぶ大通りを2本
+        for (x in 2 until 58) { place(city, x, 18, TileKind.AVENUE); place(city, x, 40, TileKind.AVENUE) }
 
         // 貨物の線路を港（湾）へ向けて通す
         for (x in 6 until 50) place(city, x, 44, TileKind.RAIL)
@@ -396,7 +419,7 @@ object ShowcaseCity {
         // 工業は電気を食うので、省エネ条例で支出を抑える。
         city.ordinances.add(Ordinance.ENERGY_SAVING)
         city.ordinances.add(Ordinance.RECYCLING)
-        return finish(city, funds = 600_000, month = 1_300, taxRate = 10)
+        return finish(city, funds = 600_000, month = 1_300, taxRate = 10, style = City.Style.GRITTY)
     }
 
     // ------------------------------------------------------------------

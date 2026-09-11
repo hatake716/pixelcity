@@ -1,5 +1,6 @@
 package io.github.hatake716.pixelcity.ui
 
+import io.github.hatake716.pixelcity.game.City
 import kotlin.math.abs
 
 /**
@@ -28,6 +29,78 @@ object IsoBuildings {
     private val HOUSE = Skin(Palette.HOUSE_ROOF, Palette.HOUSE_LEFT, Palette.HOUSE_RIGHT)
     private val OFFICE = Skin(Palette.OFFICE_ROOF, Palette.OFFICE_LEFT, Palette.OFFICE_RIGHT)
     private val FACTORY = Skin(Palette.FACTORY_ROOF, Palette.FACTORY_LEFT, Palette.FACTORY_RIGHT)
+
+    /**
+     * 色を入れ替えた同じ絵を作る。
+     *
+     * 街の様式ごとに、同じ建物を別の色で見せるために使う。
+     * 形はそのままなので、絵を描き直す必要がない。
+     */
+    private fun recolour(src: Sprite, map: Map<Int, Int>): Sprite {
+        val data = ByteArray(src.data.size)
+        for (i in src.data.indices) {
+            val v = src.data[i]
+            data[i] = if (v == Pix.TRANSPARENT) v
+            else (map[v.toInt()] ?: v.toInt()).toByte()
+        }
+        return Sprite(src.width, src.height, data)
+    }
+
+    /** 田園都市の色づかい。こげ茶の瓦と、生成りの漆喰。 */
+    private val RURAL_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.RURAL_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.RURAL_ROOF_DARK,
+        Palette.HOUSE_LEFT to Palette.RURAL_WALL,
+        Palette.HOUSE_RIGHT to Palette.RURAL_WALL_DARK,
+        Palette.RED_DARK to Palette.RURAL_ROOF_DARK,
+        Palette.OFFICE_ROOF to Palette.RURAL_WALL,
+        Palette.OFFICE_LEFT to Palette.RURAL_WALL,
+        Palette.OFFICE_RIGHT to Palette.RURAL_WALL_DARK,
+        Palette.GLASS to Palette.RURAL_WALL_DARK,
+        Palette.GLASS_LIT to Palette.SAND_LIT,
+    )
+
+    /** 工業都市の色づかい。すすけたレンガとトタン。 */
+    private val GRITTY_MAP = mapOf(
+        Palette.HOUSE_ROOF to Palette.GRIT_ROOF,
+        Palette.HOUSE_ROOF_DARK to Palette.GRIT_ROOF_DARK,
+        Palette.HOUSE_LEFT to Palette.GRIT_WALL,
+        Palette.HOUSE_RIGHT to Palette.GRIT_WALL_DARK,
+        Palette.OFFICE_ROOF to Palette.GRIT_WALL,
+        Palette.OFFICE_LEFT to Palette.GRIT_WALL,
+        Palette.OFFICE_RIGHT to Palette.GRIT_WALL_DARK,
+        Palette.GLASS to Palette.GRIT_WALL_DARK,
+        Palette.GLASS_LIT to Palette.SAND_DARK,
+    )
+
+    /** 大都市の色づかい。白い石と、青みの強いガラス。 */
+    private val PRIME_MAP = mapOf(
+        Palette.OFFICE_ROOF to Palette.PRIME_ROOF,
+        Palette.OFFICE_LEFT to Palette.PRIME_LEFT,
+        Palette.OFFICE_RIGHT to Palette.PRIME_RIGHT,
+        Palette.GLASS to Palette.PRIME_GLASS,
+        Palette.GLASS_LIT to Palette.GLASS_LIT,
+        Palette.HOUSE_LEFT to Palette.PRIME_ROOF,
+        Palette.HOUSE_RIGHT to Palette.PRIME_LEFT,
+    )
+
+    private val recolourCache = HashMap<Pair<Sprite, City.Style>, Sprite>()
+
+    /** [style] に合わせて色を変えた絵を返す。作った結果は使い回す。 */
+    fun styled(sprite: Sprite, style: City.Style): Sprite {
+        if (style == City.Style.STANDARD) return sprite
+        return recolourCache.getOrPut(sprite to style) {
+            recolour(
+                sprite,
+                when (style) {
+                    City.Style.RURAL -> RURAL_MAP
+                    City.Style.GRITTY -> GRITTY_MAP
+                    City.Style.PRIME -> PRIME_MAP
+                    else -> emptyMap()
+                },
+            )
+        }
+    }
 
     /**
      * 高さ [h] 論理ピクセルの箱を描く。

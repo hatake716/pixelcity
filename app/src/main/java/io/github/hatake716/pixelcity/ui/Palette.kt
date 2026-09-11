@@ -123,6 +123,23 @@ object Palette {
     const val SKY = 57
     const val SKY_DEEP = 58
 
+    // --- 街の性格づけ用（v3）。同じ建物でも街ごとに色を変える ---
+    /** 田園都市: 木造と漆喰の、あたたかい低層。 */
+    const val RURAL_ROOF = 59
+    const val RURAL_ROOF_DARK = 60
+    const val RURAL_WALL = 61
+    const val RURAL_WALL_DARK = 62
+    /** 工業都市: すすけたレンガとトタン。 */
+    const val GRIT_ROOF = 63
+    const val GRIT_ROOF_DARK = 64
+    const val GRIT_WALL = 65
+    const val GRIT_WALL_DARK = 66
+    /** 大都市: 磨かれたガラスと白い石。 */
+    const val PRIME_ROOF = 67
+    const val PRIME_LEFT = 68
+    const val PRIME_RIGHT = 69
+    const val PRIME_GLASS = 70
+
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
         // 地面
@@ -165,6 +182,15 @@ object Palette {
         q(0xFF8FA8D8.toInt()), q(0xFFF4F4F0.toInt()),
         q(0xFF9AA6BE.toInt()), q(0xFFEFC050.toInt()),
         q(0xFF7EB8E8.toInt()), q(0xFF3A6EA8.toInt()),
+        // 田園: こげ茶の瓦、生成りの漆喰
+        q(0xFF8A6A4A.toInt()), q(0xFF5E4630.toInt()),
+        q(0xFFF0E4C8.toInt()), q(0xFFC8B894.toInt()),
+        // 工業: すすけた赤レンガ、灰色のトタン
+        q(0xFF7A4838.toInt()), q(0xFF522E24.toInt()),
+        q(0xFF8E8478.toInt()), q(0xFF5E564E.toInt()),
+        // 大都市: 白い石と、青みの強いガラス
+        q(0xFFE8ECF0.toInt()), q(0xFFC0CAD6.toInt()),
+        q(0xFF8E9AAA.toInt()), q(0xFF4A8EC8.toInt()),
     )
 
     fun of(index: Int): Int =
