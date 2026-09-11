@@ -46,6 +46,11 @@ class CityRenderer {
         viewHeight: Int,
         overlay: Overlay = Overlay.NONE,
         highlight: IntArray? = null,
+        /**
+         * これから建てる（壊す）ものとして選ばれているタイル。
+         * タイル番号（y * width + x）の集まり。青い影をつける。
+         */
+        selected: Set<Int>? = null,
         suggest: ((Int, Int) -> Boolean)? = null,
         suggestOn: Boolean = false,
         /**
@@ -193,7 +198,25 @@ class CityRenderer {
             }
         }
 
-        // --- 5周目: 選択中の枠 ---
+        // --- 5周目: これから建てるマスの青い影 ---
+        //
+        // 地面や建物の上に重ねて染める。枠だけだと、
+        // 建物が建っているマスで見分けがつきにくい。
+        if (!selected.isNullOrEmpty()) {
+            for (index in selected) {
+                val tx = index % city.width
+                val ty = index / city.width
+                if (tx < 0 || ty < 0 || tx >= city.width || ty >= city.height) continue
+                val hx = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
+                val hy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen
+                tintDiamond(canvas, hx, hy, zoomNum, zoomDen, clipTop, clipBottom)
+                outlineDiamond(
+                    canvas, hx, hy, zoomNum, zoomDen, Palette.WATER_LIT, clipTop, clipBottom,
+                )
+            }
+        }
+
+        // --- 6周目: 選択中の枠 ---
         if (highlight != null && highlight.size >= 2) {
             val span = if (highlight.size >= 3) highlight[2] else 1
             for (dy in 0 until span) for (dx in 0 until span) {
@@ -393,6 +416,34 @@ class CityRenderer {
     }
 
     /** 菱形の縁をなぞる。 */
+    /**
+     * 菱形を青く染める。
+     *
+     * 塗りつぶすと下の建物が見えなくなるので、市松に置いて透かす。
+     * 青は水の色を使う。街の建物とぶつからず、選んだことが目に入る。
+     */
+    private fun tintDiamond(
+        canvas: PixelCanvas, x: Int, y: Int, zoomNum: Int, zoomDen: Int,
+        clipTop: Int, clipBottom: Int,
+    ) {
+        val w = Iso.TILE_W * zoomNum / zoomDen
+        val h = Iso.TILE_H * zoomNum / zoomDen
+        // 拡大率が低いと1マスが小さいので、透かしを粗くしすぎない
+        val step = if (w >= 32) 2 else 1
+        for (yy in 0 until h) {
+            val ty = y + yy
+            if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
+            for (xx in 0 until w) {
+                if (step == 2 && (xx + yy) % 2 != 0) continue
+                val dx = (xx + 0.5f - w / 2f) / (w / 2f)
+                val dy = (yy + 0.5f - h / 2f) / (h / 2f)
+                if (Math.abs(dx) + Math.abs(dy) > 1f) continue
+                val tx = x + xx
+                if (tx in 0 until canvas.width) canvas.set(tx, ty, Palette.WATER)
+            }
+        }
+    }
+
     private fun outlineDiamond(
         canvas: PixelCanvas, x: Int, y: Int, zoomNum: Int, zoomDen: Int, value: Int,
         clipTop: Int, clipBottom: Int,

@@ -4,7 +4,11 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.View
+import android.os.Build
 import android.view.WindowManager
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import android.widget.FrameLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -26,6 +30,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        goFullScreen()
         root = FrameLayout(this)
         setContentView(root)
         // 旧版（1スロットだけ）で遊んでいた街を、最初の枠へ引き継ぐ。
@@ -236,6 +241,35 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         gameView?.resume()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // 通知を引き下ろしたあとなどに、また隠す
+        if (hasFocus) goFullScreen()
+    }
+
+    /**
+     * 画面いっぱいに描く。
+     *
+     * 上下の帯（状態表示と操作の欄）を隠して、街を広く見せる。
+     * 画面の端から引き出せば、いつでも出てくる。
+     */
+    private fun goFullScreen() {
+        // 表示領域を、切り欠きのある端末でも端まで広げる
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            // 端から引き出すと一時的に出て、しばらくすると自動で隠れる
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
     }
 
     override fun onDestroy() {

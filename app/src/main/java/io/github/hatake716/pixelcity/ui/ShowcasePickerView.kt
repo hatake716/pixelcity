@@ -53,10 +53,12 @@ class ShowcasePickerView(context: Context) : View(context) {
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        scale = max(1, w / GameView.LOGICAL_W)
-        while (scale > 1 && h / scale < GameView.LOGICAL_H) scale--
-        logicalH = (h / scale).coerceIn(GameView.LOGICAL_H, GameView.LOGICAL_H_MAX)
-        if (pixels.height != logicalH) {
+        // ゲーム画面と同じ計算を使う。ばらばらに書くと、
+        // 画面を移ったときに大きさが変わってしまう。
+        val (s2, _, lh) = GameView.layoutFor(w, h)
+        scale = s2
+        logicalH = lh
+        if (pixels.width != GameView.LOGICAL_W || pixels.height != logicalH) {
             pixels = PixelCanvas(GameView.LOGICAL_W, logicalH)
             frame = Bitmap.createBitmap(GameView.LOGICAL_W, logicalH, Bitmap.Config.ARGB_8888)
             buffer = IntArray(GameView.LOGICAL_W * logicalH)

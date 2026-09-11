@@ -47,12 +47,50 @@ class GameView(
          *
          * ドット絵を細かくしたぶん、1画面に入る情報量を確保するために広くとる。
          * 1080px の端末なら 2倍、1440px なら 2〜3倍で表示される。
+         *
+         * 端末の幅を倍率で割り切った値を入れるので、[LOGICAL_W_BASE] を
+         * そのまま使うとはかぎらない。こうしないと、画面の左右に余白が出る。
+         * 最初に画面の大きさが決まった時点（[onSizeChanged]）で1度だけ決まる。
          */
-        const val LOGICAL_W = 480
+        var LOGICAL_W = LOGICAL_W_BASE
+            private set
+
+        /** 横幅の目安。実際の値は端末の幅にあわせて決まる。 */
+        const val LOGICAL_W_BASE = 480
         /** 縦の既定値。実際の高さは端末の縦横比にあわせて決まる。 */
         const val LOGICAL_H = 420
-        /** 縦に取りうる範囲。 */
-        const val LOGICAL_H_MAX = 1000
+        /** 横に取りうる上限。極端に横長の画面でも、間延びしすぎないようにする。 */
+        const val LOGICAL_W_MAX = 900
+
+        /**
+         * 端末の大きさから、拡大率と論理解像度を決める。
+         *
+         * 画面いっぱいに、余白なく描くための計算。
+         *  - 倍率は整数。半端な倍率にすると、1ドットの大きさが揃わずぼやける
+         *  - 論理解像度は「端末の大きさ ÷ 倍率」。割り切れる値にすれば余白が出ない
+         *
+         * タイトル・スロット・おてほんの各画面でも同じ計算を使う。
+         * ばらばらに書くと、画面を移ったときに大きさが変わってしまう。
+         *
+         * @return (倍率, 論理の横幅, 論理の高さ)
+         */
+        fun layoutFor(w: Int, h: Int): Triple<Int, Int, Int> {
+            var scale = max(1, w / LOGICAL_W_BASE)
+            while (scale > 1 && h / scale < LOGICAL_H) scale--
+            val lw = (w / scale).coerceIn(LOGICAL_W_BASE, LOGICAL_W_MAX)
+            val lh = (h / scale).coerceIn(LOGICAL_H, LOGICAL_H_MAX)
+            // 横幅はここで決めてしまう。タイトル画面など、ゲーム画面より先に
+            // 表示されるものからも参照されるので、最初に呼ばれた時点で入れておく。
+            LOGICAL_W = lw
+            return Triple(scale, lw, lh)
+        }
+        /**
+         * 縦に取りうる上限。
+         *
+         * 端末の高さを倍率で割った値がこれを超えると、上下に余白が出る。
+         * 1080×2400 の端末は 2倍で 1200 必要になるので、余裕をもたせてある。
+         */
+        const val LOGICAL_H_MAX = 1600
         /** 1か月の実時間（ミリ秒）。速度倍率で割る。 */
         const val MONTH_MILLIS = 8_000L
 
@@ -83,6 +121,9 @@ class GameView(
          */
         private const val PINCH_RATIO = 1.5f
 
+        /** 「じっこう」「やめる」の帯の高さ。 */
+        private const val SELECTION_BAR_H = 30
+
         /** 人口の節目。越えるたびに短い音が鳴る。 */
         private val MILESTONES = intArrayOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 
@@ -104,7 +145,7 @@ class GameView(
          * 禁則処理で句読点が2文字ぶん はみ出せるので、そのぶん狭くとる。
          * ここを画面幅ぎりぎりにすると、文の右端が切れる。
          */
-        private const val BODY_WRAP_W = LOGICAL_W - 52
+        private val BODY_WRAP_W: Int get() = LOGICAL_W - 52
 
         // 画面まわりの色。どのパレット索引を使うかをここにまとめる。
         /** パネルや帯の下地。 */
@@ -117,7 +158,7 @@ class GameView(
         private const val C_DIM = Palette.UI_DIM
         /** モニュメント一覧の行の高さ。 */
         private const val MONUMENT_ROW_H = 20
-        private const val CLOSE_X = LOGICAL_W - 84
+        private val CLOSE_X: Int get() = LOGICAL_W - 84
     }
 
     /** 画面の状態。 */
@@ -216,6 +257,38 @@ class GameView(
     private var pinched = false
     /** 道具が切り替わったので、指を離すまで置くのをやめる。 */
     private var strokeCancelled = false
+
+    // --- 選んでいるマス ---
+    /**
+     * これから建てる（壊す）マス。タイル番号（y * width + x）で持つ。
+     *
+     * タップした時点では何も起きず、ここに溜まるだけ。
+     * 「じっこう」を押して初めて実行する。
+     * 押し間違いで街が壊れたり、資金が減ったりしないようにするため。
+     */
+    private val selection = LinkedHashSet<Int>()
+
+    /** いま選んでいるマスの数。 */
+    val selectedCount: Int get() = selection.size
+
+    /** 道具を変える。選んであったマスは捨てられる。 */
+    fun selectTool(kind: TileKind) {
+        selectedTool = kind
+        invalidate()
+    }
+
+    /** 選んだマスをまとめて実行する。ツールバーの「じっこう」と同じ。 */
+    fun runSelectionForTest() = runSelection()
+
+    /** なぞって選んでいる最中に、足しているのか外しているのか。 */
+    private var strokeAdding = true
+
+    /** 選んだマスを全部実行したときの費用。 */
+    private val selectionCost: Int
+        get() {
+            if (selectedTool == TileKind.EMPTY) return selection.size * BuildCost.BULLDOZE
+            return selection.size * BuildCost.cost(selectedTool)
+        }
     private var toolScroll = 0
     private var categoryScroll = 0
     private var draggingToolbar = false
@@ -228,8 +301,18 @@ class GameView(
     private var monthAccumulator = 0L
     private var lastFrameTime = 0L
 
+    /**
+     * いま持っている道具。
+     *
+     * 変えたら、選んであるマスは捨てる。
+     * 道路のつもりで選んだマスに、そのまま発電所が建っては困る。
+     */
     var selectedTool: TileKind = TileKind.ROAD
-        private set
+        private set(value) {
+            if (field == value) return
+            field = value
+            selection.clear()
+        }
 
     /** いま開いているツールの分類。 */
     private var category: Hud.Category = Hud.Category.ZONE
@@ -369,12 +452,14 @@ class GameView(
         // 横幅にあわせた整数倍で拡大する。ただし、その倍率で縦に最低限の
         // 高さ（LOGICAL_H）が入らない画面（横向きなど）では、縦に合わせて縮める。
         // 横だけで決めると、横向きで文字が巨大になり画面からあふれる。
-        scale = max(1, w / LOGICAL_W)
-        while (scale > 1 && h / scale < LOGICAL_H) scale--
-        // 縦は端末にあわせて論理解像度そのものを伸ばす。
-        // こうしないと、細長い端末で上下に大きな余白ができ、マップが潰れる。
-        logicalH = (h / scale).coerceIn(LOGICAL_H, LOGICAL_H_MAX)
-        if (pixels.height != logicalH) {
+        // 横も縦も、端末にあわせて論理解像度そのものを伸ばす。
+        // 倍率で割り切った値にすると、拡大しても1ドットが正方形のまま、
+        // かつ画面いっぱいに描けて余白が出ない。
+        val (s2, lw, lh) = layoutFor(w, h)
+        scale = s2
+        LOGICAL_W = lw
+        logicalH = lh
+        if (pixels.width != LOGICAL_W || pixels.height != logicalH) {
             pixels = PixelCanvas(LOGICAL_W, logicalH)
             frame = Bitmap.createBitmap(LOGICAL_W, logicalH, Bitmap.Config.ARGB_8888)
             frameRow = IntArray(LOGICAL_W * logicalH)
@@ -415,6 +500,7 @@ class GameView(
         renderer.draw(
             pixels, city, camX, camY, zoomNum, zoomDen, mapTop, mapHeight, info.overlay,
             highlightForSelection(),
+            selected = selection,
             suggest = placementHint(),
             suggestOn = blinkOn(),
             animationPhase = growthPhase(),
@@ -422,6 +508,14 @@ class GameView(
 
         drawStatusBar()
         drawToolbar(mapTop + mapHeight)
+        // 選んでいるあいだだけ、ツールバーの上に帯を重ねる。
+        // 地図の大きさは変えない。選ぶたびに地図が動くと、狙いが定まらない。
+        if (selection.isNotEmpty() && screen == Screen.PLAYING) {
+            drawSelectionBar(selectionBarBottom())
+        } else {
+            runButtonX = 0 to 0
+            cancelButtonX = 0 to 0
+        }
 
         when (screen) {
             Screen.BUDGET -> drawBudget()
@@ -575,13 +669,18 @@ class GameView(
         }
 
         // 選んでいるものの名前と値段
+        val labelY = top + Hud.TOOLBAR_HEIGHT - 20
         val tool = Hud.TOOLS.firstOrNull { it.kind == selectedTool }
         if (tool != null) {
-            val price = if (tool.kind == TileKind.EMPTY) BuildCost.BULLDOZE else BuildCost.cost(tool.kind)
+            val price =
+                if (tool.kind == TileKind.EMPTY) BuildCost.BULLDOZE
+                else BuildCost.cost(tool.kind)
             text.textSize = 15
             val locked = !BuildCost.isUnlocked(tool.kind, city.population)
-            val label = if (locked) "${tool.label}（まだ つかえません）" else "${tool.label} $${price}"
-            text.draw(pixels, label, 4, top + Hud.TOOLBAR_HEIGHT - 20, if (locked) C_DIM else C_TEXT)
+            val label =
+                if (locked) "${tool.label}（まだ つかえません）"
+                else "${tool.label} $${price}"
+            text.draw(pixels, label, 4, labelY, if (locked) C_DIM else C_TEXT)
         }
 
         // 右下に情報・予算・けんちくの入口。
@@ -609,6 +708,71 @@ class GameView(
         }
         if (tutorial.active && tutorial.step?.highlightSpeed == true && blinkOn()) {
             pixels.drawRect(SPEED_X - 4, 17, 40, 24, C_TEXT)
+        }
+    }
+
+    /** 「じっこう」「やめる」の横の範囲。押したか調べるのに使う。 */
+    private var runButtonX = 0 to 0
+    private var cancelButtonX = 0 to 0
+    /** 釦の縦の位置。 */
+    private var selectionButtonY = 0
+
+    /**
+     * 選んだマスの数と値段、そして「じっこう」「やめる」。
+     *
+     * ツールバーの中には入れず、そのすぐ上に帯として出す。
+     * 中に詰めると、情報・予算の釦と重なってしまう。
+     *
+     * 押す前に「何マスに、いくらかかるか」が見えるようにする。
+     * 実行してから資金が減っていることに気づくのでは遅い。
+     */
+    private fun drawSelectionBar(bottom: Int) {
+        val h = SELECTION_BAR_H
+        val y = bottom - h
+        selectionButtonY = y
+
+        pixels.fillRect(0, y, LOGICAL_W, h, C_BG)
+        pixels.fillRect(0, y, LOGICAL_W, 2, Palette.WATER_LIT)
+
+        val cost = selectionCost
+        val enough = city.funds >= cost
+
+        // 何を、何マス、いくらで
+        text.textSize = 15
+        val what = if (selectedTool == TileKind.EMPTY) "こわす" else "たてる"
+        val head = "$what ${selection.size}マス"
+        text.draw(pixels, head, 6, y + 6, C_TEXT)
+        text.textSize = 14
+        text.draw(
+            pixels, "$${cost}", 6 + text.measure(head) + 10, y + 8,
+            if (enough) C_DIM else Palette.RED,
+        )
+
+        // 右から「やめる」「じっこう」の順に置く
+        val by = y + 4
+        val bh = h - 8
+        var bx = LOGICAL_W - 6
+        run {
+            val label = "やめる"
+            val w = text.measure(label) + 16
+            bx -= w
+            pixels.fillRect(bx, by, w, bh, C_BG)
+            pixels.drawRect(bx, by, w, bh, C_LINE)
+            text.draw(pixels, label, bx + 8, by + 4, C_TEXT)
+            cancelButtonX = bx to (bx + w)
+        }
+        run {
+            val label = "じっこう"
+            val w = text.measure(label) + 20
+            bx -= w + 8
+            // 押せるときは目立たせる
+            pixels.fillRect(bx, by, w, bh, if (enough) Palette.UI_ACCENT else C_BG)
+            pixels.drawRect(bx, by, w, bh, C_LINE)
+            text.draw(
+                pixels, label, bx + 10, by + 4,
+                if (enough) Palette.UI_BG else C_DIM,
+            )
+            runButtonX = bx to (bx + w)
         }
     }
 
@@ -690,8 +854,12 @@ class GameView(
         val counter = if (remain > 0) "あと $remain" else ""
         // 章の名前を小さく添える。どこまで進んだかが分かるように。
         text.textSize = 11
-        val chapterLabel = "${tutorial.chapterNumber()}/${tutorial.chapterCount()}　${step.chapter.summary}"
-        text.draw(pixels, chapterLabel, 8, y - 13, Palette.UI_DIM)
+        // 章の見出し。マスを選んでいるあいだは、その帯と重なるので出さない。
+        if (selection.isEmpty()) {
+            val chapterLabel =
+                "${tutorial.chapterNumber()}/${tutorial.chapterCount()}　${step.chapter.summary}"
+            text.draw(pixels, chapterLabel, 8, y - 13, Palette.UI_DIM)
+        }
 
         text.textSize = 16
         val counterW = if (counter.isEmpty()) 0 else text.measure(counter) + 12
@@ -895,9 +1063,13 @@ class GameView(
                 draggingCategories = screen == Screen.PLAYING &&
                     ly >= tbTop + 4 && ly < tbTop + 4 + Hud.CATEGORY_H
                 draggingToolbar = screen == Screen.PLAYING && ly >= tbTop && !draggingCategories
-                // マップ上なら、押した時点から置き始める（なぞって敷けるように）
+                // マップ上なら、押した時点から選び始める（なぞってまとめて選べる）
                 if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null) {
-                    applyToolAt(lx, ly)
+                    // すでに選んであるマスを押したら、なぞるあいだは「外す」側にする。
+                    // 選びすぎたときに、同じ動きで取り消せる。
+                    val at = tileIndexAt(lx, ly)
+                    strokeAdding = at == null || at !in selection
+                    selectAt(lx, ly)
                 }
                 return true
             }
@@ -988,8 +1160,8 @@ class GameView(
                 if (screen == Screen.PLAYING && isOnMap(ly) &&
                     pendingMonument == null && !strokeCancelled
                 ) {
-                    // なぞって連続で置く
-                    applyToolAt(lx, ly)
+                    // なぞって連続で選ぶ
+                    selectAt(lx, ly)
                 }
                 lastTouchX = event.x
                 lastTouchY = event.y
@@ -1026,8 +1198,26 @@ class GameView(
         else -> Sfx.BUILD
     }
 
-    private fun isOnMap(ly: Int): Boolean =
-        ly >= Hud.STATUS_HEIGHT && ly < logicalH - Hud.TOOLBAR_HEIGHT
+    /**
+     * 「じっこう」の帯の下端。
+     *
+     * チュートリアルの説明が出ているときは、その上に置く。
+     * 重ねると、説明に隠れて釦が押せなくなる。
+     */
+    private fun selectionBarBottom(): Int {
+        var bottom = logicalH - Hud.TOOLBAR_HEIGHT
+        if (tutorial.active && tutorial.step != null) bottom -= bannerHeight()
+        return bottom
+    }
+
+    private fun isOnMap(ly: Int): Boolean {
+        if (ly < Hud.STATUS_HEIGHT) return false
+        var bottom = logicalH - Hud.TOOLBAR_HEIGHT
+        // 帯が出ているあいだは、その上だけが地図。
+        // でないと、釦を押したときに下のマスまで選んでしまう。
+        if (selection.isNotEmpty()) bottom = selectionBarBottom() - SELECTION_BAR_H
+        return ly < bottom
+    }
 
     private fun handleTap(lx: Int, ly: Int) {
         when (screen) {
@@ -1080,6 +1270,20 @@ class GameView(
                 return
             }
             Screen.PLAYING -> {}
+        }
+
+        // 「じっこう」「やめる」。マスを選んでいるあいだだけ出る。
+        // チュートリアルの帯より先に見る。でないと、
+        // 説明の「つぎへ」に取られて押せない。
+        if (selection.isNotEmpty() &&
+            ly >= selectionButtonY && ly < selectionButtonY + SELECTION_BAR_H
+        ) {
+            if (lx in runButtonX.first..runButtonX.second) { runSelection(); return }
+            if (lx in cancelButtonX.first..cancelButtonX.second) {
+                clearSelection()
+                audio.play(Sfx.CLOSE)
+                return
+            }
         }
 
         // チュートリアルの「つぎへ」
@@ -1345,58 +1549,131 @@ class GameView(
         return ((a + b) / 2f) to ((b - a) / 2f)
     }
 
-    private fun applyToolAt(lx: Int, ly: Int) {
+    /** 画面の点が指すタイルの番号。マップ外なら null。 */
+    private fun tileIndexAt(lx: Int, ly: Int): Int? {
+        val (tx, ty) = mapCoords(lx, ly) ?: return null
+        return ty * city.width + tx
+    }
+
+    /**
+     * そのマスを、選んでいるものに足す（またはそこから外す）。
+     *
+     * ここでは建てない。溜めるだけ。
+     * 置けない場所は選ばせない。選べてしまうと、
+     * 「じっこう」を押したときに何も起きず、理由も分からなくなる。
+     */
+    private fun selectAt(lx: Int, ly: Int) {
         if (city.gameOver) return
         val (tx, ty) = mapCoords(lx, ly) ?: return
+        val index = ty * city.width + tx
 
+        if (!strokeAdding) {
+            if (selection.remove(index)) invalidate()
+            return
+        }
+        if (index in selection) return
+
+        // 選べない場所は、その場で理由を出す
+        val blocker = selectionBlocker(tx, ty)
+        if (blocker != null) {
+            // なぞっている最中に何度も言わない
+            if (!dragged) { showToast(blocker); audio.play(Sfx.DENIED) }
+            return
+        }
+        selection.add(index)
+        audio.play(Sfx.TAP)
+        invalidate()
+    }
+
+    /**
+     * そのマスを選べない理由。選べるなら null。
+     *
+     * 実行したときに断られる条件は、選ぶ時点で弾いておく。
+     */
+    private fun selectionBlocker(tx: Int, ty: Int): String? {
         if (selectedTool == TileKind.EMPTY) {
-            if (tutorial.active) { showToast("いまは こわせません"); audio.play(Sfx.DENIED); return }
-            if (city.bulldoze(tx, ty)) {
-                audio.play(Sfx.BULLDOZE)
-                onStateChanged?.invoke()
-                invalidate()
-            }
-            return
+            if (tutorial.active) return "いまは こわせません"
+            return null
         }
-
-        if (!tutorial.allowsBuild(selectedTool)) {
-            showToast("いまは ちがう どうぐです")
-            audio.play(Sfx.DENIED)
-            return
-        }
-
-        // 同じところに同じものを置き直さない（なぞったときに無駄に払わない）
-        val existing = city.tileAt(tx, ty)
-        if (existing.kind == selectedTool) return
-
-        val blocker = city.buildBlocker(tx, ty, selectedTool)
-        if (blocker != null) { showToast(blocker); audio.play(Sfx.DENIED); return }
-
-        // 求められた数を超えて置かせない。余分な設置は資金と土地の無駄になり、
+        if (!tutorial.allowsBuild(selectedTool)) return "いまは ちがう どうぐです"
+        // 求められた数を超えて選ばせない。余分な設置は資金と土地の無駄になり、
         // 「あと N」の意味も分からなくなる。
-        if (tutorial.active && tutorial.remaining() <= 0 && tutorial.step?.highlightTool != null) {
-            showToast("つぎの ステップへ すすみます")
-            return
+        if (tutorial.active && tutorial.step?.highlightTool != null &&
+            tutorial.remaining() <= selection.size
+        ) {
+            return "つぎの ステップへ すすみます"
         }
-
-        // チュートリアル中は、道路に接していない区分・発電所を断る。
-        // 置けてしまうと「電気の来ない街」ができて、
-        // 何が悪いのか分からないまま詰んでしまう。
+        // すでに同じものが建っているところは選ばない（払い損になる）
+        if (city.tileAt(tx, ty).kind == selectedTool) return null
+        city.buildBlocker(tx, ty, selectedTool)?.let { return it }
+        // チュートリアル中は、道路に接していない区分・発電所を断る
         if (tutorial.active && !city.touchesRoad(tx, ty) &&
             (selectedTool.isZone || selectedTool.isPowerPlant)
         ) {
-            showToast("どうろの となりに おいてください")
-            return
+            return "どうろの となりに おいてください"
+        }
+        return null
+    }
+
+    /** 選んだマスを取り消す。 */
+    private fun clearSelection() {
+        if (selection.isEmpty()) return
+        selection.clear()
+        invalidate()
+    }
+
+    /**
+     * 選んだマスを、まとめて実行する。
+     *
+     * 資金が足りなくなったら、そこで止める。
+     * 一部だけ建って残りが建たないのは分かりにくいので、
+     * 何マスできたかを伝える。
+     */
+    private fun runSelection() {
+        if (city.gameOver || selection.isEmpty()) return
+
+        // 先に足りるか見る。足りなければ、建てられるところまでで止まる。
+        val cost = selectionCost
+        if (city.funds < cost) {
+            val each = if (selectedTool == TileKind.EMPTY) BuildCost.BULLDOZE
+            else BuildCost.cost(selectedTool)
+            val affordable = if (each <= 0) selection.size else city.funds / each
+            if (affordable <= 0) {
+                showToast("しきんが たりません")
+                audio.play(Sfx.DENIED)
+                return
+            }
+            showToast("しきんが たりないので ${affordable}マスだけ")
         }
 
-        if (city.build(tx, ty, selectedTool)) {
-            audio.play(sfxForTool(selectedTool))
-            tutorial.onBuilt(selectedTool)
+        var done = 0
+        for (index in selection.toList()) {
+            val tx = index % city.width
+            val ty = index / city.width
+            val ok = if (selectedTool == TileKind.EMPTY) {
+                city.bulldoze(tx, ty)
+            } else {
+                if (city.tileAt(tx, ty).kind == selectedTool) false
+                else city.build(tx, ty, selectedTool)
+            }
+            if (ok) {
+                done++
+                if (selectedTool != TileKind.EMPTY) {
+                    tutorial.onBuilt(selectedTool)
+                }
+            }
+        }
+
+        if (done > 0) {
+            audio.play(if (selectedTool == TileKind.EMPTY) Sfx.BULLDOZE else sfxForTool(selectedTool))
             showTutorialMessageIfNeeded()
             if (tutorial.finished) onTutorialFinished?.invoke()
             onStateChanged?.invoke()
-            invalidate()
+        } else {
+            audio.play(Sfx.DENIED)
         }
+        selection.clear()
+        invalidate()
     }
 
     private fun showToast(msg: String) {
