@@ -16,15 +16,31 @@ import io.github.hatake716.pixelcity.game.TileKind
 class CityRenderer {
 
     /** 地図に重ねて見る情報。 */
-    enum class Overlay(val label: String) {
+    /**
+     * 地図に重ねて見る情報。
+     *
+     * [good] が true のものは「多いほど良い」ので青〜緑、
+     * false のものは「多いほど悪い」ので黄〜赤で塗る。
+     */
+    enum class Overlay(val label: String, val good: Boolean = true) {
         NONE("なし"),
-        POPULATION("じんこうみつど"),
+
+        // --- 区分の育ち具合 ---
+        RESIDENTIAL("じゅうたく みつど"),
+        COMMERCIAL("しょうぎょう みつど"),
+        INDUSTRIAL("こうぎょう みつど"),
+
+        // --- 土地の質 ---
         LAND_VALUE("ちか"),
-        POLLUTION("こうがい"),
-        CRIME("はんざい"),
-        TRAFFIC("こうつうりょう"),
-        POWER("でんりょく"),
-        WATER("すいどう"),
+        POLLUTION("こうがい", good = false),
+        CRIME("はんざい", good = false),
+
+        // --- 足まわり ---
+        TRAFFIC("こうつうりょう", good = false),
+        POWER("でんりょく", good = false),
+        WATER("すいどう", good = false),
+
+        // --- くらし ---
         HEALTH("けんこう"),
         EDUCATION("きょういく"),
         FIRE_RISK("しょうぼう"),
@@ -121,44 +137,14 @@ class CityRenderer {
             blit(canvas, ground, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
         }
 
-        // --- 2周目: 情報の重ね表示（地面の上、建物の下） ---
-        if (overlay != Overlay.NONE) {
-            forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
-                val tile = city.tileAt(tx, ty)
-                // 0（薄い）〜5（濃い）。値が大きいほど目立つ。
-                val level = when (overlay) {
-                    Overlay.NONE -> 0
-                    Overlay.POPULATION ->
-                        if (tile.kind == TileKind.ZONE_R) tile.stage * 2 else 0
-                    Overlay.LAND_VALUE -> tile.landValue / 20
-                    Overlay.POLLUTION -> tile.pollution / 20
-                    Overlay.CRIME -> tile.crime / 20
-                    Overlay.TRAFFIC ->
-                        if (tile.kind.capacity <= 0) 0
-                        else (tile.traffic * 5 / tile.kind.capacity.coerceAtLeast(1)).coerceAtMost(5)
-                    Overlay.POWER -> if (tile.kind == TileKind.EMPTY) 0 else if (tile.powered) 1 else 5
-                    Overlay.WATER -> if (tile.kind == TileKind.EMPTY) 0 else if (tile.watered) 1 else 5
-                    Overlay.HEALTH -> tile.health / 20
-                    Overlay.EDUCATION -> tile.education / 20
-                    Overlay.FIRE_RISK -> tile.safety / 20
-                }
-                if (level > 0) {
-                    tintDiamond(
-                        canvas, sx, sy, zoomNum, zoomDen,
-                        level.coerceIn(1, 5), overlay, clipTop, clipBottom,
-                    )
-                }
-            }
-        }
-
-        // --- 3周目: 置ける場所の目印 ---
+        // --- 2周目: 置ける場所の目印 ---
         if (suggest != null && suggestOn) {
             forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
                 if (suggest(tx, ty)) outlineDiamond(canvas, sx, sy, zoomNum, zoomDen, Palette.UI_ACCENT, clipTop, clipBottom)
             }
         }
 
-        // --- 4周目: 建物。奥から手前へ ---
+        // --- 3周目: 建物。奥から手前へ ---
         // (tx+ty) が同じものは同じ奥行き。行ごとに描けば自然に前後が揃う。
         val maxDepth = city.width + city.height
         for (depth in 0 until maxDepth) {
@@ -200,6 +186,27 @@ class CityRenderer {
                     }
                 }
                 tx--
+            }
+        }
+
+        // --- 4周目: 情報の重ね表示 ---
+        //
+        // 建物の**上**に重ねる。地面の上・建物の下に描くと、
+        // 育った街では建物にすっかり隠れて、何も見えない。
+        // 「地図に重ねて見る」ものなので、建物ごと染めるのが正しい。
+        if (overlay != Overlay.NONE) {
+            forEachVisibleTile(
+                city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom,
+            ) { tx, ty, sx, sy ->
+                val tile = city.tileAt(tx, ty)
+                // 0（薄い）〜5（濃い）。値が大きいほど目立つ。
+                val level = levelFor(overlay, tile)
+                if (level > 0) {
+                    tintTile(
+                        canvas, city, tx, ty, sx, sy, zoomNum, zoomDen,
+                        level.coerceIn(1, 5), overlay, clipTop, clipBottom,
+                    )
+                }
             }
         }
 
@@ -375,12 +382,64 @@ class CityRenderer {
     }
 
     /** 菱形の内側を市松で暗くする。情報の重ね表示に使う。 */
+    /**
+     * そのマスを、建物ごと染める。
+     *
+     * 地面の菱形だけを塗ると、育った街では建物に隠れて見えない。
+     * そのマスに建っているものの高さぶん、上へも塗る。
+     */
+    private fun tintTile(
+        canvas: PixelCanvas, city: City, tx: Int, ty: Int, sx: Int, sy: Int,
+        zoomNum: Int, zoomDen: Int, level: Int, overlay: Overlay,
+        clipTop: Int, clipBottom: Int,
+    ) {
+        val tile = city.tileAt(tx, ty)
+        val sprite = buildingFor(city, tx, ty, tile)
+        val c = overlayColour(overlay, level)
+        val w = Iso.TILE_W * zoomNum / zoomDen
+        val h = Iso.TILE_H * zoomNum / zoomDen
+
+        if (sprite == null) {
+            // 何も建っていない。地面の菱形だけ塗る。
+            tintDiamond(canvas, sx, sy, zoomNum, zoomDen, level, overlay, clipTop, clipBottom)
+            return
+        }
+
+        // 建物の絵は、足元の菱形より上に伸びている。
+        // 描いたのと同じ位置に重ね、絵のある画素だけを染める。
+        val dw = sprite.width * zoomNum / zoomDen
+        val dh = sprite.height * zoomNum / zoomDen
+        val bx = sx + (w - dw) / 2
+        val by = sy + h - dh
+        for (yy in 0 until dh) {
+            val py = by + yy
+            if (py < clipTop || py >= clipBottom || py < 0 || py >= canvas.height) continue
+            for (xx in 0 until dw) {
+                val px = bx + xx
+                if (px < 0 || px >= canvas.width) continue
+                // 絵の透けているところは塗らない（建物の形に沿って染まる）
+                val v = sprite.at(xx * zoomDen / zoomNum, yy * zoomDen / zoomNum)
+                if (v == Pix.TRANSPARENT) continue
+                if ((px + py) % 2 == 0) canvas.set(px, py, c)
+            }
+        }
+        // 足元の地面も、同じように染める
+        tintDiamond(canvas, sx, sy, zoomNum, zoomDen, level, overlay, clipTop, clipBottom)
+    }
+
+    /**
+     * 地図に重ねる色。0〜5 の濃さで塗り分ける。
+     *
+     * 建物の上から塗るので、建物が完全に消えないよう市松にする。
+     * 全部塗ってしまうと、どこに何が建っているか分からなくなる。
+     */
     private fun tintDiamond(
         canvas: PixelCanvas, x: Int, y: Int, zoomNum: Int, zoomDen: Int, level: Int,
         overlay: Overlay, clipTop: Int, clipBottom: Int,
     ) {
         val w = Iso.TILE_W * zoomNum / zoomDen
         val h = Iso.TILE_H * zoomNum / zoomDen
+        val c = overlayColour(overlay, level)
         for (yy in 0 until h) {
             val ty = y + yy
             if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
@@ -393,29 +452,90 @@ class CityRenderer {
                 // 濃さに応じた色で市松に塗る。地の色に足すのではなく、
                 // 決まった色を置くことで、どの地面の上でも同じ見え方にする。
                 if ((tx + ty) % 2 == 0) {
-                    // 「多いほど良い」ものは青〜緑、「多いほど悪い」ものは黄〜赤。
-                    val bad = overlay == Overlay.POLLUTION || overlay == Overlay.CRIME ||
-                        overlay == Overlay.TRAFFIC || overlay == Overlay.POWER ||
-                        overlay == Overlay.WATER
-                    val c = if (bad) {
-                        when {
-                            level >= 5 -> Palette.RED_DARK
-                            level >= 4 -> Palette.RED
-                            level >= 3 -> Palette.GOLD
-                            level >= 2 -> Palette.WINDOW_LIT
-                            else -> Palette.WHITE
-                        }
-                    } else {
-                        when {
-                            level >= 5 -> Palette.SKY_DEEP
-                            level >= 4 -> Palette.WATER
-                            level >= 3 -> Palette.TREE
-                            level >= 2 -> Palette.TREE_LIT
-                            else -> Palette.WHITE
-                        }
-                    }
                     canvas.set(tx, ty, c)
                 }
+            }
+        }
+    }
+
+
+    /**
+     * 濃さに対する色。
+     *
+     * 「多いほど良い」ものは青〜緑、「多いほど悪い」ものは黄〜赤。
+     * 見ただけで、良し悪しの向きが分かるようにする。
+     */
+    private fun overlayColour(overlay: Overlay, level: Int): Int = colourOf(overlay, level)
+
+    companion object {
+        /**
+         * そのマスの、その情報の濃さ。0（塗らない）〜5（最も濃い）。
+         *
+         * 区分の育ち具合は段（0〜3）なので、そのままでは差が出ない。
+         * 建っていないマスは 0 のままにして、塗らずに残す。
+         */
+        private fun levelFor(overlay: Overlay, tile: io.github.hatake716.pixelcity.game.Tile): Int =
+            levelOf(overlay, tile)
+
+        /**
+         * そのマスの、その情報の濃さ。0（塗らない）〜5（最も濃い）。
+         *
+         * 区分の育ち具合は段（0〜3）なので、そのままでは差が出ない。
+         * 建っていないマスは 0 のままにして、塗らずに残す。
+         */
+        fun levelOf(
+            overlay: Overlay,
+            tile: io.github.hatake716.pixelcity.game.Tile,
+        ): Int =
+            when (overlay) {
+                Overlay.NONE -> 0
+
+                // 区分の育ち具合。段 0..3 を 2..5 に広げて、差を見せる。
+                Overlay.RESIDENTIAL ->
+                    if (tile.kind == TileKind.ZONE_R) tile.stage + 2 else 0
+                Overlay.COMMERCIAL ->
+                    if (tile.kind == TileKind.ZONE_C) tile.stage + 2 else 0
+                Overlay.INDUSTRIAL ->
+                    if (tile.kind == TileKind.ZONE_I) tile.stage + 2 else 0
+
+                Overlay.LAND_VALUE -> tile.landValue / 20
+                Overlay.POLLUTION -> tile.pollution / 20
+                Overlay.CRIME -> tile.crime / 20
+
+                Overlay.TRAFFIC ->
+                    if (tile.kind.capacity <= 0) 0
+                    else (tile.traffic * 5 / tile.kind.capacity.coerceAtLeast(1)).coerceAtMost(5)
+                // 来ているところは薄く、来ていないところを濃く出す。
+                // 「足りない場所」を探すための地図なので。
+                Overlay.POWER ->
+                    if (tile.kind == TileKind.EMPTY) 0 else if (tile.powered) 1 else 5
+                Overlay.WATER ->
+                    if (tile.kind == TileKind.EMPTY) 0 else if (tile.watered) 1 else 5
+
+                Overlay.HEALTH -> tile.health / 20
+                Overlay.EDUCATION -> tile.education / 20
+                Overlay.FIRE_RISK -> tile.safety / 20
+            }
+
+        /**
+         * 濃さに対する色。一覧に見本を並べるため、外からも引けるようにしてある。
+         */
+        fun colourOf(overlay: Overlay, level: Int): Int =
+        if (!overlay.good) {
+            when {
+                level >= 5 -> Palette.RED_DARK
+                level >= 4 -> Palette.RED
+                level >= 3 -> Palette.GOLD
+                level >= 2 -> Palette.WINDOW_LIT
+                else -> Palette.WHITE
+            }
+        } else {
+            when {
+                level >= 5 -> Palette.SKY_DEEP
+                level >= 4 -> Palette.WATER
+                level >= 3 -> Palette.TREE
+                level >= 2 -> Palette.TREE_LIT
+                else -> Palette.WHITE
             }
         }
     }

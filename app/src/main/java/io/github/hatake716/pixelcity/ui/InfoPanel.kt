@@ -55,6 +55,8 @@ class InfoPanel(private val text: GbText) {
         const val TAB_H = 34
         /** 一覧の1行。 */
         const val ROW = 24
+        /** データマップの一覧の1行。指で押すので、少し高くする。 */
+        const val MAP_ROW_H = 34
         /** 様式の1行の高さ。 */
         const val STYLE_ROW_H = 32
     }
@@ -321,28 +323,41 @@ class InfoPanel(private val text: GbText) {
     private fun drawMapList(pixels: PixelCanvas, logicalH: Int) {
         var y = rowY(0)
         text.textSize = 14
-        text.draw(pixels, "ちずに かさねて みる", MARGIN + 6, y, Palette.UI_DIM)
-        y += ROW + 4
+        text.draw(pixels, "えらぶと、ちずに かさねて みられます", MARGIN + 6, y, Palette.UI_DIM)
+        y += ROW + 2
 
         for (o in CityRenderer.Overlay.entries) {
             val on = o == overlay
-            val h = 20
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h,
+            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, MAP_ROW_H,
                 if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h, Palette.UI_LINE)
-            text.draw(pixels, o.label, MARGIN + 10, y + 3, if (on) Palette.UI_BG else Palette.UI_TEXT)
-            y += h + 3
-            if (y > logicalH - 70) break
+            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, MAP_ROW_H, Palette.UI_LINE)
+            text.textSize = 15
+            text.draw(
+                pixels, o.label, MARGIN + 10, y + (MAP_ROW_H - 15) / 2,
+                if (on) Palette.UI_BG else Palette.UI_TEXT,
+            )
+            // 濃さの見本。薄い→濃いの順に並べ、色の向きが分かるようにする。
+            if (o != CityRenderer.Overlay.NONE) {
+                val sw = 13
+                var cx = GameView.LOGICAL_W - MARGIN - 8 - sw * 4
+                for (level in 2..5) {
+                    pixels.fillRect(cx, y + 5, sw - 2, MAP_ROW_H - 10, CityRenderer.colourOf(o, level))
+                    pixels.drawRect(cx, y + 5, sw - 2, MAP_ROW_H - 10, Palette.BLACK)
+                    cx += sw
+                }
+            }
+            y += MAP_ROW_H + 3
+            if (y > logicalH - 80) break
         }
     }
 
     /** データマップの一覧で、その座標にある項目。 */
     fun overlayAt(lx: Int, ly: Int): CityRenderer.Overlay? {
         if (tab != Tab.MAP) return null
-        var y = rowY(0) + ROW + 4
+        var y = rowY(0) + ROW + 2
         for (o in CityRenderer.Overlay.entries) {
-            if (ly >= y && ly < y + 20) return o
-            y += 23
+            if (ly >= y && ly < y + MAP_ROW_H) return o
+            y += MAP_ROW_H + 3
         }
         return null
     }

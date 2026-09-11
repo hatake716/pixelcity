@@ -596,6 +596,7 @@ class GameView(
                 styleEditor.draw(pixels, city.customStyle, logicalH)
             }
             Screen.PLAYING -> {
+                if (info.overlay != CityRenderer.Overlay.NONE) drawOverlayBadge()
                 if (tutorial.active) drawTutorialBanner()
                 toast?.let { drawToast(it) }
             }
@@ -860,6 +861,35 @@ class GameView(
             )
             runButtonX = bx to (bx + w)
         }
+    }
+
+    /** その座標が、重ね表示の名札の上か。名札の下のマスは選ばせない。 */
+    private fun onOverlayBadge(lx: Int, ly: Int): Boolean =
+        info.overlay != CityRenderer.Overlay.NONE &&
+            ly >= overlayBadgeY && ly < overlayBadgeY + 26 &&
+            lx >= overlayBadge.first && lx <= overlayBadge.second
+
+    /** 重ね表示の名札の範囲。押したか調べるのに使う。 */
+    private var overlayBadge = 0 to 0
+    private var overlayBadgeY = 0
+
+    /**
+     * いま地図に重ねているものの名前。
+     *
+     * 重ねたまま画面を閉じると、色がついた理由が分からなくなる。
+     * 名前を出し、押せばすぐ消せるようにしておく。
+     */
+    private fun drawOverlayBadge() {
+        val label = "${info.overlay.label} ×"
+        text.textSize = 16
+        val w = text.measure(label) + 20
+        val x = 8
+        val y = statusBottom + 8
+        pixels.fillRect(x, y, w, 26, Palette.UI_BG)
+        pixels.drawRect(x, y, w, 26, Palette.UI_ACCENT)
+        text.draw(pixels, label, x + 10, y + 5, Palette.UI_ACCENT)
+        overlayBadge = x to (x + w)
+        overlayBadgeY = y
     }
 
     /** ツールバーに出すアイコン。地図と同じドット絵を使う。 */
@@ -1155,7 +1185,9 @@ class GameView(
                     ly >= tbTop + 4 && ly < tbTop + 4 + Hud.CATEGORY_H
                 draggingToolbar = screen == Screen.PLAYING && ly >= tbTop && !draggingCategories
                 // マップ上なら、押した時点から選び始める（なぞってまとめて選べる）
-                if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null) {
+                if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null &&
+                    !onOverlayBadge(lx, ly)
+                ) {
                     // すでに選んであるマスを押したら、なぞるあいだは「外す」側にする。
                     // 選びすぎたときに、同じ動きで取り消せる。
                     val at = tileIndexAt(lx, ly)
@@ -1244,7 +1276,7 @@ class GameView(
                 }
 
                 if (screen == Screen.PLAYING && isOnMap(ly) &&
-                    pendingMonument == null && !strokeCancelled
+                    pendingMonument == null && !strokeCancelled && !onOverlayBadge(lx, ly)
                 ) {
                     // なぞって連続で選ぶ
                     selectAt(lx, ly)
@@ -1387,6 +1419,17 @@ class GameView(
         val toolbarTop = toolbarTopY
 
         // 速度
+        // 重ね表示の名札。押すと消せる。
+        if (info.overlay != CityRenderer.Overlay.NONE &&
+            ly >= overlayBadgeY && ly < overlayBadgeY + 26 &&
+            lx >= overlayBadge.first && lx <= overlayBadge.second
+        ) {
+            info.overlay = CityRenderer.Overlay.NONE
+            audio.play(Sfx.CLOSE)
+            invalidate()
+            return
+        }
+
         val statusRow = (insetTop + 17)..(insetTop + 44)
         if (ly in statusRow && lx in (SPEED_X - 4)..(SPEED_X + 36)) { cycleSpeed(); return }
         // 拡大率
