@@ -17,7 +17,13 @@ class City(
     val height: Int = DEFAULT_SIZE,
 ) {
     companion object {
-        const val DEFAULT_SIZE = 32
+        /**
+         * マップの一辺。128×128 = 16,384 タイル。
+         *
+         * 毎月の計算はタイル数に比例するが、施設の影響範囲（[spread]）は
+         * 半径で頭打ちになるので、1タイルあたりの費用は広げても増えない。
+         */
+        const val DEFAULT_SIZE = 128
         const val STARTING_FUNDS = 20_000
         const val DEFAULT_TAX_RATE = 7
 
@@ -83,19 +89,32 @@ class City(
         val rnd = Random(seed)
         for (t in tiles) { t.terrain = Terrain.LAND; t.clearForBulldoze() }
 
-        // 下の端を海にする。建設できる土地を十分に残すため、浅くとる。
-        val seaBase = height - 3 - rnd.nextInt(2)
+        // 下の端を海にする。マップの大きさに比例させ、
+        // 広いマップでも「海辺の街」と分かる厚みを持たせる。
+        val seaDepth = (height / 10).coerceAtLeast(3)
+        val seaBase = height - seaDepth - rnd.nextInt(2)
+        // 海岸線の揺らぎも、マップの広さに応じて大きくとる。
+        val coastWave = (height / 24).coerceAtLeast(1)
         for (x in 0 until width) {
-            val edge = seaBase + ((x * 3 + rnd.nextInt(3)) % 3) - 1
+            val edge = seaBase + ((x * 3 + rnd.nextInt(3)) % (coastWave * 2 + 1)) - coastWave
             for (y in max(0, edge) until height) tileAt(x, y).terrain = Terrain.WATER
         }
 
-        // 上から下へ蛇行する川を一本引く。幅1で、街を分断しすぎないようにする。
-        var cx = width / 4 + rnd.nextInt(width / 2)
-        for (y in 0 until height) {
-            if (inBounds(cx, y)) tileAt(cx, y).terrain = Terrain.WATER
-            cx += rnd.nextInt(3) - 1
-            cx = cx.coerceIn(2, width - 3)
+        // 上から下へ蛇行する川を引く。広いマップでは本数と幅を増やす。
+        val riverCount = (width / 48).coerceAtLeast(1)
+        val riverWidth = (width / 64).coerceAtLeast(1)
+        for (n in 0 until riverCount) {
+            // 川どうしが重ならないよう、幅を等分した帯の中から始める。
+            val band = width / (riverCount + 1)
+            var cx = band * (n + 1) + rnd.nextInt(band / 2) - band / 4
+            for (y in 0 until height) {
+                for (d in 0 until riverWidth) {
+                    val x = cx + d
+                    if (inBounds(x, y)) tileAt(x, y).terrain = Terrain.WATER
+                }
+                cx += rnd.nextInt(3) - 1
+                cx = cx.coerceIn(2, width - riverWidth - 2)
+            }
         }
 
         markShores()
@@ -108,7 +127,10 @@ class City(
      * 中心が川や海だと最初の一歩が踏み出せない。生成のたびに詰まないよう、
      * 中央の一画だけは必ず陸地にする。
      */
-    fun clearStartingArea(halfWidth: Int = 7, halfHeight: Int = 5) {
+    fun clearStartingArea(
+        halfWidth: Int = (width / 5).coerceAtLeast(7),
+        halfHeight: Int = (height / 7).coerceAtLeast(5),
+    ) {
         val cx = width / 2
         val cy = height / 2
         for (y in (cy - halfHeight)..(cy + halfHeight)) {

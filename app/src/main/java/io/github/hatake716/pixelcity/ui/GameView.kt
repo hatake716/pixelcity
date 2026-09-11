@@ -54,10 +54,10 @@ class GameView(
         private val SPEEDS = intArrayOf(0, 1, 2, 4)
 
         /**
-         * 拡大率の段（分子, 分母）。
-         * 1/2 = 街全体を見渡す、1/1 = 標準、2/1 = 建物の細部まで寄る。
+         * 拡大率の段（分子, 分母）。広いマップを見渡せるよう、引いた画を厚くしてある。
+         * 1/4 = 街の全体像、1/2 = 区画の配置、1/1 = 標準、2/1 = 建物の細部。
          */
-        private val ZOOM_STEPS = arrayOf(1 to 2, 1 to 1, 2 to 1)
+        private val ZOOM_STEPS = arrayOf(1 to 4, 1 to 2, 1 to 1, 2 to 1)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
         private const val SPEED_X = 150
@@ -121,7 +121,7 @@ class GameView(
      * 地図の拡大率の段。[ZOOM_STEPS] の索引。
      * 引いた画（街全体）から、寄った画（建物の細部）まで選べる。
      */
-    private var zoomStep = 1
+    private var zoomStep = 2
 
     /** いまの拡大率。分数を使わずに済むよう、分子と分母で持つ。 */
     private val zoomNum: Int get() = ZOOM_STEPS[zoomStep].first
@@ -332,7 +332,12 @@ class GameView(
         text.draw(pixels, speedLabel, SPEED_X, 20, C_TEXT)
 
         // 拡大率の切り替え
-        val zoomLabel = when (zoomStep) { 0 -> "ひろい"; 1 -> "ふつう"; else -> "よせる" }
+        val zoomLabel = when (zoomStep) {
+            0 -> "ぜんたい"
+            1 -> "ひろい"
+            2 -> "ふつう"
+            else -> "よせる"
+        }
         pixels.drawRect(ZOOM_X, 18, 64, 24, C_LINE)
         text.textSize = 14
         text.draw(pixels, zoomLabel, ZOOM_X + 5, 21, C_TEXT)
