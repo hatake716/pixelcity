@@ -126,6 +126,29 @@ class SaveGameTest {
         assertEquals(city.month + 10, restored.month)
     }
 
+    /**
+     * 読み込んだ直後から人口が分かること。
+     * 人口を保存していなかったため、読み込み直後は 0 のままで、
+     * モニュメントが解禁されない不具合があった。
+     */
+    @Test
+    fun `population is known immediately after loading`() {
+        val city = City().apply { for (t in tiles) t.terrain = Terrain.LAND }
+        city.funds = 100_000
+        for (x in 2..20) city.build(x, 10, TileKind.ROAD)
+        city.build(2, 9, TileKind.POWER_COAL)
+        for (x in 4..12) {
+            city.build(x, 9, TileKind.ZONE_R)
+            city.build(x, 11, TileKind.ZONE_C)
+        }
+        repeat(24) { city.step() }
+        assertTrue("city did not grow", city.population > 0)
+
+        val restored = SaveGame.parse(serialize(city, Tutorial(), 0L)).city
+        assertEquals(city.population, restored.population)
+        assertEquals(city.jobs, restored.jobs)
+    }
+
     @Test
     fun `water tiles stay unbuildable after loading`() {
         val city = sampleCity()

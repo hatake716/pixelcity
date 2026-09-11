@@ -257,6 +257,19 @@ class City(
     // シミュレーション
     // ------------------------------------------------------------------
 
+    /**
+     * 保存から復元した直後に、タイルから導かれる値を組み直す。
+     *
+     * 人口や雇用は毎月の [step] でしか計算していないため、読み込み直後は 0 のままで、
+     * モニュメントの解禁判定などが誤る。月を進めずに整合させるために使う。
+     */
+    fun recomputeDerivedState() {
+        updateConnectivity()
+        updatePower()
+        updateLocalValues()
+        tallyPopulation()
+    }
+
     /** 1か月進める。順序は docs/SPEC.md §5 のとおり。 */
     fun step() {
         if (gameOver) return

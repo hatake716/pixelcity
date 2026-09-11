@@ -69,11 +69,7 @@ class CityRenderer {
                         drawScaled(canvas, Sprites.forZone(tile.kind, tile.stage), Sprites.SIZE, px, py, tileSize, transparent = 0)
                     }
                     tile.kind == TileKind.MONUMENT -> {
-                        // 本体タイルでのみ 16×16 を描く
-                        val m = tile.monument
-                        if (m != null) {
-                            drawScaled(canvas, MonumentSprites.of(m), MonumentSprites.SIZE, px, py, tileSize * 2, transparent = 0)
-                        }
+                        // 本体は 2×2 にまたがるので、この周回では描かない（下でまとめて描く）
                     }
                     else -> {
                         val s = Sprites.forBuilding(tile.kind)
@@ -96,7 +92,19 @@ class CityRenderer {
             }
         }
 
-        // 2周目: 情報の重ね表示
+        // 2周目: モニュメント。2×2 にまたがるため、地形を描き終えてから重ねる。
+        // 1周目で描くと、右と下のタイルの地形が上書きしてしまう。
+        // 本体が画面の左上の外にあっても、はみ出す分が見えるよう1タイル広く見る。
+        for (ty in maxOf(0, firstY - 1)..lastY) for (tx in maxOf(0, firstX - 1)..lastX) {
+            val m = city.tileAt(tx, ty).monument ?: continue
+            drawScaled(
+                canvas, MonumentSprites.of(m), MonumentSprites.SIZE,
+                originX + tx * tileSize, originY + ty * tileSize,
+                tileSize * 2, transparent = 0,
+            )
+        }
+
+        // 3周目: 情報の重ね表示
         if (overlay != Overlay.NONE) {
             for (ty in firstY..lastY) for (tx in firstX..lastX) {
                 val px = originX + tx * tileSize
@@ -112,7 +120,7 @@ class CityRenderer {
             }
         }
 
-        // 3周目: 置ける場所の目印
+        // 4周目: 置ける場所の目印
         if (suggest != null && suggestOn) {
             for (ty in firstY..lastY) for (tx in firstX..lastX) {
                 if (!suggest(tx, ty)) continue
@@ -122,7 +130,7 @@ class CityRenderer {
             }
         }
 
-        // 4周目: 選択中の枠
+        // 5周目: 選択中の枠
         if (highlight != null && highlight.size >= 2) {
             val hx = originX + highlight[0] * tileSize
             val hy = originY + highlight[1] * tileSize

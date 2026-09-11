@@ -134,6 +134,9 @@ object SaveGame {
             tutorial.restore(IntArray(ts.length()) { ts.getInt(it) })
         }
 
+        // 人口などはタイルから導かれる値なので、保存せずに組み直す。
+        city.recomputeDerivedState()
+
         return Loaded(city, tutorial, json.optLong("seed", 0L))
     }
 }

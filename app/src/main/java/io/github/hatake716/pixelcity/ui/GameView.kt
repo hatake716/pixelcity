@@ -58,6 +58,8 @@ class GameView(
         private const val RESTART_Y = 190
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
         private const val BODY_SIZE = 15
+        /** モニュメント一覧の行の高さ。 */
+        private const val MONUMENT_ROW_H = 20
         private const val CLOSE_X = LOGICAL_W - 84
     }
 
@@ -508,8 +510,17 @@ class GameView(
         drawCloseButton()
     }
 
+    /** モニュメント一覧の1行目の y。描画と判定で共有する。 */
+    private fun monumentListTop(): Int {
+        // drawPanel と同じ高さの計算をして、本文の開始位置を求める。
+        val content = Monument.entries.size * MONUMENT_ROW_H + 28
+        val height = 44 + content + 40
+        val top = ((logicalH - height) / 2).coerceAtLeast(24)
+        return top + 36
+    }
+
     private fun drawMonuments() {
-        var y = drawPanel("せかいの けんちく", Monument.entries.size * 20 + 28)
+        var y = drawPanel("せかいの けんちく", Monument.entries.size * MONUMENT_ROW_H + 28)
         text.textSize = 14
         val all = Monument.entries
         for (m in all) {
@@ -522,7 +533,7 @@ class GameView(
             }
             val shade = if (built || unlocked) 3 else 2
             text.draw(pixels, label, 30, y, shade)
-            y += 20
+            y += MONUMENT_ROW_H
         }
         text.draw(pixels, "えらんで マップを タップ", 30, y + 4, 3)
         drawCloseButton()
@@ -680,8 +691,8 @@ class GameView(
             }
             Screen.MONUMENTS -> {
                 if (isCloseTapped(lx, ly)) { screen = Screen.PLAYING; return }
-                // 一覧から選ぶ（drawMonuments の行の高さと合わせる）
-                val idx = (ly - 60) / 20
+                // 一覧から選ぶ。行の位置は描画と同じ式で求める。
+                val idx = (ly - monumentListTop()) / MONUMENT_ROW_H
                 val m = Monument.entries.getOrNull(idx)
                 if (m != null) selectMonument(m)
                 return
