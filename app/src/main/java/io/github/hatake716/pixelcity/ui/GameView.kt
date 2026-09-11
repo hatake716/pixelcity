@@ -57,7 +57,7 @@ class GameView(
          * 拡大率の段（分子, 分母）。広いマップを見渡せるよう、引いた画を厚くしてある。
          * 1/4 = 街の全体像、1/2 = 区画の配置、1/1 = 標準、2/1 = 建物の細部。
          */
-        private val ZOOM_STEPS = arrayOf(1 to 4, 1 to 2, 1 to 1, 2 to 1)
+        private val ZOOM_STEPS = arrayOf(1 to 8, 1 to 4, 1 to 2, 1 to 1)
 
         // 配置。描画と当たり判定で同じ値を使うため、ここに集める。
         private const val SPEED_X = 150

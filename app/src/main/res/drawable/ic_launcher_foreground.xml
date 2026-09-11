@@ -1,7 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  アプリのアイコン。ゲーム本編と同じ、斜め見下ろしのビルを3棟。
+  手前ほど大きく、色は本編の建物と同じ（赤い瓦・青いガラス・ベージュの壁）。
+  アダプティブアイコンの安全域（中央66dp）に収めてある。
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#0F380F" android:pathData="M30,66h12v18h-12z" />
-    <path android:fillColor="#0F380F" android:pathData="M48,54h12v30h-12z" />
-    <path android:fillColor="#0F380F" android:pathData="M66,36h12v48h-12z" />
+
+    <!-- 奥のオフィスビル（青いガラス） -->
+    <path android:fillColor="#7C93AD" android:pathData="M58,40 L72,47 L72,72 L58,65 Z" />
+    <path android:fillColor="#556A82" android:pathData="M72,47 L86,40 L86,65 L72,72 Z" />
+    <path android:fillColor="#8FA3B8" android:pathData="M58,40 L72,33 L86,40 L72,47 Z" />
+    <!-- 窓 -->
+    <path android:fillColor="#AEE0F2" android:pathData="M62,46 h4 v5 h-4 Z M62,55 h4 v5 h-4 Z" />
+    <path android:fillColor="#3E4A5A" android:pathData="M77,46 h4 v5 h-4 Z M77,55 h4 v5 h-4 Z" />
+
+    <!-- 左の集合住宅（赤い瓦） -->
+    <path android:fillColor="#E0C9A6" android:pathData="M22,54 L36,61 L36,82 L22,75 Z" />
+    <path android:fillColor="#B39C7C" android:pathData="M36,61 L50,54 L50,75 L36,82 Z" />
+    <path android:fillColor="#C2543E" android:pathData="M22,54 L36,47 L50,54 L36,61 Z" />
+    <path android:fillColor="#FFE9A0" android:pathData="M26,61 h4 v5 h-4 Z M26,70 h4 v5 h-4 Z" />
+    <path android:fillColor="#3E4A5A" android:pathData="M41,62 h4 v5 h-4 Z M41,71 h4 v5 h-4 Z" />
+
+    <!-- 手前の一戸建て（赤い瓦） -->
+    <path android:fillColor="#E0C9A6" android:pathData="M44,74 L58,81 L58,92 L44,85 Z" />
+    <path android:fillColor="#B39C7C" android:pathData="M58,81 L72,74 L72,85 L58,92 Z" />
+    <path android:fillColor="#C2543E" android:pathData="M44,74 L58,67 L72,74 L58,81 Z" />
+    <path android:fillColor="#8E3A2B" android:pathData="M51,70.5 L65,77.5 L58,81 L44,74 Z" />
+    <path android:fillColor="#FFE9A0" android:pathData="M48,80 h4 v4 h-4 Z" />
+    <path android:fillColor="#6B4A2F" android:pathData="M63,81 h4 v6 h-4 Z" />
 </vector>

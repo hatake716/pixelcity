@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 空と芝生。本編の空の色から取っている。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#7EB8E8" android:pathData="M0,0 h108 v66 h-108 Z" />
+    <path android:fillColor="#6FA23C" android:pathData="M0,66 h108 v42 h-108 Z" />
+    <path android:fillColor="#54812C" android:pathData="M0,86 h108 v22 h-108 Z" />
+</vector>
