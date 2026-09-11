@@ -72,6 +72,14 @@ class GameView(
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
         private const val BODY_SIZE = 15
 
+        /**
+         * 吹き出しの本文を折り返す幅。
+         *
+         * 禁則処理で句読点が2文字ぶん はみ出せるので、そのぶん狭くとる。
+         * ここを画面幅ぎりぎりにすると、文の右端が切れる。
+         */
+        private const val BODY_WRAP_W = LOGICAL_W - 52
+
         // 画面まわりの色。どのパレット索引を使うかをここにまとめる。
         /** パネルや帯の下地。 */
         private const val C_BG = Palette.UI_BG
@@ -464,6 +472,9 @@ class GameView(
         if (tutorial.active && tutorial.step?.highlightBudget == true && blinkOn()) {
             pixels.drawRect(budgetButtonX.first - 2, by - 2, budgetButtonX.second - budgetButtonX.first + 4, 22, C_TEXT)
         }
+        if (tutorial.active && tutorial.step?.highlightInfo == true && blinkOn()) {
+            pixels.drawRect(infoButtonX.first - 2, by - 2, infoButtonX.second - infoButtonX.first + 4, 22, C_TEXT)
+        }
         if (tutorial.active && tutorial.step?.highlightSpeed == true && blinkOn()) {
             pixels.drawRect(SPEED_X - 4, 17, 40, 24, C_TEXT)
         }
@@ -508,7 +519,7 @@ class GameView(
     private fun bannerHeight(): Int {
         val step = tutorial.step ?: return 0
         text.textSize = BODY_SIZE
-        val lines = text.wrap(step.body, LOGICAL_W - 20).size
+        val lines = text.wrap(step.body, BODY_WRAP_W).size
         return 36 + lines * 18 + if (tutorial.awaitingContinue()) 30 else 6
     }
 
@@ -518,7 +529,7 @@ class GameView(
     private fun drawTutorialBanner() {
         val step = tutorial.step ?: return
         text.textSize = BODY_SIZE
-        val lines = text.wrap(step.body, LOGICAL_W - 20)
+        val lines = text.wrap(step.body, BODY_WRAP_W)
         // 本文の行数と、進むボタンの有無で高さを決める。文字が欠けないようにする。
         val h = bannerHeight()
         val y = logicalH - Hud.TOOLBAR_HEIGHT - h
@@ -529,6 +540,11 @@ class GameView(
         // 見出しは「あと N」の手前で切る。重ねると両方読めなくなる。
         val remain = tutorial.remaining()
         val counter = if (remain > 0) "あと $remain" else ""
+        // 章の名前を小さく添える。どこまで進んだかが分かるように。
+        text.textSize = 11
+        val chapterLabel = "${tutorial.chapterNumber()}/${tutorial.chapterCount()}　${step.chapter.summary}"
+        text.draw(pixels, chapterLabel, 8, y - 13, Palette.UI_DIM)
+
         text.textSize = 16
         val counterW = if (counter.isEmpty()) 0 else text.measure(counter) + 12
         var title = step.title
@@ -872,7 +888,10 @@ class GameView(
         // 情報・予算・けんちく
         if (ly >= toolbarTop + Hud.TOOLBAR_HEIGHT - 24) {
             if (lx in infoButtonX.first..infoButtonX.second) {
+                if (!tutorial.allowsInfo()) { showToast("いまは ステップの とおりに"); return }
                 screen = Screen.INFO
+                tutorial.onInfoOpened()
+                showTutorialMessageIfNeeded()
                 return
             }
             if (lx in budgetButtonX.first..budgetButtonX.second) {
@@ -951,7 +970,13 @@ class GameView(
         info.seriesAt(lx, ly)?.let { info.series = it; invalidate(); return }
         // 条例
         info.ordinanceAt(lx, ly, logicalH)?.let { o ->
-            if (o in city.ordinances) city.ordinances.remove(o) else city.ordinances.add(o)
+            if (o in city.ordinances) {
+                city.ordinances.remove(o)
+            } else {
+                city.ordinances.add(o)
+                tutorial.onOrdinanceEnabled()
+                if (tutorial.finished) onTutorialFinished?.invoke()
+            }
             onStateChanged?.invoke()
             invalidate()
             return
