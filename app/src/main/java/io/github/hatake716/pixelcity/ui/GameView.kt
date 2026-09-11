@@ -55,7 +55,6 @@ class GameView(
         private const val PANEL_MARGIN = 16
         private const val TAX_MINUS_X = 200
         private const val TAX_PLUS_X = 240
-        private const val RESTART_Y = 190
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
         private const val BODY_SIZE = 15
         /** モニュメント一覧の行の高さ。 */
@@ -553,15 +552,20 @@ class GameView(
 
     private fun drawGameOver() {
         pixels.clear(0)
+        // 画面の高さは端末で変わるので、中央から組み立てる。
+        val mid = logicalH / 2
         text.textSize = 20
-        text.drawCentered(pixels, "ざいせい はさん", LOGICAL_W / 2, 80, 3)
+        text.drawCentered(pixels, "ざいせい はさん", LOGICAL_W / 2, mid - 80, 3)
         text.textSize = 15
-        text.drawCentered(pixels, "しきんが つきました", LOGICAL_W / 2, 120, 3)
-        text.drawCentered(pixels, "じんこう ${city.population}", LOGICAL_W / 2, 144, 3)
+        text.drawCentered(pixels, "しきんが つきました", LOGICAL_W / 2, mid - 40, 3)
+        text.drawCentered(pixels, "さいだい じんこう ${city.population}", LOGICAL_W / 2, mid - 16, 3)
         text.textSize = 16
-        pixels.drawRect(LOGICAL_W / 2 - 70, RESTART_Y, 140, 28, 3)
-        text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, RESTART_Y + 4, 3)
+        pixels.drawRect(LOGICAL_W / 2 - 70, restartButtonY(), 140, 28, 3)
+        text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, restartButtonY() + 4, 3)
     }
+
+    /** もういちどボタンの y。描画と判定で共有する。 */
+    private fun restartButtonY(): Int = logicalH / 2 + 30
 
     /** とじるボタンの y。パネルの下端に合わせ、描画と判定で共有する。 */
     private fun closeButtonY(): Int = panelTop() + panelHeight - 34
@@ -673,7 +677,7 @@ class GameView(
     private fun handleTap(lx: Int, ly: Int) {
         when (screen) {
             Screen.GAME_OVER -> {
-                if (ly in RESTART_Y..(RESTART_Y + 28)) onRestartRequested?.invoke()
+                if (ly in restartButtonY()..(restartButtonY() + 28)) onRestartRequested?.invoke()
                 return
             }
             Screen.BUDGET -> {
