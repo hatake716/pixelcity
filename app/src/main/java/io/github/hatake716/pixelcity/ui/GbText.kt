@@ -98,9 +98,15 @@ class GbText(context: Context) {
                 continue
             }
             val line = StringBuilder()
+            // 禁則で1行に押し込める幅の上限。ここを超えたら、
+            // 句読点であっても折る。無制限に許すと画面からはみ出す。
+            val hardLimit = maxWidth + measure("。。")
             for (ch in paragraph) {
-                // 行頭に置きたくない文字は、あふれても前の行に残す。
-                if (measure(line.toString() + ch) > maxWidth && line.isNotEmpty() && ch !in NO_LINE_START) {
+                val next = measure(line.toString() + ch)
+                val overflow = next > maxWidth
+                // 行頭に置きたくない文字は、少しだけなら前の行に残す。
+                val keepWithPrevious = ch in NO_LINE_START && next <= hardLimit
+                if (overflow && line.isNotEmpty() && !keepWithPrevious) {
                     out.add(line.toString().trimEnd())
                     line.setLength(0)
                 }

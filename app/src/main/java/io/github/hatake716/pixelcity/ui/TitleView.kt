@@ -89,10 +89,22 @@ class TitleView(
         super.onDraw(canvas)
         pixels.clear(0)
 
-        drawSkyline()
+        drawShowcase()
 
-        // 大きく構えたロゴ。影を先に落としてから本体を重ねる。
+        // 街の上に文字を置くため、ロゴの帯を敷いて読みやすくする。
         val logoY = logicalH / 8
+        val bandTop = logoY - 14
+        val bandH = 120
+        for (y in bandTop until bandTop + bandH) {
+            // 上下の端をぼかすように、市松で薄く重ねる
+            val edge = minOf(y - bandTop, bandTop + bandH - 1 - y)
+            for (x in 0 until GameView.LOGICAL_W) {
+                if (edge < 6 && ((x + y) and 1) == 0) continue
+                pixels.set(x, y, 1)
+            }
+        }
+        pixels.fillRect(0, bandTop, GameView.LOGICAL_W, 2, 11)
+        pixels.fillRect(0, bandTop + bandH - 2, GameView.LOGICAL_W, 2, 11)
         text.textSize = 58
         text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2 + 3, logoY + 3, 12)
         text.drawCentered(pixels, "PIXELCITY", GameView.LOGICAL_W / 2, logoY, 15)
@@ -105,11 +117,15 @@ class TitleView(
 
         text.textSize = 18
         for (b in buttons()) {
-            val w = text.measure(b.label) + 32
+            val w = text.measure(b.label) + 36
             val x = (GameView.LOGICAL_W - w) / 2
+            // 街が透けないよう、しっかり塗ってから枠と文字を置く
             pixels.fillRect(x, b.y, w, BUTTON_H, 1)
             pixels.drawRect(x, b.y, w, BUTTON_H, 14)
             pixels.drawRect(x + 1, b.y + 1, w - 2, BUTTON_H - 2, 11)
+            // 影で浮かせる
+            pixels.fillRect(x + 2, b.y + BUTTON_H, w, 2, 13)
+            pixels.fillRect(x + w, b.y + 2, 2, BUTTON_H, 13)
             text.drawCentered(pixels, b.label, GameView.LOGICAL_W / 2, b.y + 6, 14)
         }
 
@@ -119,39 +135,23 @@ class TitleView(
         canvas.drawBitmap(frame, null, dst, paint)
     }
 
-    /**
-     * 画面の下に並ぶビル群。ゲーム本編と同じ、斜め見下ろしの箱で描く。
-     */
-    private fun drawSkyline() {
-        val groundY = logicalH - 28
-        // 空はうっすら明るく、地面は暗く
-        pixels.fillRect(0, 0, GameView.LOGICAL_W, logicalH, 0)
-        pixels.fillRect(0, groundY, GameView.LOGICAL_W, logicalH - groundY, 6)
+    /** 背景の大都市。作るのは一度きりで、以後は使い回す。 */
+    private val showcase by lazy { ShowcaseCity.build() }
+    private val cityRenderer = CityRenderer()
 
-        val heights = intArrayOf(34, 58, 26, 72, 44, 84, 30, 62, 48, 76, 38, 54, 42, 66, 28, 50)
-        var x = -8
-        for ((i, h) in heights.withIndex()) {
-            val w = 26 + (i % 3) * 4
-            val top = groundY - h
-            // 正面の壁
-            pixels.fillRect(x, top, w, h, if (i % 2 == 0) 7 else 9)
-            // 右側面（暗い）
-            pixels.fillRect(x + w, top + 4, 5, h - 4, 12)
-            // 屋根
-            pixels.fillRect(x, top, w, 3, 4)
-            for (k in 0 until 5) pixels.set(x + w + k, top + 3 + k, 12)
-            // 輪郭
-            pixels.drawRect(x, top, w, h, 14)
-            // 窓
-            for (wy in top + 8 until groundY - 6 step 9) {
-                for (wx in x + 4 until x + w - 5 step 8) {
-                    val lit = ((wx * 7 + wy * 13 + i) % 5) != 0
-                    pixels.fillRect(wx, wy, 4, 5, if (lit) 1 else 13)
-                }
-            }
-            x += w + 5
-            if (x > GameView.LOGICAL_W) break
-        }
+    /**
+     * 背景の大都市を描く。
+     *
+     * ゲーム本編とまったく同じ [CityRenderer] を使うので、
+     * 「この街づくりの行き着く先」をそのまま見せることになる。
+     */
+    private fun drawShowcase() {
+        cityRenderer.draw(
+            pixels, showcase,
+            camX = 31f, camY = 31f,
+            zoomNum = 1, zoomDen = 1,
+            viewTop = 0, viewHeight = logicalH,
+        )
     }
 
     @SuppressLint("ClickableViewAccessibility")
