@@ -133,7 +133,10 @@ class GameView(
         private const val PINCH_RATIO = 1.5f
 
         /** 「じっこう」「やめる」の帯の高さ。 */
-        private const val SELECTION_BAR_H = 30
+        private const val SELECTION_BAR_H = 42
+
+        /** ツールバーの一番下の段（情報・予算・けんちく）の高さ。 */
+        private const val BOTTOM_ROW_H = 30
 
         /** 人口の節目。越えるたびに短い音が鳴る。 */
         private val MILESTONES = intArrayOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
@@ -375,6 +378,8 @@ class GameView(
     private var category: Hud.Category = Hud.Category.ZONE
 
     // 右下のボタンの位置。描いたときに覚えて、判定で使う。
+    /** 一番下の段の上端。描いた位置をそのまま当たり判定に使う。 */
+    private var bottomRowTop = 0
     private var infoButtonX = 0 to 0
     private var budgetButtonX = 0 to 0
     private var monumentButtonX = 0 to 0
@@ -579,8 +584,17 @@ class GameView(
             Screen.MONUMENTS -> drawMonuments()
             Screen.MESSAGE -> drawMessage()
             Screen.GAME_OVER -> drawGameOver()
-            Screen.INFO -> info.draw(pixels, city, logicalH)
-            Screen.STYLE_EDIT -> styleEditor.draw(pixels, city.customStyle, logicalH)
+            Screen.INFO -> {
+                // 欄の高さは倍率が要るので、ここで渡す
+                info.insetTop = insetTop
+                info.insetBottom = insetBottom
+                info.draw(pixels, city, logicalH)
+            }
+            Screen.STYLE_EDIT -> {
+                styleEditor.insetTop = insetTop
+                styleEditor.insetBottom = insetBottom
+                styleEditor.draw(pixels, city.customStyle, logicalH)
+            }
             Screen.PLAYING -> {
                 if (tutorial.active) drawTutorialBanner()
                 toast?.let { drawToast(it) }
@@ -675,22 +689,23 @@ class GameView(
         pixels.fillRect(0, top, LOGICAL_W, 2, C_LINE)
 
         // --- 分類の帯 ---
-        text.textSize = 13
+        text.textSize = 17
         for ((i, cat) in Hud.Category.entries.withIndex()) {
             val x = Hud.categoryX(i) - categoryScroll
             if (x + Hud.CATEGORY_W < 0 || x > LOGICAL_W) continue
-            val y = top + 4
+            val y = top + 5
             val on = cat == category
             pixels.fillRect(x, y, Hud.CATEGORY_W, Hud.CATEGORY_H, if (on) Palette.UI_ACCENT else C_BG)
             pixels.drawRect(x, y, Hud.CATEGORY_W, Hud.CATEGORY_H, C_LINE)
+            // 文字は枠の上下の真ん中に置く
             text.drawCentered(
-                pixels, cat.label, x + Hud.CATEGORY_W / 2, y + 4,
+                pixels, cat.label, x + Hud.CATEGORY_W / 2, y + (Hud.CATEGORY_H - 17) / 2,
                 if (on) Palette.UI_BG else C_TEXT,
             )
         }
 
         // --- 道具の並び ---
-        val toolTop = top + 4 + Hud.CATEGORY_H + 4
+        val toolTop = top + 5 + Hud.CATEGORY_H + 6
         val tools = Hud.toolsIn(category)
         for ((i, tool) in tools.withIndex()) {
             val x = Hud.toolX(i) - toolScroll
@@ -706,10 +721,14 @@ class GameView(
             if (sprite != null) {
                 drawIcon(sprite, x + 1, toolTop + 1, Hud.TOOL_SIZE - 2)
             } else {
-                // 取り壊しは×印
-                for (k in 0 until 16) {
-                    pixels.set(x + 6 + k, toolTop + 6 + k, Palette.RED)
-                    pixels.set(x + 21 - k, toolTop + 6 + k, Palette.RED)
+                // 取り壊しは×印。枠の大きさに合わせて引く。
+                val pad = Hud.TOOL_SIZE / 5
+                val span = Hud.TOOL_SIZE - pad * 2
+                for (k in 0 until span) {
+                    for (t in 0 until 3) {
+                        pixels.set(x + pad + k + t, toolTop + pad + k, Palette.RED)
+                        pixels.set(x + pad + span - k + t, toolTop + pad + k, Palette.RED)
+                    }
                 }
             }
 
@@ -726,47 +745,55 @@ class GameView(
                 pixels.drawRect(x - 3, toolTop - 3, Hud.TOOL_SIZE + 6, Hud.TOOL_SIZE + 6, C_TEXT)
             }
         }
+        // --- 一番下の段: 道具の名前と、情報・予算・けんちくの入口 ---
+        val rowH = BOTTOM_ROW_H
+        val by = top + Hud.TOOLBAR_HEIGHT - rowH - 4
+        bottomRowTop = by
+        val labelY = by + (rowH - 18) / 2
 
-        // 選んでいるものの名前と値段
-        val labelY = top + Hud.TOOLBAR_HEIGHT - 20
         val tool = Hud.TOOLS.firstOrNull { it.kind == selectedTool }
         if (tool != null) {
             val price =
                 if (tool.kind == TileKind.EMPTY) BuildCost.BULLDOZE
                 else BuildCost.cost(tool.kind)
-            text.textSize = 15
+            text.textSize = 18
             val locked = !BuildCost.isUnlocked(tool.kind, city.population)
             val label =
                 if (locked) "${tool.label}（まだ つかえません）"
                 else "${tool.label} $${price}"
-            text.draw(pixels, label, 4, labelY, if (locked) C_DIM else C_TEXT)
+            text.draw(pixels, label, 6, labelY, if (locked) C_DIM else C_TEXT)
         }
 
-        // 右下に情報・予算・けんちくの入口。
-        // 文字の幅を測って右から詰めるので、重ならない。
-        text.textSize = 13
-        val by = top + Hud.TOOLBAR_HEIGHT - 21
-        var bx = LOGICAL_W - 4
+        // 右から詰める。文字の幅を測るので、重ならない。
+        text.textSize = 16
+        var bx = LOGICAL_W - 6
         for ((label, id) in listOf("けんちく" to 2, "よさん" to 1, "じょうほう" to 0)) {
-            val w = text.measure(label) + 10
-            bx -= w + 4
-            pixels.fillRect(bx, by, w, 18, C_BG)
-            pixels.drawRect(bx, by, w, 18, C_LINE)
-            text.draw(pixels, label, bx + 5, by + 2, C_TEXT)
+            val w = text.measure(label) + 16
+            bx -= w + 6
+            pixels.fillRect(bx, by, w, rowH, C_BG)
+            pixels.drawRect(bx, by, w, rowH, C_LINE)
+            text.draw(pixels, label, bx + 8, by + (rowH - 16) / 2, C_TEXT)
             when (id) {
                 0 -> infoButtonX = bx to (bx + w)
                 1 -> budgetButtonX = bx to (bx + w)
                 else -> monumentButtonX = bx to (bx + w)
             }
         }
+        // チュートリアルで、押してほしい釦を点滅させる
         if (tutorial.active && tutorial.step?.highlightBudget == true && blinkOn()) {
-            pixels.drawRect(budgetButtonX.first - 2, by - 2, budgetButtonX.second - budgetButtonX.first + 4, 22, C_TEXT)
+            pixels.drawRect(
+                budgetButtonX.first - 3, by - 3,
+                budgetButtonX.second - budgetButtonX.first + 6, rowH + 6, C_TEXT,
+            )
         }
         if (tutorial.active && tutorial.step?.highlightInfo == true && blinkOn()) {
-            pixels.drawRect(infoButtonX.first - 2, by - 2, infoButtonX.second - infoButtonX.first + 4, 22, C_TEXT)
+            pixels.drawRect(
+                infoButtonX.first - 3, by - 3,
+                infoButtonX.second - infoButtonX.first + 6, rowH + 6, C_TEXT,
+            )
         }
         if (tutorial.active && tutorial.step?.highlightSpeed == true && blinkOn()) {
-            pixels.drawRect(SPEED_X - 4, 17, 40, 24, C_TEXT)
+            pixels.drawRect(SPEED_X - 4, insetTop + 17, 40, 24, C_TEXT)
         }
     }
 
@@ -965,7 +992,12 @@ class GameView(
     private var panelHeight = 0
 
     /** パネルの上端。画面の中ほどに置く。 */
-    private fun panelTop(): Int = ((logicalH - panelHeight) / 2).coerceAtLeast(24)
+    private fun panelTop(): Int {
+        // 欄の内側で中ほどに置く。高い枠でも、通知の欄には掛からない。
+        val usableTop = insetTop
+        val usable = logicalH - insetTop - insetBottom
+        return (usableTop + (usable - panelHeight) / 2).coerceAtLeast(usableTop + 8)
+    }
 
     /**
      * パネルの枠を描き、本文を書き始める y を返す。
@@ -1361,7 +1393,7 @@ class GameView(
         if (ly in statusRow && lx in ZOOM_X..(ZOOM_X + 64)) { cycleZoom(); return }
 
         // 情報・予算・けんちく
-        if (ly >= toolbarTop + Hud.TOOLBAR_HEIGHT - 24) {
+        if (ly >= bottomRowTop && ly < bottomRowTop + BOTTOM_ROW_H) {
             if (lx in infoButtonX.first..infoButtonX.second) {
                 if (!tutorial.allowsInfo()) { showToast("いまは ステップの とおりに"); return }
                 screen = Screen.INFO

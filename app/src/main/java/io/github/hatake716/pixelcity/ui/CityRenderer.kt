@@ -216,7 +216,7 @@ class CityRenderer {
                 val hy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen
                 tintDiamond(canvas, hx, hy, zoomNum, zoomDen, clipTop, clipBottom)
                 outlineDiamond(
-                    canvas, hx, hy, zoomNum, zoomDen, Palette.WATER_LIT, clipTop, clipBottom,
+                    canvas, hx, hy, zoomNum, zoomDen, Palette.SELECT_EDGE, clipTop, clipBottom,
                 )
             }
         }
@@ -433,18 +433,19 @@ class CityRenderer {
     ) {
         val w = Iso.TILE_W * zoomNum / zoomDen
         val h = Iso.TILE_H * zoomNum / zoomDen
-        // 拡大率が低いと1マスが小さいので、透かしを粗くしすぎない
-        val step = if (w >= 32) 2 else 1
         for (yy in 0 until h) {
             val ty = y + yy
             if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
             for (xx in 0 until w) {
-                if (step == 2 && (xx + yy) % 2 != 0) continue
                 val dx = (xx + 0.5f - w / 2f) / (w / 2f)
                 val dy = (yy + 0.5f - h / 2f) / (h / 2f)
-                if (Math.abs(dx) + Math.abs(dy) > 1f) continue
+                val d = Math.abs(dx) + Math.abs(dy)
+                if (d > 1f) continue
                 val tx = x + xx
-                if (tx in 0 until canvas.width) canvas.set(tx, ty, Palette.WATER)
+                if (tx !in 0 until canvas.width) continue
+                // 透かさずに塗る。市松に抜くと、下の色と混ざって薄く見える。
+                // 縁だけ明るくして、隣り合うマスの境目が分かるようにする。
+                canvas.set(tx, ty, if (d > 0.80f) Palette.SELECT_EDGE else Palette.SELECT)
             }
         }
     }

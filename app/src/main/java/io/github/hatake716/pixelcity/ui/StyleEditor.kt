@@ -17,9 +17,9 @@ class StyleEditor(private val text: GbText) {
     private companion object {
         const val MARGIN = 12
         /** 場所の一覧の1行の高さ。 */
-        const val ROW_H = 20
+        const val ROW_H = 26
         /** パレットの1マス。 */
-        const val SWATCH = 22
+        const val SWATCH = 28
         const val SWATCH_GAP = 3
         /** パレットの横に並ぶ数。 */
         const val COLS = 8
@@ -53,7 +53,11 @@ class StyleEditor(private val text: GbText) {
         Palette.FUTURE_WALL, Palette.JP_ROOF, Palette.JP_WALL, Palette.BLACK,
     )
 
-    private fun listTop(): Int = 56
+    /** 通知の欄・操作の欄の高さ。[GameView] から渡す。 */
+    var insetTop: Int = 0
+    var insetBottom: Int = 0
+
+    private fun listTop(): Int = insetTop + 68
     private fun rowY(i: Int): Int = listTop() + i * ROW_H
 
     /** パレットの上端。場所の一覧の下に置く。 */
@@ -62,18 +66,21 @@ class StyleEditor(private val text: GbText) {
     private fun swatchX(i: Int): Int = MARGIN + (i % COLS) * (SWATCH + SWATCH_GAP)
     private fun swatchY(i: Int): Int = paletteTop() + 22 + (i / COLS) * (SWATCH + SWATCH_GAP)
 
-    fun backButtonY(logicalH: Int): Int = logicalH - 46
-    private fun resetButtonY(logicalH: Int): Int = logicalH - 82
+    fun backButtonY(logicalH: Int): Int = logicalH - insetBottom - 52
+    private fun resetButtonY(logicalH: Int): Int = logicalH - insetBottom - 92
 
     fun draw(pixels: PixelCanvas, custom: CustomStyle, logicalH: Int) {
         pixels.clear(Palette.UI_BG)
 
         text.textSize = 18
-        text.drawCentered(pixels, "いろを えらぶ", GameView.LOGICAL_W / 2, 10, Palette.UI_ACCENT)
+        text.drawCentered(
+            pixels, "いろを えらぶ", GameView.LOGICAL_W / 2,
+            insetTop + 12, Palette.UI_ACCENT,
+        )
         text.textSize = 11
         text.drawCentered(
             pixels, "ばしょを えらんでから、したの いろを おします",
-            GameView.LOGICAL_W / 2, 34, Palette.UI_DIM,
+            GameView.LOGICAL_W / 2, insetTop + 40, Palette.UI_DIM,
         )
 
         // --- どこの色か ---

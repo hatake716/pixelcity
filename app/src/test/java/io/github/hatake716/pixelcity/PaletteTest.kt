@@ -64,6 +64,7 @@ class PaletteTest {
             Palette.LONDON_LIT, Palette.LONDON, Palette.LONDON_DARK, Palette.LONDON_EDGE,
             Palette.GILT_LIT, Palette.GILT, Palette.GILT_DARK,
             Palette.SHADOW, Palette.OPENING,
+            Palette.SELECT, Palette.SELECT_EDGE,
         )
         // 名前の数だけ色があること（並びがずれていない）
         assertEquals("palette size", named.size, Palette.SIZE)

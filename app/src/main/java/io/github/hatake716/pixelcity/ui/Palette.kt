@@ -208,6 +208,9 @@ object Palette {
     /** 影。地面に落ちる影と、窪んだ開口部。 */
     const val SHADOW = 119
     const val OPENING = 120
+    /** これから建てるマスの印。地面にも建物にも負けない、濃い青。 */
+    const val SELECT = 121
+    const val SELECT_EDGE = 122
 
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
@@ -294,6 +297,8 @@ object Palette {
         q(0xFFFFE080.toInt()), q(0xFFE0AE30.toInt()), q(0xFF9C7418.toInt()),
         // 影と開口部
         q(0xFF2A2620.toInt()), q(0xFF1C1A18.toInt()),
+        // 選んでいるマス（濃い青と、その縁）
+        q(0xFF1858C8.toInt()), q(0xFF68C0FF.toInt()),
     )
 
     fun of(index: Int): Int =

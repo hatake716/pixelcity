@@ -13,6 +13,14 @@ import io.github.hatake716.pixelcity.game.Ordinance
  */
 class InfoPanel(private val text: GbText) {
 
+    /**
+     * 通知の欄の高さ（論理ピクセル）。中身をこのぶんだけ下げる。
+     * [GameView] が画面の倍率を知っているので、そこから渡してもらう。
+     */
+    var insetTop: Int = 0
+    /** 操作の欄の高さ。閉じる釦をこのぶんだけ上げる。 */
+    var insetBottom: Int = 0
+
     /** 情報画面の見出し。 */
     enum class Tab(val label: String) {
         SUMMARY("がいよう"),
@@ -41,10 +49,12 @@ class InfoPanel(private val text: GbText) {
 
     var series: Series = Series.POPULATION
 
-    private companion object {
-        const val MARGIN = 12
-        const val TAB_H = 24
-        const val ROW = 19
+    companion object {
+        const val MARGIN = 14
+        /** 見出しの高さ。指で押すので、小さくしすぎない。 */
+        const val TAB_H = 34
+        /** 一覧の1行。 */
+        const val ROW = 24
         /** 様式の1行の高さ。 */
         const val STYLE_ROW_H = 32
     }
@@ -52,7 +62,7 @@ class InfoPanel(private val text: GbText) {
     /** 見出しの帯の位置。判定と描画で共有する。 */
     fun tabX(index: Int): Int = MARGIN + index * ((GameView.LOGICAL_W - MARGIN * 2) / Tab.entries.size)
     fun tabW(): Int = (GameView.LOGICAL_W - MARGIN * 2) / Tab.entries.size
-    fun tabY(): Int = 34
+    fun tabY(): Int = insetTop + 44
 
     /** その座標にある見出し。なければ null。 */
     fun tabAt(lx: Int, ly: Int): Tab? {
@@ -69,8 +79,10 @@ class InfoPanel(private val text: GbText) {
     fun draw(pixels: PixelCanvas, city: City, logicalH: Int) {
         pixels.clear(Palette.UI_BG)
 
-        text.textSize = 20
-        text.drawCentered(pixels, "じょうほう", GameView.LOGICAL_W / 2, 8, Palette.UI_ACCENT)
+        text.textSize = 22
+        text.drawCentered(
+            pixels, "じょうほう", GameView.LOGICAL_W / 2, insetTop + 10, Palette.UI_ACCENT,
+        )
 
         // 見出し
         text.textSize = 12
@@ -544,7 +556,7 @@ class InfoPanel(private val text: GbText) {
         return City.DisasterLevel.entries.getOrNull(i)
     }
 
-    fun closeButtonY(logicalH: Int): Int = logicalH - 46
+    fun closeButtonY(logicalH: Int): Int = logicalH - insetBottom - 52
 
     private fun drawCloseButton(pixels: PixelCanvas, logicalH: Int) {
         val y = closeButtonY(logicalH)

@@ -16,8 +16,8 @@ object Hud {
      * 指で押すものは、48dp（この端末で約126px、論理で約63）を下回らないようにする。
      * それより小さいと、狙って押すのが難しくなる。
      */
-    const val STATUS_HEIGHT = 62
-    const val TOOLBAR_HEIGHT = 132
+    const val STATUS_HEIGHT = 76
+    const val TOOLBAR_HEIGHT = 164
 
     /**
      * ツールの分類。
@@ -97,14 +97,14 @@ object Hud {
         TOOLS.firstOrNull { it.kind == kind }?.label ?: ""
 
     /** 分類の並ぶ1マスの大きさ。 */
-    const val CATEGORY_W = 74
-    const val CATEGORY_H = 34
+    const val CATEGORY_W = 92
+    const val CATEGORY_H = 44
 
     fun categoryX(index: Int): Int = TOOL_GAP + index * (CATEGORY_W + TOOL_GAP)
 
     /** ツールの並ぶ1マスの大きさ。 */
-    const val TOOL_SIZE = 44
-    const val TOOL_GAP = 6
+    const val TOOL_SIZE = 58
+    const val TOOL_GAP = 8
 
     fun toolCount(): Int = TOOLS.size
 
