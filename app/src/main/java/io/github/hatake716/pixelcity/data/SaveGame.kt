@@ -3,6 +3,8 @@ package io.github.hatake716.pixelcity.data
 import android.content.Context
 import io.github.hatake716.pixelcity.game.City
 import io.github.hatake716.pixelcity.game.Monument
+import io.github.hatake716.pixelcity.game.MonthlyStat
+import io.github.hatake716.pixelcity.game.Ordinance
 import io.github.hatake716.pixelcity.game.Terrain
 import io.github.hatake716.pixelcity.game.TileKind
 import io.github.hatake716.pixelcity.game.Tutorial
@@ -24,7 +26,7 @@ object SaveGame {
     private const val PREFS = "pixelcity"
     /** 保存できる街の数。 */
     const val SLOT_COUNT = 10
-    private const val VERSION = 2
+    private const val VERSION = 3
 
     /** 旧版（1スロットだけだったころ）の保存先。読み込んで引き継ぐために残す。 */
     private const val LEGACY_KEY = "city"
@@ -70,6 +72,30 @@ object SaveGame {
             put("monuments", monuments)
 
             put("tutorial", JSONArray().apply { tutorial.saveState().forEach { put(it) } })
+
+            // v2: 条例・災害の設定・溜まったゴミ・感染
+            put("ordinances", JSONArray().apply { city.ordinances.forEach { put(it.name) } })
+            put("disasterLevel", city.disasterLevel.name)
+            put("garbageBacklog", city.garbageBacklog)
+            put("infection", city.infection)
+            // 埋立地の埋まり具合は、タイルごとに持つ
+            val fills = JSONArray()
+            for ((i, t) in city.tiles.withIndex()) {
+                if (t.landfillFill > 0) {
+                    fills.put(JSONObject().apply { put("i", i); put("f", t.landfillFill) })
+                }
+            }
+            put("landfills", fills)
+            // 推移の記録
+            put("history", JSONArray().apply {
+                for (h in city.history) {
+                    put(JSONObject().apply {
+                        put("m", h.month); put("p", h.population); put("f", h.funds)
+                        put("b", h.balance); put("o", h.pollution); put("c", h.crime)
+                        put("u", h.unemployment); put("h", h.health); put("t", h.traffic)
+                    })
+                }
+            })
 
             // 一覧に出すための要約。街全体を読まずに済ませる。
             put("population", city.population)
@@ -206,6 +232,41 @@ object SaveGame {
         val ts = json.optJSONArray("tutorial")
         if (ts != null) {
             tutorial.restore(IntArray(ts.length()) { ts.getInt(it) })
+        }
+
+        // v2 の状態。古いセーブには入っていないので、なければ既定値のまま。
+        json.optJSONArray("ordinances")?.let { arr ->
+            for (n in 0 until arr.length()) {
+                Ordinance.entries.firstOrNull { it.name == arr.getString(n) }
+                    ?.let { city.ordinances.add(it) }
+            }
+        }
+        json.optString("disasterLevel", "").takeIf { it.isNotEmpty() }?.let { name ->
+            City.DisasterLevel.entries.firstOrNull { it.name == name }
+                ?.let { city.disasterLevel = it }
+        }
+        city.garbageBacklog = json.optInt("garbageBacklog", 0)
+        city.infection = json.optInt("infection", 0)
+        json.optJSONArray("landfills")?.let { arr ->
+            for (n in 0 until arr.length()) {
+                val e = arr.getJSONObject(n)
+                val i = e.getInt("i")
+                if (i in city.tiles.indices) city.tiles[i].landfillFill = e.getInt("f")
+            }
+        }
+        json.optJSONArray("history")?.let { arr ->
+            for (n in 0 until arr.length()) {
+                val e = arr.getJSONObject(n)
+                city.history.add(
+                    MonthlyStat(
+                        month = e.optInt("m"), population = e.optInt("p"),
+                        funds = e.optInt("f"), balance = e.optInt("b"),
+                        pollution = e.optInt("o"), crime = e.optInt("c"),
+                        unemployment = e.optInt("u"), health = e.optInt("h"),
+                        traffic = e.optInt("t"),
+                    ),
+                )
+            }
         }
 
         // 人口などはタイルから導かれる値なので、保存せずに組み直す。

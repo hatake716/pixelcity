@@ -374,7 +374,7 @@ object ShowcaseCity {
         ))
 
         // 財政が最も健全なので、資金を厚く持たせる
-        return finish(city, funds = 600_000, month = 1_300, taxRate = 9)
+        return finish(city, funds = 600_000, month = 1_300, taxRate = 11)
     }
 
     // ------------------------------------------------------------------

@@ -15,7 +15,20 @@ import io.github.hatake716.pixelcity.game.TileKind
  */
 class CityRenderer {
 
-    enum class Overlay { NONE, LAND_VALUE, POLLUTION, POWER }
+    /** 地図に重ねて見る情報。 */
+    enum class Overlay(val label: String) {
+        NONE("なし"),
+        POPULATION("じんこうみつど"),
+        LAND_VALUE("ちか"),
+        POLLUTION("こうがい"),
+        CRIME("はんざい"),
+        TRAFFIC("こうつうりょう"),
+        POWER("でんりょく"),
+        WATER("すいどう"),
+        HEALTH("けんこう"),
+        EDUCATION("きょういく"),
+        FIRE_RISK("しょうぼう"),
+    }
 
     /**
      * [city] を [canvas] の (0, [viewTop]) から高さ [viewHeight] の帯へ描く。
@@ -53,7 +66,23 @@ class CityRenderer {
         // --- 1周目: 地面 ---
         forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
             val tile = city.tileAt(tx, ty)
+            // 道の種類ごとに、つながる向きを見て絵を選ぶ
+            fun linked(kind: TileKind, dx: Int, dy: Int): Boolean =
+                city.tileOrNull(tx + dx, ty + dy)?.kind == kind
             val ground = when {
+                tile.kind == TileKind.AVENUE -> IsoTiles.avenueFor(
+                    alongX = linked(TileKind.AVENUE, -1, 0) || linked(TileKind.AVENUE, 1, 0),
+                    alongY = linked(TileKind.AVENUE, 0, -1) || linked(TileKind.AVENUE, 0, 1),
+                )
+                tile.kind == TileKind.HIGHWAY -> IsoTiles.highwayFor(
+                    alongX = linked(TileKind.HIGHWAY, -1, 0) || linked(TileKind.HIGHWAY, 1, 0),
+                    alongY = linked(TileKind.HIGHWAY, 0, -1) || linked(TileKind.HIGHWAY, 0, 1),
+                )
+                tile.kind == TileKind.SUBWAY -> IsoTiles.subwayFor(
+                    alongX = linked(TileKind.SUBWAY, -1, 0) || linked(TileKind.SUBWAY, 1, 0),
+                    alongY = linked(TileKind.SUBWAY, 0, -1) || linked(TileKind.SUBWAY, 0, 1),
+                )
+                tile.kind == TileKind.LANDFILL -> IsoTiles.GRASS
                 tile.kind == TileKind.RAIL -> IsoTiles.railFor(
                     alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.RAIL ||
                         city.tileOrNull(tx + 1, ty)?.kind == TileKind.RAIL,
@@ -81,13 +110,29 @@ class CityRenderer {
         if (overlay != Overlay.NONE) {
             forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
                 val tile = city.tileAt(tx, ty)
+                // 0（薄い）〜5（濃い）。値が大きいほど目立つ。
                 val level = when (overlay) {
+                    Overlay.NONE -> 0
+                    Overlay.POPULATION ->
+                        if (tile.kind == TileKind.ZONE_R) tile.stage * 2 else 0
                     Overlay.LAND_VALUE -> tile.landValue / 20
                     Overlay.POLLUTION -> tile.pollution / 20
-                    Overlay.POWER -> if (tile.powered) 0 else 4
-                    Overlay.NONE -> 0
+                    Overlay.CRIME -> tile.crime / 20
+                    Overlay.TRAFFIC ->
+                        if (tile.kind.capacity <= 0) 0
+                        else (tile.traffic * 5 / tile.kind.capacity.coerceAtLeast(1)).coerceAtMost(5)
+                    Overlay.POWER -> if (tile.kind == TileKind.EMPTY) 0 else if (tile.powered) 1 else 5
+                    Overlay.WATER -> if (tile.kind == TileKind.EMPTY) 0 else if (tile.watered) 1 else 5
+                    Overlay.HEALTH -> tile.health / 20
+                    Overlay.EDUCATION -> tile.education / 20
+                    Overlay.FIRE_RISK -> tile.safety / 20
                 }
-                if (level > 0) tintDiamond(canvas, sx, sy, zoomNum, zoomDen, level.coerceIn(1, 5), clipTop, clipBottom)
+                if (level > 0) {
+                    tintDiamond(
+                        canvas, sx, sy, zoomNum, zoomDen,
+                        level.coerceIn(1, 5), overlay, clipTop, clipBottom,
+                    )
+                }
             }
         }
 
@@ -167,6 +212,18 @@ class CityRenderer {
             TileKind.POWER_COAL -> IsoBuildings.POWER_COAL
             TileKind.POWER_SOLAR -> IsoBuildings.POWER_SOLAR
             TileKind.POWER_WIND -> IsoBuildings.POWER_WIND
+            TileKind.POWER_LINE -> IsoBuildings.POWER_LINE
+            TileKind.CLINIC -> IsoBuildings.CLINIC
+            TileKind.WATER_TOWER -> IsoBuildings.WATER_TOWER
+            TileKind.WATER_PLANT -> IsoBuildings.WATER_PLANT
+            TileKind.SEWAGE_PLANT -> IsoBuildings.SEWAGE_PLANT
+            TileKind.LANDFILL -> IsoBuildings.LANDFILL
+            TileKind.INCINERATOR -> IsoBuildings.INCINERATOR
+            TileKind.RECYCLING -> IsoBuildings.RECYCLING
+            TileKind.BUS_STOP -> IsoBuildings.BUS_STOP
+            TileKind.SUBWAY_STATION -> IsoBuildings.SUBWAY_STATION
+            TileKind.AIRPORT -> IsoBuildings.AIRPORT
+            TileKind.SEAPORT -> IsoBuildings.SEAPORT
             TileKind.PARK -> IsoBuildings.PARK
             TileKind.POLICE -> IsoBuildings.POLICE
             TileKind.FIRE -> IsoBuildings.FIRE
@@ -237,7 +294,7 @@ class CityRenderer {
     /** 菱形の内側を市松で暗くする。情報の重ね表示に使う。 */
     private fun tintDiamond(
         canvas: PixelCanvas, x: Int, y: Int, zoomNum: Int, zoomDen: Int, level: Int,
-        clipTop: Int, clipBottom: Int,
+        overlay: Overlay, clipTop: Int, clipBottom: Int,
     ) {
         val w = Iso.TILE_W * zoomNum / zoomDen
         val h = Iso.TILE_H * zoomNum / zoomDen
@@ -253,11 +310,26 @@ class CityRenderer {
                 // 濃さに応じた色で市松に塗る。地の色に足すのではなく、
                 // 決まった色を置くことで、どの地面の上でも同じ見え方にする。
                 if ((tx + ty) % 2 == 0) {
-                    val c = when {
-                        level >= 4 -> Palette.RED
-                        level >= 3 -> Palette.GOLD
-                        level >= 2 -> Palette.WINDOW_LIT
-                        else -> Palette.WHITE
+                    // 「多いほど良い」ものは青〜緑、「多いほど悪い」ものは黄〜赤。
+                    val bad = overlay == Overlay.POLLUTION || overlay == Overlay.CRIME ||
+                        overlay == Overlay.TRAFFIC || overlay == Overlay.POWER ||
+                        overlay == Overlay.WATER
+                    val c = if (bad) {
+                        when {
+                            level >= 5 -> Palette.RED_DARK
+                            level >= 4 -> Palette.RED
+                            level >= 3 -> Palette.GOLD
+                            level >= 2 -> Palette.WINDOW_LIT
+                            else -> Palette.WHITE
+                        }
+                    } else {
+                        when {
+                            level >= 5 -> Palette.SKY_DEEP
+                            level >= 4 -> Palette.WATER
+                            level >= 3 -> Palette.TREE
+                            level >= 2 -> Palette.TREE_LIT
+                            else -> Palette.WHITE
+                        }
                     }
                     canvas.set(tx, ty, c)
                 }

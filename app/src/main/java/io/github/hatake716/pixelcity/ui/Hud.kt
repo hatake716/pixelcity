@@ -11,28 +11,90 @@ import io.github.hatake716.pixelcity.game.TileKind
  */
 object Hud {
     const val STATUS_HEIGHT = 52
-    const val TOOLBAR_HEIGHT = 60
+    const val TOOLBAR_HEIGHT = 96
 
-    /** ツールバーに並べるもの。 */
-    val TOOLS: List<Tool> = listOf(
-        Tool(TileKind.ROAD, "どうろ"),
-        Tool(TileKind.ZONE_R, "じゅうたく"),
-        Tool(TileKind.ZONE_C, "しょうぎょう"),
-        Tool(TileKind.ZONE_I, "こうぎょう"),
-        Tool(TileKind.POWER_COAL, "かりょく"),
-        Tool(TileKind.POWER_SOLAR, "たいようこう"),
-        Tool(TileKind.PARK, "こうえん"),
-        Tool(TileKind.POLICE, "けいさつ"),
-        Tool(TileKind.FIRE, "しょうぼう"),
-        Tool(TileKind.SCHOOL, "がっこう"),
-        Tool(TileKind.HOSPITAL, "びょういん"),
-        Tool(TileKind.FARM, "のうち"),
-        Tool(TileKind.POWER_WIND, "ふうりょく"),
-        Tool(TileKind.RAIL, "せんろ"),
-        Tool(TileKind.EMPTY, "こわす"),
-    )
+    /**
+     * ツールの分類。
+     *
+     * 施設が28種になり、一列では収まらなくなった。
+     * まず分類を選び、その中の道具を選ぶ二段構えにする。
+     */
+    enum class Category(val label: String) {
+        ZONE("くかく"),
+        TRANSPORT("こうつう"),
+        POWER("でんりょく"),
+        WATER("すいどう"),
+        GARBAGE("ゴミ"),
+        SERVICE("サービス"),
+        GREEN("みどり"),
+        DEMOLISH("こわす"),
+    }
 
     data class Tool(val kind: TileKind, val label: String)
+
+    /** 分類ごとの道具。 */
+    val TOOLS_BY_CATEGORY: Map<Category, List<Tool>> = mapOf(
+        Category.ZONE to listOf(
+            Tool(TileKind.ZONE_R, "じゅうたく"),
+            Tool(TileKind.ZONE_C, "しょうぎょう"),
+            Tool(TileKind.ZONE_I, "こうぎょう"),
+        ),
+        Category.TRANSPORT to listOf(
+            Tool(TileKind.ROAD, "どうろ"),
+            Tool(TileKind.AVENUE, "おおどおり"),
+            Tool(TileKind.HIGHWAY, "こうそく"),
+            Tool(TileKind.RAIL, "せんろ"),
+            Tool(TileKind.SUBWAY, "ちかてつ"),
+            Tool(TileKind.BUS_STOP, "バスてい"),
+            Tool(TileKind.SUBWAY_STATION, "えき"),
+            Tool(TileKind.AIRPORT, "くうこう"),
+            Tool(TileKind.SEAPORT, "みなと"),
+        ),
+        Category.POWER to listOf(
+            Tool(TileKind.POWER_COAL, "かりょく"),
+            Tool(TileKind.POWER_SOLAR, "たいようこう"),
+            Tool(TileKind.POWER_WIND, "ふうりょく"),
+            Tool(TileKind.POWER_LINE, "そうでんせん"),
+        ),
+        Category.WATER to listOf(
+            Tool(TileKind.WATER_TOWER, "きゅうすいとう"),
+            Tool(TileKind.WATER_PLANT, "じょうすいじょう"),
+            Tool(TileKind.SEWAGE_PLANT, "げすいしょり"),
+        ),
+        Category.GARBAGE to listOf(
+            Tool(TileKind.LANDFILL, "うめたてち"),
+            Tool(TileKind.INCINERATOR, "しょうきゃくじょう"),
+            Tool(TileKind.RECYCLING, "リサイクル"),
+        ),
+        Category.SERVICE to listOf(
+            Tool(TileKind.POLICE, "けいさつ"),
+            Tool(TileKind.FIRE, "しょうぼう"),
+            Tool(TileKind.HOSPITAL, "びょういん"),
+            Tool(TileKind.CLINIC, "しんりょうじょ"),
+            Tool(TileKind.SCHOOL, "がっこう"),
+        ),
+        Category.GREEN to listOf(
+            Tool(TileKind.PARK, "こうえん"),
+            Tool(TileKind.FARM, "のうち"),
+        ),
+        Category.DEMOLISH to listOf(
+            Tool(TileKind.EMPTY, "こわす"),
+        ),
+    )
+
+    /** すべての道具。名前を引くのに使う。 */
+    val TOOLS: List<Tool> = TOOLS_BY_CATEGORY.values.flatten()
+
+    fun toolsIn(category: Category): List<Tool> = TOOLS_BY_CATEGORY[category].orEmpty()
+
+    fun labelOf(kind: TileKind): String =
+        TOOLS.firstOrNull { it.kind == kind }?.label ?: ""
+
+    /** 分類の並ぶ1マスの大きさ。 */
+    const val CATEGORY_W = 56
+    const val CATEGORY_H = 22
+
+    fun categoryX(index: Int): Int = TOOL_GAP + index * (CATEGORY_W + TOOL_GAP)
 
     /** ツールの並ぶ1マスの大きさ。 */
     const val TOOL_SIZE = 28
@@ -43,8 +105,8 @@ object Hud {
     /** [index] 番目のツールの、ツールバー内での x 座標。 */
     fun toolX(index: Int): Int = TOOL_GAP + index * (TOOL_SIZE + TOOL_GAP)
 
-    /** ツールバー全体の幅。横にはみ出す分はスクロールする。 */
-    fun toolStripWidth(): Int = toolX(TOOLS.size)
+    /** いま開いている分類の道具が並ぶ幅。 */
+    fun toolStripWidth(category: Category): Int = toolX(toolsIn(category).size)
 
     /**
      * 需要バー。R/C/I を縦棒で表す。中央より上が「もっとほしい」、下が「余っている」。

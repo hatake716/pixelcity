@@ -123,6 +123,91 @@ object IsoTiles {
     }
 
     /**
+     * 大通り。道路より広く、中央分離帯がある。
+     */
+    private fun avenue(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
+        if (edge > 0.95f) return@diamond Palette.KERB
+        val cx = (x + 0.5f) - W / 2f
+        val cy = (y + 0.5f) - H / 2f
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+        val across = if (alongX) v else u
+        val grain = noise(x, y, 5) % 100
+        when {
+            // 中央分離帯（緑）
+            abs(across) < 0.06f -> Palette.GRASS_DARK
+            abs(across) < 0.09f -> Palette.KERB
+            // 車線の白線
+            abs(abs(across) - 0.22f) < 0.02f -> Palette.ROAD_LINE
+            edge > 0.82f -> Palette.ROAD_DARK
+            grain < 10 -> Palette.ROAD_LIT
+            else -> Palette.ROAD
+        }
+    }
+
+    val AVENUE_X = avenue(alongX = true, alongY = false)
+    val AVENUE_Y = avenue(alongX = false, alongY = true)
+
+    fun avenueFor(alongX: Boolean, alongY: Boolean): Sprite =
+        if (alongY && !alongX) AVENUE_Y else AVENUE_X
+
+    /**
+     * 高速道路。高架にはせず、中央に柵のある広い舗装で表す。
+     */
+    private fun highway(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
+        if (edge > 0.96f) return@diamond Palette.WALL_EDGE
+        val cx = (x + 0.5f) - W / 2f
+        val cy = (y + 0.5f) - H / 2f
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+        val along = if (alongX) u else v
+        val across = if (alongX) v else u
+        when {
+            // 中央の柵
+            abs(across) < 0.05f -> Palette.METAL
+            // 外側のガードレール
+            abs(abs(across) - 0.42f) < 0.035f -> Palette.METAL_LIT
+            abs(abs(across) - 0.20f) < 0.02f &&
+                ((along * 12f).toInt() and 1) == 0 -> Palette.ROAD_LINE
+            edge > 0.86f -> Palette.ROAD_DARK
+            else -> Palette.ROAD_DARK
+        }
+    }
+
+    val HIGHWAY_X = highway(alongX = true, alongY = false)
+    val HIGHWAY_Y = highway(alongX = false, alongY = true)
+
+    fun highwayFor(alongX: Boolean, alongY: Boolean): Sprite =
+        if (alongY && !alongX) HIGHWAY_Y else HIGHWAY_X
+
+    /**
+     * 地下鉄。地上には点線の目印だけを出す（地下を走るため）。
+     */
+    private fun subway(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
+        val cx = (x + 0.5f) - W / 2f
+        val cy = (y + 0.5f) - H / 2f
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+        val along = if (alongX) u else v
+        val across = if (alongX) v else u
+        val n = noise(x, y, 21) % 100
+        when {
+            edge > 0.94f -> Palette.GRASS_EDGE
+            // 地下を示す点線
+            abs(across) < 0.08f && ((along * 10f).toInt() and 1) == 0 -> Palette.METAL_DARK
+            n < 14 -> Palette.GRASS_LIT
+            n < 30 -> Palette.GRASS_DARK
+            else -> Palette.GRASS
+        }
+    }
+
+    val SUBWAY_X = subway(alongX = true, alongY = false)
+    val SUBWAY_Y = subway(alongX = false, alongY = true)
+
+    fun subwayFor(alongX: Boolean, alongY: Boolean): Sprite =
+        if (alongY && !alongX) SUBWAY_Y else SUBWAY_X
+
+    /**
      * 線路。枕木とレールを2本。道路と同じく向きで描き分ける。
      */
     private fun rail(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->

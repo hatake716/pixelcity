@@ -113,11 +113,27 @@ class City(
     val waterRatio: Float
         get() = if (waterDemand <= 0) 1f else min(1f, waterSupply.toFloat() / waterDemand)
 
-    /** 平均の値。統計と助言に使う。 */
-    val averagePollution: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.pollution } / tiles.size
-    val averageCrime: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.crime } / tiles.size
-    val averageLandValue: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.landValue } / tiles.size
-    val averageHealth: Int get() = if (tiles.isEmpty()) 0 else tiles.sumOf { it.health } / tiles.size
+    /**
+     * 平均の値。統計と助言に使う。
+     *
+     * 空き地まで含めて平均すると、広いマップではどの指標もほぼ 0 になり、
+     * 街の様子が見えなくなる。**建物のある場所だけ**で平均を取る。
+     */
+    private inline fun averageOver(pick: (Tile) -> Int): Int {
+        var sum = 0
+        var n = 0
+        for (t in tiles) {
+            if (t.kind == TileKind.EMPTY) continue
+            sum += pick(t)
+            n++
+        }
+        return if (n == 0) 0 else sum / n
+    }
+
+    val averagePollution: Int get() = averageOver { it.pollution }
+    val averageCrime: Int get() = averageOver { it.crime }
+    val averageLandValue: Int get() = averageOver { it.landValue }
+    val averageHealth: Int get() = averageOver { it.health }
 
     /**
      * 市民の満足度 0..100。街の良し悪しをひとつの数にまとめたもの。
@@ -994,15 +1010,17 @@ class City(
             }
         }
 
-        // 溜まったゴミは街全体の地価を下げ、公害を増やす。
-        // 罰は控えめにする。これだけで街が消えるようでは、遊びにならない。
-        val garbagePenalty = (garbageBacklog / 2_000).coerceAtMost(8)
+        // 溜まったゴミは街全体の公害を増やす。
+        //
+        // 地価まで下げると、成長の敷居（8）を割って街がすべて消えてしまう。
+        // ゴミを放っておくと「育たない・不健康になる」が、
+        // 街が消えるほどではない、という重さに留める。
+        val garbagePenalty = (garbageBacklog / 3_000).coerceAtMost(5)
         // 教育の条例
         val eduBonus = if (Ordinance.EDUCATION in ordinances) 15 else 0
         val healthBonus = if (Ordinance.FREE_CLINIC in ordinances) 15 else 0
         for (t in tiles) {
-            t.pollution += garbagePenalty / 2
-            t.landValue -= garbagePenalty
+            t.pollution += garbagePenalty
             t.education += eduBonus
             t.health += healthBonus
             // 渋滞している道のまわりは公害が増える
