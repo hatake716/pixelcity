@@ -1,0 +1,37 @@
+{
+  "title": "PIXELCITY original felt launcher icon",
+  "author": "PIXELCITY",
+  "license": "MIT",
+  "method": "Original Blender geometry with the same wool shader as the city; preserves the three-building motif. No external image or model.",
+  "androidForegroundSize": 648,
+  "androidBackgroundSize": 432,
+  "alphaRadiusPixels": 183.65728953678914,
+  "safeRadiusPixels": 198,
+  "monochrome": "Surface luminance encoded as alpha for the launcher theme tint.",
+  "files": [
+    {
+      "file": "tools/realistic/package_icon.py",
+      "sha256": "28602e35264a10d072d065c3e96dc9b56404fe23bcc7cdfe48e7f288f6da543b"
+    },
+    {
+      "file": "tools/realistic/build_icon.py",
+      "sha256": "e3d9d7302c926daed2f77e74c91e11ed455d516df2e03c8abf17575726d4935e"
+    },
+    {
+      "file": "tools/realistic/felt_materials.py",
+      "sha256": "10a421fa9f9458b5794c3cc3646a2bf58034105cb40bb4b6e16d8a961834ffda"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/launcher_felt_foreground.png",
+      "sha256": "46e8439bba4978792d65923159f9dbd598900be706cefa9f05eb5ea3f2496956"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/launcher_felt_background.png",
+      "sha256": "f278b3e1c8a6128624df8abe90e4399830ae150dcd316044a556e7827842c571"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/launcher_felt_monochrome.png",
+      "sha256": "042206e3efd4a58b52bc67ee27f31aff54dccc245c9a2372c4f9792117555aa3"
+    }
+  ]
+}

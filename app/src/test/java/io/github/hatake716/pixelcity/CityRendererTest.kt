@@ -5,6 +5,7 @@ import io.github.hatake716.pixelcity.game.Monument
 import io.github.hatake716.pixelcity.game.Terrain
 import io.github.hatake716.pixelcity.game.TileKind
 import io.github.hatake716.pixelcity.ui.CityRenderer
+import io.github.hatake716.pixelcity.ui.Palette
 import io.github.hatake716.pixelcity.ui.PixelCanvas
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -49,7 +50,7 @@ class CityRendererTest {
     @Test
     fun `an empty map still draws ground`() {
         val c = render(flatCity())
-        assertTrue("ground is flat colour", distinctLevels(c) > 1)
+        assertTrue("ground was not drawn", c.pixels.count { it.toInt() in Palette.GRASS_LIT..Palette.GRASS_EDGE } > c.pixels.size / 3)
     }
 
     /**

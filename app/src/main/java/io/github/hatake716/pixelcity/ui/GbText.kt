@@ -6,17 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import androidx.core.content.res.ResourcesCompat
-import io.github.hatake716.pixelcity.R
 
-/**
- * 同梱の DotGothic16 で文字を描き、4階調へ落としてピクセルバッファへ転送する。
- *
- * 日本語のドットフォントを自前で持つのは現実的ではないので、
- * SIL OFL 1.1 の DotGothic16（Fontworks Inc.）をそのまま同梱して使う。
- * いったんビットマップへ描いてから2値化することで、
- * アンチエイリアスのにじみを消し、ドット絵と同じ見た目に揃える。
- */
+/** Text layout shared by game panels, rendered with native antialiasing in production. */
 class GbText(context: Context) {
 
     private companion object {
@@ -26,11 +17,11 @@ class GbText(context: Context) {
 
 
     private val typeface: Typeface =
-        ResourcesCompat.getFont(context, R.font.dot_gothic) ?: Typeface.MONOSPACE
+        Typeface.create("sans-serif", Typeface.NORMAL)
 
     private val paint = Paint().apply {
         typeface = this@GbText.typeface
-        isAntiAlias = false
+        isAntiAlias = true
         color = Color.BLACK
     }
 
@@ -62,6 +53,12 @@ class GbText(context: Context) {
      */
     fun draw(canvas: PixelCanvas, text: String, x: Int, y: Int, value: Int = 3) {
         if (text.isEmpty()) return
+        canvas.nativeCanvas?.let { native ->
+            paint.color = Palette.of(value)
+            native.drawText(text, x.toFloat(), (y+baseline()).toFloat(), paint)
+            paint.color = Color.BLACK
+            return
+        }
         val w = measure(text).coerceAtLeast(1) + 2
         val h = lineHeight()
         val bmp = ensureScratch(w, h) ?: return

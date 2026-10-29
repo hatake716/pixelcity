@@ -23,12 +23,12 @@ class InfoPanel(private val text: GbText) {
 
     /** 情報画面の見出し。 */
     enum class Tab(val label: String) {
-        SUMMARY("がいよう"),
-        GRAPH("すいい"),
-        BUDGET("しゅうし"),
-        MAP("データマップ"),
-        ORDINANCE("じょうれい"),
-        SETTINGS("せってい"),
+        SUMMARY("概要"),
+        GRAPH("推移"),
+        BUDGET("収支"),
+        MAP("地図"),
+        ORDINANCE("条例"),
+        SETTINGS("設定"),
     }
 
     var tab: Tab = Tab.SUMMARY
@@ -38,566 +38,178 @@ class InfoPanel(private val text: GbText) {
 
     /** 推移グラフで見る項目。 */
     enum class Series(val label: String, val pick: (MonthlyStat) -> Int) {
-        POPULATION("じんこう", { it.population }),
-        FUNDS("しきん", { it.funds }),
-        BALANCE("しゅうし", { it.balance }),
-        POLLUTION("こうがい", { it.pollution }),
-        CRIME("はんざい", { it.crime }),
-        UNEMPLOYMENT("しつぎょう", { it.unemployment }),
-        TRAFFIC("じゅうたい", { it.traffic }),
+        POPULATION("人口", { it.population }),
+        FUNDS("資金", { it.funds }),
+        BALANCE("収支", { it.balance }),
+        POLLUTION("公害", { it.pollution }),
+        CRIME("犯罪", { it.crime }),
+        UNEMPLOYMENT("失業", { it.unemployment }),
+        TRAFFIC("渋滞", { it.traffic }),
     }
 
     var series: Series = Series.POPULATION
 
     companion object {
-        const val MARGIN = 14
-        /** 見出しの高さ。指で押すので、小さくしすぎない。 */
-        const val TAB_H = 34
-        /** 一覧の1行。 */
-        const val ROW = 24
-        /** データマップの一覧の1行。指で押すので、少し高くする。 */
-        const val MAP_ROW_H = 34
-        /** 様式の1行の高さ。 */
-        const val STYLE_ROW_H = 32
+        const val MARGIN=18
+        const val TAB_H=64
+        const val ROW=36
+        const val MAP_ROW_H=72
+        const val STYLE_ROW_H=80
     }
-
-    /** 見出しの帯の位置。判定と描画で共有する。 */
-    fun tabX(index: Int): Int = MARGIN + index * ((GameView.LOGICAL_W - MARGIN * 2) / Tab.entries.size)
-    fun tabW(): Int = (GameView.LOGICAL_W - MARGIN * 2) / Tab.entries.size
-    fun tabY(): Int = insetTop + 44
-
-    /** その座標にある見出し。なければ null。 */
-    fun tabAt(lx: Int, ly: Int): Tab? {
-        if (ly < tabY() || ly > tabY() + TAB_H) return null
-        for ((i, t) in Tab.entries.withIndex()) {
-            if (lx >= tabX(i) && lx < tabX(i) + tabW()) return t
-        }
-        return null
+    private data class Target(val key: Any,val x: Int,val y: Int,val w: Int,val h: Int)
+    private val targets=ArrayList<Target>()
+    var scrollOffset=0
+        private set
+    private var maxScroll=0
+    private var lastTab=tab
+    private var contentTop=0
+    private var contentBottom=0
+    private var y=0
+    var custom: CustomStyle?=null
+    var sfxOn=true
+    var bgmOn=true
+    private var soundRowY=0
+    private var settingsDisasterY=0
+    private var customEditY=-1
+    private fun columns()=if(GameView.LOGICAL_W>=900) 6 else 3
+    private fun tabRows()=(Tab.entries.size+columns()-1)/columns()
+    fun tabX(index: Int)=MARGIN+(index%columns())*tabW()
+    fun tabW()=(GameView.LOGICAL_W-MARGIN*2)/columns()
+    fun tabY()=insetTop+64
+    fun rowY(index: Int)=tabY()+TAB_H*tabRows()+20+index*ROW
+    fun tabAt(lx: Int,ly: Int): Tab? = Tab.entries.firstOrNull {
+        val x=tabX(it.ordinal);val top=tabY()+(it.ordinal/columns())*TAB_H
+        lx in x until x+tabW() && ly in top until top+TAB_H
     }
-
-    /** 一覧の行。中身によって当たり判定に使う。 */
-    fun rowY(index: Int): Int = tabY() + TAB_H + 12 + index * ROW
-
-    fun draw(pixels: PixelCanvas, city: City, logicalH: Int) {
-        pixels.clear(Palette.UI_BG)
-
-        text.textSize = 22
-        text.drawCentered(
-            pixels, "じょうほう", GameView.LOGICAL_W / 2, insetTop + 10, Palette.UI_ACCENT,
-        )
-
-        // 見出し
-        text.textSize = 12
-        for ((i, t) in Tab.entries.withIndex()) {
-            val x = tabX(i)
-            val w = tabW()
-            val on = t == tab
-            pixels.fillRect(x, tabY(), w, TAB_H, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(x, tabY(), w, TAB_H, Palette.UI_LINE)
-            text.drawCentered(
-                pixels, t.label, x + w / 2, tabY() + 6,
-                if (on) Palette.UI_BG else Palette.UI_TEXT,
-            )
-        }
-
-        when (tab) {
-            Tab.SUMMARY -> drawSummary(pixels, city, logicalH)
-            Tab.GRAPH -> drawGraph(pixels, city, logicalH)
-            Tab.BUDGET -> drawBudget(pixels, city, logicalH)
-            Tab.MAP -> drawMapList(pixels, logicalH)
-            Tab.ORDINANCE -> drawOrdinances(pixels, city, logicalH)
-            Tab.SETTINGS -> drawSettings(pixels, city, logicalH)
-        }
-
-        drawCloseButton(pixels, logicalH)
+    fun scrollBy(delta: Int) { scrollOffset=(scrollOffset+delta).coerceIn(0,maxScroll) }
+    fun closeButtonY(logicalH: Int)=logicalH-insetBottom-80
+    private fun hit(lx: Int,ly: Int): Any? {
+        if(lx<MARGIN || lx>=GameView.LOGICAL_W-MARGIN || ly<contentTop || ly>=contentBottom) return null
+        val sy=ly+scrollOffset
+        return targets.firstOrNull { lx in it.x until it.x+it.w && sy in it.y until it.y+it.h }?.key
     }
+    fun overlayAt(lx: Int,ly: Int)=hit(lx,ly) as? CityRenderer.Overlay
+    fun ordinanceAt(lx: Int,ly: Int,logicalH: Int)=hit(lx,ly) as? Ordinance
+    fun styleAt(lx: Int,ly: Int,logicalH: Int)=hit(lx,ly) as? City.Style
+    fun seriesAt(lx: Int,ly: Int)=hit(lx,ly) as? Series
+    fun disasterAt(lx: Int,ly: Int)=hit(lx,ly) as? City.DisasterLevel
+    fun customEditTapped(lx: Int,ly: Int)=hit(lx,ly)=="custom"
+    fun soundToggleAt(lx: Int,ly: Int): Int?=when(hit(lx,ly)) { "sfx"->0;"bgm"->1;else->null }
 
-    // ------------------------------------------------------------------
-
-    private fun drawSummary(pixels: PixelCanvas, city: City, logicalH: Int) {
-        var y = rowY(0)
-        text.textSize = 14
-
-        fun row(label: String, value: String, colour: Int = Palette.UI_TEXT) {
-            text.draw(pixels, label, MARGIN + 6, y, Palette.UI_DIM)
-            text.draw(pixels, value, GameView.LOGICAL_W - MARGIN - 8 - text.measure(value), y, colour)
-            y += ROW
+    fun draw(p: PixelCanvas,city: City,logicalH: Int) {
+        if(lastTab!=tab) { scrollOffset=0;lastTab=tab }
+        p.clear(Palette.UI_BG)
+        text.textSize=28;text.draw(p,"都市情報",MARGIN,insetTop+14,Palette.UI_TEXT)
+        text.textSize=22
+        for(t in Tab.entries) {
+            val x=tabX(t.ordinal);val top=tabY()+t.ordinal/columns()*TAB_H
+            p.fillRect(x,top,tabW()-4,TAB_H-4,if(t==tab) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+            text.drawCentered(p,t.label,x+(tabW()-4)/2,top+18,if(t==tab) Palette.UI_BG else Palette.UI_TEXT)
         }
-
-        row("じんこう", "${city.population}")
-        row("しごと", "${city.jobs}")
-        row("しつぎょうりつ", "${city.unemployment}%", warn(city.unemployment, 20, 35))
-        row("へいきん ちか", "${city.averageLandValue}")
-        row("へいきん こうがい", "${city.averagePollution}", warn(city.averagePollution, 30, 50))
-        row("へいきん はんざい", "${city.averageCrime}", warn(city.averageCrime, 35, 55))
-        row("かんせんど", "${city.infection}", warn(city.infection, 30, 50))
-        row("じゅうたい", "${city.congestionRate}%", warn(city.congestionRate, 25, 45))
-        y += 4
-        row("でんりょく", "${city.powerSupply}/${city.powerDemand}",
-            if (city.powerSupply < city.powerDemand) Palette.RED else Palette.UI_TEXT)
-        row("すいどう", "${city.waterSupply}/${city.waterDemand}",
-            if (city.waterSupply < city.waterDemand) Palette.RED else Palette.UI_TEXT)
-        row("ゴミ", "${city.garbageProduced}/${city.garbageCapacity}",
-            if (city.garbageProduced > city.garbageCapacity) Palette.RED else Palette.UI_TEXT)
-        if (city.garbageBacklog > 0) {
-            row("たまった ゴミ", "${city.garbageBacklog}", warn(city.garbageBacklog / 100, 10, 40))
-        }
-        y += 6
-
-        // 満足度を棒で
-        text.draw(pixels, "まんぞくど", MARGIN + 6, y, Palette.UI_DIM)
-        val barX = MARGIN + 110
-        val barW = GameView.LOGICAL_W - barX - MARGIN - 40
-        pixels.drawRect(barX, y + 2, barW, 12, Palette.UI_LINE)
-        val fill = barW * city.approval / 100
-        val colour = when {
-            city.approval >= 60 -> Palette.TREE
-            city.approval >= 35 -> Palette.GOLD
-            else -> Palette.RED
-        }
-        pixels.fillRect(barX + 1, y + 3, (fill - 2).coerceAtLeast(0), 10, colour)
-        text.draw(pixels, "${city.approval}", GameView.LOGICAL_W - MARGIN - 30, y, Palette.UI_TEXT)
-        y += ROW + 8
-
-        // 助言
-        text.textSize = 13
-        text.draw(pixels, "しちょうへの ほうこく", MARGIN + 6, y, Palette.UI_ACCENT)
-        y += ROW
-        text.textSize = 12
-        for (a in city.advice().take(4)) {
-            val colour = when {
-                a.severity >= 80 -> Palette.RED
-                a.severity >= 50 -> Palette.GOLD
-                else -> Palette.UI_TEXT
+        contentTop=rowY(0);contentBottom=closeButtonY(logicalH)-12
+        targets.clear();y=contentTop
+        val c=p.nativeCanvas
+        c?.save();c?.clipRect(0,contentTop,GameView.LOGICAL_W,contentBottom);c?.translate(0f,-scrollOffset.toFloat())
+        when(tab) {
+            Tab.SUMMARY -> {
+                row(p,"住宅 / 商業 / 工業の需要","${city.demandR} / ${city.demandC} / ${city.demandI}");row(p,"人口","${city.population} 人");row(p,"雇用","${city.jobs} 人");row(p,"失業率","${city.unemployment}%")
+                row(p,"平均地価","${city.averageLandValue}");row(p,"平均公害","${city.averagePollution}");row(p,"平均犯罪","${city.averageCrime}")
+                row(p,"感染度","${city.infection}");row(p,"渋滞率","${city.congestionRate}%");row(p,"支持率","${city.approval}%")
+                heading(p,"暮らしを支える設備")
+                row(p,"電力供給 / 需要","${city.powerSupply} / ${city.powerDemand}")
+                row(p,"給水供給 / 需要","${city.waterSupply} / ${city.waterDemand}")
+                row(p,"ゴミ発生 / 処理能力","${city.garbageProduced} / ${city.garbageCapacity}")
+                row(p,"未処理のゴミ","${city.garbageBacklog}")
+                heading(p,"市長への助言")
+                paragraph(p,when { city.powerSupply<city.powerDemand -> "電力が不足しています。発電施設と送電経路を確認しましょう。"
+                    city.waterSupply<city.waterDemand -> "水道が不足しています。給水設備を整えて住民の健康を守りましょう。"
+                    city.unemployment>20 -> "働く場所が不足しています。商業や工業の区画と交通を整えましょう。"
+                    city.averagePollution>35 -> "公害が広がっています。産業と住宅の距離、緑地、排出規制を見直しましょう。"
+                    else -> "暮らしは落ち着いています。収支と需要を見ながら、少しずつ街を広げましょう。" })
             }
-            for (line in text.wrap(a.text, GameView.LOGICAL_W - MARGIN * 2 - 16)) {
-                if (y > logicalH - 70) return
-                text.draw(pixels, line, MARGIN + 10, y, colour)
-                y += 15
+            Tab.BUDGET -> {
+                val inc=city.lastIncomeBreakdown;val sp=city.lastSpending
+                heading(p,"収入")
+                row(p,"住宅税",money(inc.residential));row(p,"商業税",money(inc.commercial));row(p,"工業・企業協定",money(inc.industrial));row(p,"観光",money(inc.tourism));row(p,"収入合計",money(inc.total))
+                heading(p,"支出")
+                listOf("交通" to sp.transport,"電力" to sp.power,"水道" to sp.water,"ゴミ処理" to sp.garbage,"警察・消防" to sp.safety,"医療" to sp.health,"教育" to sp.education,"公園・農地" to sp.parks,"条例・施策" to sp.ordinances).forEach { row(p,it.first,money(it.second)) }
+                row(p,"支出合計",money(sp.total));heading(p,"月間収支 ${money(inc.total-sp.total)}")
             }
-            y += 3
-        }
-    }
-
-    private fun warn(value: Int, caution: Int, danger: Int): Int = when {
-        value >= danger -> Palette.RED
-        value >= caution -> Palette.GOLD
-        else -> Palette.UI_TEXT
-    }
-
-    // ------------------------------------------------------------------
-
-    private fun drawGraph(pixels: PixelCanvas, city: City, logicalH: Int) {
-        // 見る項目を選ぶ
-        text.textSize = 12
-        var x = MARGIN
-        var y = rowY(0) - 6
-        for (s in Series.entries) {
-            val w = text.measure(s.label) + 10
-            if (x + w > GameView.LOGICAL_W - MARGIN) {
-                x = MARGIN
-                y += 18
+            Tab.MAP -> {
+                paragraph(p,"項目を選ぶと街に色を重ねます。地図上のラベルを押すと解除できます。")
+                for(o in CityRenderer.Overlay.entries) choice(p,o,o.label,if(o==overlay) "選択中" else if(o.good) "値が高いほど青・緑" else "値が高いほど橙・赤",o==overlay,MAP_ROW_H)
             }
-            val on = s == series
-            pixels.fillRect(x, y, w, 16, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(x, y, w, 16, Palette.UI_LINE)
-            text.draw(pixels, s.label, x + 5, y + 2, if (on) Palette.UI_BG else Palette.UI_TEXT)
-            x += w + 4
-        }
-        val graphTop = y + 26
-
-        val data = city.history
-        val gx = MARGIN + 30
-        val gy = graphTop
-        val gw = GameView.LOGICAL_W - gx - MARGIN
-        val gh = (logicalH - graphTop - 80).coerceAtLeast(60)
-
-        // 枠
-        pixels.drawRect(gx, gy, gw, gh, Palette.UI_LINE)
-
-        if (data.size < 2) {
-            text.textSize = 13
-            text.drawCentered(
-                pixels, "まだ きろくが ありません",
-                GameView.LOGICAL_W / 2, gy + gh / 2, Palette.UI_DIM,
-            )
-            return
-        }
-
-        val values = data.map(series.pick)
-        val lo = minOf(values.min(), 0)
-        val hi = maxOf(values.max(), 1)
-        val span = (hi - lo).coerceAtLeast(1)
-
-        // 目盛り
-        text.textSize = 11
-        text.draw(pixels, "$hi", MARGIN - 4, gy - 4, Palette.UI_DIM)
-        text.draw(pixels, "$lo", MARGIN - 4, gy + gh - 10, Palette.UI_DIM)
-        // ゼロの線
-        if (lo < 0) {
-            val zy = gy + gh - (0 - lo) * gh / span
-            for (px in gx until gx + gw step 3) pixels.set(px, zy, Palette.UI_DIM)
-        }
-
-        // 折れ線
-        var prevX = -1
-        var prevY = -1
-        for ((i, v) in values.withIndex()) {
-            val px = gx + i * gw / (values.size - 1).coerceAtLeast(1)
-            val py = gy + gh - (v - lo) * gh / span
-            if (prevX >= 0) line(pixels, prevX, prevY, px, py, Palette.UI_ACCENT)
-            prevX = px
-            prevY = py
-        }
-
-        text.textSize = 12
-        text.draw(
-            pixels, "${data.first().month / 12 + 1900}ねん 〜 ${data.last().month / 12 + 1900}ねん",
-            gx, gy + gh + 6, Palette.UI_DIM,
-        )
-    }
-
-    /** 2点を結ぶ線。 */
-    private fun line(pixels: PixelCanvas, x0: Int, y0: Int, x1: Int, y1: Int, colour: Int) {
-        val dx = Math.abs(x1 - x0)
-        val dy = Math.abs(y1 - y0)
-        val sx = if (x0 < x1) 1 else -1
-        val sy = if (y0 < y1) 1 else -1
-        var err = dx - dy
-        var x = x0
-        var y = y0
-        var guard = 0
-        while (guard++ < 4_000) {
-            pixels.set(x, y, colour)
-            pixels.set(x, y + 1, colour)
-            if (x == x1 && y == y1) break
-            val e2 = err * 2
-            if (e2 > -dy) { err -= dy; x += sx }
-            if (e2 < dx) { err += dx; y += sy }
-        }
-    }
-
-    // ------------------------------------------------------------------
-
-    private fun drawBudget(pixels: PixelCanvas, city: City, logicalH: Int) {
-        var y = rowY(0)
-        text.textSize = 14
-
-        fun row(label: String, value: Int, colour: Int = Palette.UI_TEXT, indent: Int = 0) {
-            text.draw(pixels, label, MARGIN + 6 + indent, y, Palette.UI_DIM)
-            val v = "$$value"
-            text.draw(pixels, v, GameView.LOGICAL_W - MARGIN - 8 - text.measure(v), y, colour)
-            y += ROW
-        }
-
-        val inc = city.lastIncomeBreakdown
-        val sp = city.lastSpending
-
-        text.draw(pixels, "しゅうにゅう", MARGIN + 6, y, Palette.UI_ACCENT); y += ROW
-        row("じゅうたく", inc.residential, indent = 10)
-        row("しょうぎょう", inc.commercial, indent = 10)
-        row("こうぎょう", inc.industrial, indent = 10)
-        if (inc.tourism > 0) row("かんこう", inc.tourism, indent = 10)
-        row("ごうけい", inc.total, Palette.TREE_LIT)
-        y += 6
-
-        text.draw(pixels, "ししゅつ", MARGIN + 6, y, Palette.UI_ACCENT); y += ROW
-        if (sp.transport > 0) row("こうつう", sp.transport, indent = 10)
-        if (sp.power > 0) row("でんりょく", sp.power, indent = 10)
-        if (sp.water > 0) row("すいどう", sp.water, indent = 10)
-        if (sp.garbage > 0) row("ゴミしょり", sp.garbage, indent = 10)
-        if (sp.safety > 0) row("けいさつ・しょうぼう", sp.safety, indent = 10)
-        if (sp.health > 0) row("いりょう", sp.health, indent = 10)
-        if (sp.education > 0) row("きょういく", sp.education, indent = 10)
-        if (sp.parks > 0) row("こうえん・のうち", sp.parks, indent = 10)
-        if (sp.ordinances > 0) row("じょうれい", sp.ordinances, indent = 10)
-        row("ごうけい", sp.total, Palette.RED)
-        y += 6
-
-        val balance = inc.total - sp.total
-        row("さしひき", balance, if (balance >= 0) Palette.TREE_LIT else Palette.RED)
-    }
-
-    // ------------------------------------------------------------------
-
-    private fun drawMapList(pixels: PixelCanvas, logicalH: Int) {
-        var y = rowY(0)
-        text.textSize = 14
-        text.draw(pixels, "えらぶと、ちずに かさねて みられます", MARGIN + 6, y, Palette.UI_DIM)
-        y += ROW + 2
-
-        for (o in CityRenderer.Overlay.entries) {
-            val on = o == overlay
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, MAP_ROW_H,
-                if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, MAP_ROW_H, Palette.UI_LINE)
-            text.textSize = 15
-            text.draw(
-                pixels, o.label, MARGIN + 10, y + (MAP_ROW_H - 15) / 2,
-                if (on) Palette.UI_BG else Palette.UI_TEXT,
-            )
-            // 濃さの見本。薄い→濃いの順に並べ、色の向きが分かるようにする。
-            if (o != CityRenderer.Overlay.NONE) {
-                val sw = 13
-                var cx = GameView.LOGICAL_W - MARGIN - 8 - sw * 4
-                for (level in 2..5) {
-                    pixels.fillRect(cx, y + 5, sw - 2, MAP_ROW_H - 10, CityRenderer.colourOf(o, level))
-                    pixels.drawRect(cx, y + 5, sw - 2, MAP_ROW_H - 10, Palette.BLACK)
-                    cx += sw
+            Tab.ORDINANCE -> {
+                paragraph(p,"条例の費用は人口に応じて毎月かかります。効果と収支を見ながら選びましょう。")
+                for(o in Ordinance.entries) choice(p,o,o.label,o.detail+"  /  ${money((city.population*o.costPerCitizen).toInt())} / 月",o in city.ordinances,106)
+            }
+            Tab.SETTINGS -> {
+                heading(p,"サウンド")
+                soundRowY=y
+                choice(p,"sfx","効果音",if(sfxOn) "オン" else "オフ",sfxOn)
+                choice(p,"bgm","音楽",if(bgmOn) "オン" else "オフ",bgmOn)
+                heading(p,"街並みの色調")
+                paragraph(p,"建物の素材を保ちながら、街の色調を変えます。")
+                for(st in City.Style.entries) choice(p,st,st.label,st.detail,st==city.style,STYLE_ROW_H)
+                customEditY=-1
+                if(city.style==City.Style.CUSTOM) { customEditY=y;choice(p,"custom","色を選ぶ","建物の色調をカスタマイズ",false) }
+                heading(p,"災害の多さ")
+                settingsDisasterY=y
+                for(lv in City.DisasterLevel.entries) choice(p,lv,lv.label,null,lv==city.disasterLevel)
+            }
+            Tab.GRAPH -> {
+                for(s in Series.entries) choice(p,s,s.label,null,s==series,64)
+                heading(p,"${series.label}の推移")
+                val history=city.history
+                if(history.size<2) paragraph(p,"月が進むと、この場所に街の推移が記録されます。")
+                else {
+                    val values=history.map(series.pick);val lo=minOf(0,values.min());val hi=maxOf(1,values.max());val span=(hi.toDouble()-lo).coerceAtLeast(1.0)
+                    val left=MARGIN+48;val w=GameView.LOGICAL_W-left-MARGIN;val h=240
+                    p.drawRect(left,y,w,h,Palette.UI_LINE)
+                    text.textSize=17;text.draw(p,"$hi",MARGIN,y,Palette.UI_DIM);text.draw(p,"$lo",MARGIN,y+h-20,Palette.UI_DIM)
+                    val path=android.graphics.Path()
+                    for((i,v) in values.withIndex()) { val px=left+i*w.toFloat()/(values.size-1);val py=y+h-((v.toDouble()-lo)/span*h).toFloat();if(i==0) path.moveTo(px,py) else path.lineTo(px,py) }
+                    c?.drawPath(path,android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color=Palette.of(Palette.UI_ACCENT);style=android.graphics.Paint.Style.STROKE;strokeWidth=2f })
+                    y+=h+20
                 }
             }
-            y += MAP_ROW_H + 3
-            if (y > logicalH - 80) break
+        }
+        maxScroll=(y-contentBottom).coerceAtLeast(0)
+        if(scrollOffset>maxScroll) scrollOffset=maxScroll
+        c?.restore()
+        val by=closeButtonY(logicalH)
+        p.fillRect(MARGIN,by,GameView.LOGICAL_W-MARGIN*2,64,Palette.UI_BG_LIGHT)
+        text.textSize=23;text.drawCentered(p,"街に戻る",GameView.LOGICAL_W/2,by+18,Palette.UI_TEXT)
+        if(maxScroll>0) {
+            p.fillRect(GameView.LOGICAL_W-8,contentTop,3,contentBottom-contentTop,Palette.UI_LINE)
+            val h=((contentBottom-contentTop).toFloat()/(y-contentTop)*(contentBottom-contentTop)).toInt().coerceAtLeast(22)
+            val pos=contentTop+(contentBottom-contentTop-h)*scrollOffset/maxScroll
+            p.fillRect(GameView.LOGICAL_W-8,pos,3,h,Palette.UI_ACCENT)
         }
     }
-
-    /** データマップの一覧で、その座標にある項目。 */
-    fun overlayAt(lx: Int, ly: Int): CityRenderer.Overlay? {
-        if (tab != Tab.MAP) return null
-        var y = rowY(0) + ROW + 2
-        for (o in CityRenderer.Overlay.entries) {
-            if (ly >= y && ly < y + MAP_ROW_H) return o
-            y += MAP_ROW_H + 3
-        }
-        return null
+    private fun money(v: Int)="$${"%,d".format(v)}"
+    private fun row(p: PixelCanvas,label: String,value: String) {
+        text.textSize=21;text.draw(p,label,MARGIN,y,Palette.UI_DIM)
+        text.draw(p,value,GameView.LOGICAL_W-MARGIN-text.measure(value),y,Palette.UI_TEXT);y+=ROW
     }
-
-    // ------------------------------------------------------------------
-
-    private fun drawOrdinances(pixels: PixelCanvas, city: City, logicalH: Int) {
-        var y = rowY(0)
-        text.textSize = 12
-        text.draw(pixels, "ひようは じんこうに おうじて まいつき かかります", MARGIN + 6, y, Palette.UI_DIM)
-        y += ROW
-
-        for (o in Ordinance.entries) {
-            val on = o in city.ordinances
-            val h = 46
-            if (y + h > logicalH - 60) break
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h,
-                if (on) Palette.UI_BG_LIGHT else Palette.UI_BG)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h,
-                if (on) Palette.UI_ACCENT else Palette.UI_LINE)
-
-            // 入／切の印
-            val markX = GameView.LOGICAL_W - MARGIN - 34
-            pixels.fillRect(markX, y + 13, 26, 18, if (on) Palette.TREE else Palette.UI_BG)
-            pixels.drawRect(markX, y + 13, 26, 18, Palette.UI_LINE)
-            text.textSize = 12
-            text.drawCentered(pixels, if (on) "オン" else "オフ", markX + 13, y + 16,
-                if (on) Palette.WHITE else Palette.UI_DIM)
-
-            text.textSize = 13
-            text.draw(pixels, o.label, MARGIN + 8, y + 4, Palette.UI_TEXT)
-            text.textSize = 11
-            text.draw(pixels, o.detail, MARGIN + 8, y + 21, Palette.UI_DIM)
-            val cost = (city.population * o.costPerCitizen).toInt()
-            text.draw(pixels, "$$cost/つき", MARGIN + 8, y + 33, Palette.GOLD)
-            y += h + 4
-        }
+    private fun heading(p: PixelCanvas,label: String) {
+        y+=14;text.textSize=24;text.draw(p,label,MARGIN,y,Palette.UI_ACCENT);y+=44
     }
-
-    /** 条例の一覧で、その座標にある条例。 */
-    fun ordinanceAt(lx: Int, ly: Int, logicalH: Int): Ordinance? {
-        if (tab != Tab.ORDINANCE) return null
-        var y = rowY(0) + ROW
-        for (o in Ordinance.entries) {
-            val h = 46
-            if (y + h > logicalH - 60) break
-            if (ly >= y && ly < y + h) return o
-            y += h + 4
-        }
-        return null
+    private fun paragraph(p: PixelCanvas,value: String) {
+        text.textSize=20
+        for(line in text.wrap(value,GameView.LOGICAL_W-MARGIN*2-12)) { text.draw(p,line,MARGIN,y,Palette.UI_DIM);y+=29 }
+        y+=14
     }
-
-    // ------------------------------------------------------------------
-
-    /**
-     * せってい。街並みの様式と、災害の多さを選ぶ。
-     *
-     * 様式は見た目だけを変えるもので、シミュレーションには関わらない。
-     * 同じ街でも、古代風にすれば砂漠の都に、未来風にすれば発光する都市に見える。
-     */
-    private fun drawSettings(pixels: PixelCanvas, city: City, logicalH: Int) {
-        var y = rowY(0)
-
-        // --- 音 ---
-        text.textSize = 14
-        text.draw(pixels, "おと", MARGIN + 6, y, Palette.UI_ACCENT)
-        y += ROW
-        soundRowY = y
-        val half = (GameView.LOGICAL_W - MARGIN * 2) / 2
-        for ((i, on) in booleanArrayOf(sfxOn, bgmOn).withIndex()) {
-            val x = MARGIN + i * half
-            pixels.fillRect(x, y, half - 3, 24, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(x, y, half - 3, 24, Palette.UI_LINE)
-            text.textSize = 12
-            val label = if (i == 0) "こうかおん" else "おんがく"
-            text.drawCentered(
-                pixels, "$label ${if (on) "オン" else "オフ"}",
-                x + (half - 3) / 2, y + 6,
-                if (on) Palette.UI_BG else Palette.UI_DIM,
-            )
-        }
-        y += 32
-
-        text.textSize = 14
-        text.draw(pixels, "まちなみの ようしき", MARGIN + 6, y, Palette.UI_ACCENT)
-        y += ROW
-
-        text.textSize = 11
-        text.draw(pixels, "みためだけが かわります。まちの なかみは そのままです。", MARGIN + 6, y, Palette.UI_DIM)
-        y += 16
-
-        for (st in City.Style.entries) {
-            val on = st == city.style
-            val h = STYLE_ROW_H
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h,
-                if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, h, Palette.UI_LINE)
-            text.textSize = 13
-            text.draw(pixels, st.label, MARGIN + 8, y + 3,
-                if (on) Palette.UI_BG else Palette.UI_TEXT)
-            text.textSize = 10
-            text.draw(pixels, st.detail, MARGIN + 8, y + 18,
-                if (on) Palette.UI_BG else Palette.UI_DIM)
-            // 色の見本を右に並べる
-            val swatchX = GameView.LOGICAL_W - MARGIN - 52
-            for ((i, c) in swatchesFor(st).withIndex()) {
-                pixels.fillRect(swatchX + i * 12, y + 8, 10, 14, c)
-                pixels.drawRect(swatchX + i * 12, y + 8, 10, 14, Palette.BLACK)
-            }
-            y += h + 3
-            if (y > logicalH - 130) break
-        }
-
-        // 「じぶんで きめる」なら、色を選ぶ入口を出す
-        if (city.style == City.Style.CUSTOM) {
-            y += 4
-            customEditY = y
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, 24, Palette.UI_BG_LIGHT)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, 24, Palette.UI_ACCENT)
-            text.textSize = 13
-            text.draw(pixels, "いろを えらぶ ▶", MARGIN + 8, y + 5, Palette.UI_ACCENT)
-            y += 28
-        } else {
-            customEditY = -1
-        }
-
-        y += 6
-        text.textSize = 14
-        text.draw(pixels, "さいがいの おおさ", MARGIN + 6, y, Palette.UI_ACCENT)
-        y += ROW
-        settingsDisasterY = y
-        for (lv in City.DisasterLevel.entries) {
-            val on = lv == city.disasterLevel
-            val w = (GameView.LOGICAL_W - MARGIN * 2) / City.DisasterLevel.entries.size
-            val x = MARGIN + lv.ordinal * w
-            pixels.fillRect(x, y, w - 2, 22, if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(x, y, w - 2, 22, Palette.UI_LINE)
-            text.textSize = 12
-            text.drawCentered(pixels, lv.label, x + w / 2, y + 5,
-                if (on) Palette.UI_BG else Palette.UI_TEXT)
-        }
-    }
-
-    /** その様式の代表的な3色。一覧で見分けるために出す。 */
-    private fun swatchesFor(style: City.Style): IntArray = when (style) {
-        City.Style.STANDARD -> intArrayOf(Palette.HOUSE_ROOF, Palette.HOUSE_LEFT, Palette.GLASS_LIT)
-        City.Style.PRIME -> intArrayOf(Palette.PRIME_ROOF, Palette.PRIME_LEFT, Palette.PRIME_GLASS)
-        City.Style.RURAL -> intArrayOf(Palette.RURAL_ROOF, Palette.RURAL_WALL, Palette.TREE)
-        City.Style.GRITTY -> intArrayOf(Palette.GRIT_ROOF, Palette.GRIT_WALL, Palette.METAL_DARK)
-        City.Style.ANCIENT -> intArrayOf(Palette.ANCIENT_ROOF, Palette.ANCIENT_WALL, Palette.SAND_LIT)
-        City.Style.FUTURE -> intArrayOf(Palette.FUTURE_ROOF, Palette.FUTURE_WALL, Palette.FUTURE_GLOW)
-        City.Style.EUROPE -> intArrayOf(Palette.EURO_ROOF, Palette.EURO_WALL, Palette.SAND_LIT)
-        City.Style.JAPAN -> intArrayOf(Palette.JP_ROOF, Palette.JP_WALL, Palette.TREE_DARK)
-        City.Style.CUSTOM -> intArrayOf(
-            customSwatch(CustomStyle.Slot.HOUSE_ROOF),
-            customSwatch(CustomStyle.Slot.HOUSE_WALL),
-            customSwatch(CustomStyle.Slot.GLASS_LIT),
-        )
-    }
-
-    /** いま編集中のカスタム様式。見本を出すために持つ。 */
-    var custom: CustomStyle? = null
-
-    /** 音の設定。表示のために持つだけで、実際に鳴らすのは GameView。 */
-    var sfxOn: Boolean = true
-    var bgmOn: Boolean = true
-    private var soundRowY = -1
-
-    /**
-     * 音の釦のどちらを押したか。
-     * 0 = 効果音、1 = 音楽、押していなければ null。
-     */
-    fun soundToggleAt(lx: Int, ly: Int): Int? {
-        if (tab != Tab.SETTINGS || soundRowY < 0) return null
-        if (ly < soundRowY || ly >= soundRowY + 24) return null
-        val half = (GameView.LOGICAL_W - MARGIN * 2) / 2
-        return if (lx < MARGIN + half) 0 else 1
-    }
-
-    private fun customSwatch(slot: CustomStyle.Slot): Int =
-        custom?.get(slot) ?: slot.default
-
-    /** 災害の段の y。描いたときに覚えて、判定で使う。 */
-    private var settingsDisasterY = 0
-
-    /** 「いろを えらぶ」の y。出していないときは -1。 */
-    private var customEditY = -1
-
-    /** 「いろを えらぶ」が押されたか。 */
-    fun customEditTapped(lx: Int, ly: Int): Boolean =
-        tab == Tab.SETTINGS && customEditY >= 0 && ly >= customEditY && ly < customEditY + 24
-
-    /** せっていの一覧で、その座標にある様式。 */
-    fun styleAt(lx: Int, ly: Int, logicalH: Int): City.Style? {
-        if (tab != Tab.SETTINGS) return null
-        var y = rowY(0) + ROW + 16
-        for (st in City.Style.entries) {
-            if (ly >= y && ly < y + STYLE_ROW_H) return st
-            y += STYLE_ROW_H + 3
-            if (y > logicalH - 130) break
-        }
-        return null
-    }
-
-    /** せっていの一覧で、その座標にある災害の段。 */
-    fun disasterAt(lx: Int, ly: Int): City.DisasterLevel? {
-        if (tab != Tab.SETTINGS) return null
-        if (ly < settingsDisasterY || ly > settingsDisasterY + 22) return null
-        val w = (GameView.LOGICAL_W - MARGIN * 2) / City.DisasterLevel.entries.size
-        val i = (lx - MARGIN) / w
-        return City.DisasterLevel.entries.getOrNull(i)
-    }
-
-    fun closeButtonY(logicalH: Int): Int = logicalH - insetBottom - 52
-
-    private fun drawCloseButton(pixels: PixelCanvas, logicalH: Int) {
-        val y = closeButtonY(logicalH)
-        val w = 90
-        val x = (GameView.LOGICAL_W - w) / 2
-        pixels.fillRect(x, y, w, 28, Palette.UI_BG_LIGHT)
-        pixels.drawRect(x, y, w, 28, Palette.UI_LINE)
-        text.textSize = 15
-        text.drawCentered(pixels, "とじる", GameView.LOGICAL_W / 2, y + 5, Palette.UI_TEXT)
-    }
-
-    /** 推移グラフで、その座標にある項目。 */
-    fun seriesAt(lx: Int, ly: Int): Series? {
-        if (tab != Tab.GRAPH) return null
-        text.textSize = 12
-        var x = MARGIN
-        var y = rowY(0) - 6
-        for (s in Series.entries) {
-            val w = text.measure(s.label) + 10
-            if (x + w > GameView.LOGICAL_W - MARGIN) {
-                x = MARGIN
-                y += 18
-            }
-            if (lx >= x && lx < x + w && ly >= y && ly < y + 16) return s
-            x += w + 4
-        }
-        return null
+    private fun choice(p: PixelCanvas,key: Any,title: String,detail: String?,on: Boolean,height: Int=76) {
+        val x=MARGIN;val w=GameView.LOGICAL_W-MARGIN*2
+        text.textSize=18
+        val lines=detail?.let { text.wrap(it,w-36) }.orEmpty()
+        val h=maxOf(height,if(lines.isEmpty()) 64 else 46+lines.size*24)
+        p.fillRect(x,y,w,h-6,if(on) Palette.UI_BG_LIGHT else Palette.UI_BG)
+        p.drawRect(x,y,w,h-6,if(on) Palette.UI_ACCENT else Palette.UI_LINE)
+        text.textSize=22;text.draw(p,if(on) "✓ $title" else title,x+12,y+10,if(on) Palette.UI_ACCENT else Palette.UI_TEXT)
+        text.textSize=18
+        for((i,line) in lines.withIndex()) text.draw(p,line,x+12,y+40+i*24,Palette.UI_DIM)
+        targets.add(Target(key,x,y,w,h-6));y+=h+4
     }
 }

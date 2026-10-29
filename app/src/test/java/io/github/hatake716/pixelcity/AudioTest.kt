@@ -3,6 +3,7 @@ package io.github.hatake716.pixelcity
 import io.github.hatake716.pixelcity.audio.Bgm
 import io.github.hatake716.pixelcity.audio.Sfx
 import io.github.hatake716.pixelcity.audio.Waves
+import io.github.hatake716.pixelcity.game.Campaign
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -19,6 +20,9 @@ import org.junit.Test
  * は数で確かめられる。
  */
 class AudioTest {
+    private companion object {
+        val tunes by lazy { Bgm.entries.associateWith { it.render() } }
+    }
 
     private fun peak(pcm: ShortArray): Int = pcm.maxOf { abs(it.toInt()) }
 
@@ -95,9 +99,10 @@ class AudioTest {
     @Test
     fun `every tune is long enough to loop`() {
         for (bgm in Bgm.entries) {
-            val pcm = bgm.render()
+            val pcm = tunes.getValue(bgm)
             val seconds = pcm.size.toFloat() / Waves.RATE
-            assertTrue("${bgm.name} is too short ($seconds s)", seconds >= 8f)
+            assertTrue("${bgm.name} is too short ($seconds s)", seconds >= 60f)
+            assertEquals(bgm.durationSeconds, seconds, 0.001f)
             assertTrue("${bgm.name} is silent", peak(pcm) > 2_000)
             assertTrue("${bgm.name} has no name", bgm.label.isNotBlank())
         }
@@ -112,7 +117,7 @@ class AudioTest {
     @Test
     fun `tunes start and end quietly so the loop is seamless`() {
         for (bgm in Bgm.entries) {
-            val pcm = bgm.render()
+            val pcm = tunes.getValue(bgm)
             val head = peak(pcm.copyOfRange(0, 64))
             val tail = peak(pcm.copyOfRange(pcm.size - 64, pcm.size))
             val full = peak(pcm)
@@ -124,10 +129,10 @@ class AudioTest {
     /** 曲どうしが、別の曲であること。 */
     @Test
     fun `each tune differs from the others`() {
-        val rendered = Bgm.entries.associateWith { it.render() }
+        val rendered = tunes
         for (a in Bgm.entries) for (b in Bgm.entries) {
             if (a >= b) continue
-            assertNotEquals("$a and $b are the same tune", rendered[a]!!.toList(), rendered[b]!!.toList())
+            assertTrue("$a and $b are the same tune", !rendered.getValue(a).contentEquals(rendered.getValue(b)))
         }
     }
 
@@ -154,5 +159,40 @@ class AudioTest {
         // ドはラより9半音下
         assertTrue(Waves.freq(Waves.C4) < Waves.freq(Waves.A4))
         assertTrue(Waves.freq(Waves.C5) > Waves.freq(Waves.A4))
+    }
+
+    @Test
+    fun `score levels retain headroom with no dc offset or sustained silence`() {
+        for ((bgm, pcm) in tunes) {
+            assertTrue("$bgm clips", peak(pcm) < 31_000)
+            assertTrue("$bgm DC offset", abs(pcm.sumOf { it.toDouble() } / pcm.size) < 120)
+            val windows = pcm.asSequence().chunked(Waves.RATE * 2)
+            for (window in windows) {
+                val rms = kotlin.math.sqrt(window.sumOf { it.toDouble() * it } / window.size)
+                assertTrue("$bgm drops out", rms > 400)
+                assertTrue("$bgm is too loud", rms < 7_000)
+            }
+        }
+    }
+
+    @Test
+    fun `routes pick distinct scores and budget recovery restores the route`() {
+        assertEquals(Bgm.DAWN, Bgm.forCity(0, 100, 0, null))
+        assertEquals(Bgm.CITY, Bgm.forCity(2_000, 100, 0, null))
+        val expected = mapOf(Campaign.Route.METROPOLIS to Bgm.CITY,
+            Campaign.Route.GARDEN to Bgm.GARDEN, Campaign.Route.INDUSTRIAL to Bgm.INDUSTRY)
+        for ((route, tune) in expected) {
+            assertEquals(tune, Bgm.forCity(500, 100, 0, route))
+            assertEquals(Bgm.TROUBLE, Bgm.forCity(50_000, -1, 0, route))
+            assertEquals(Bgm.TROUBLE, Bgm.forCity(50_000, 100, 1, route))
+            assertEquals(tune, Bgm.forCity(50_000, 100, 0, route))
+        }
+    }
+
+    @Test
+    fun `gain cannot clip a loud mix`() {
+        val track = Waves.Track(32)
+        track.data.fill(0.8f)
+        assertTrue(peak(track.toPcm(3f)) < 31_000)
     }
 }

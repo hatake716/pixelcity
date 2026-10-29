@@ -1,0 +1,24 @@
+地球の衛星画像・標高・海底地形
+
+Blue Marble Next Generation (July 2004)
+NASA Earth Observatory / Reto Stöckli
+https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/
+
+Topography and bathymetry: GEBCO / British Oceanographic Data Centre;
+NASA Earth Observatory / Jesse Allen
+https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/topography-bathymetry-maps/
+
+NASA image and media usage guidelines:
+https://www.nasa.gov/nasa-brand-center/images-and-media/
+GEBCO grid: public domain, free use with acknowledgment:
+https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use
+
+加工：衛星画像を縮小。NASAが公開する陸域0〜6,400m・海底−8,000〜0mの
+濃淡図を512×512の等積格子へ変換。起伏を表示上65倍に強調。
+地形区分・編集後の地形・海面・大気はゲーム用の独自処理。
+衛星画像は合成画像であり、現在の地球のライブ写真ではありません。
+測量・航海用ではありません。NASA・GEBCOによる本アプリの推奨を意味しません。
+原資料のURL・ハッシュ・変換内容は assets/earth/sources.json に収録。
+
+0.5.3以降、球体の表面表示には保存された土地属性から生成した独自素材を使用。
+衛星写真は表面へ貼り付けず、初期の地形分類の原資料として使用しています。

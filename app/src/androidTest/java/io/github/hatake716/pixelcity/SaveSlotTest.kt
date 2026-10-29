@@ -142,8 +142,8 @@ class SaveSlotTest {
         assertEquals(city.funds, info.funds)
         assertTrue("savedAt was not recorded", info.savedAt > 0)
         // 年月の表示
-        assertTrue(info.dateLabel.contains("ねん"))
-        assertTrue(info.dateLabel.contains("がつ"))
+        assertTrue(info.dateLabel.contains("年"))
+        assertTrue(info.dateLabel.contains("月"))
     }
 
     /** チュートリアルの途中かどうかが、一覧に出せること。 */
@@ -222,13 +222,13 @@ class SaveSlotTest {
         assertEquals("the newer city was overwritten", 9_999, SaveGame.load(context, 0)!!.city.funds)
     }
 
-    /** 壊れた保存を読んでも落ちず、その枠が空になること。 */
+    /** 壊れた保存を読んでも落ちず、元のデータを保持すること。 */
     @Test
-    fun a_corrupted_slot_is_discarded_instead_of_crashing() {
+    fun a_corrupted_slot_is_preserved_without_crashing() {
         context.getSharedPreferences("pixelcity", Context.MODE_PRIVATE)
             .edit().putString("city_4", "{ this is not valid json").commit()
         assertNull(SaveGame.load(context, 4))
-        assertFalse(SaveGame.hasSave(context, 4))
-        assertNull(SaveGame.slotInfo(context, 4))
+        assertTrue(SaveGame.hasSave(context, 4))
+        assertFalse(SaveGame.slotInfo(context, 4)!!.readable)
     }
 }

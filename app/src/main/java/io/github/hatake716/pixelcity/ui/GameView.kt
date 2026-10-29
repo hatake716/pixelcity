@@ -7,22 +7,27 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.view.MotionEvent
+import androidx.core.graphics.withTranslation
 import io.github.hatake716.pixelcity.audio.Audio
 import io.github.hatake716.pixelcity.audio.Bgm
 import io.github.hatake716.pixelcity.audio.Sfx
 import io.github.hatake716.pixelcity.data.Settings
 import android.view.View
+import android.widget.FrameLayout
+import io.github.hatake716.pixelcity.game.Planet
 import io.github.hatake716.pixelcity.game.BuildCost
 import io.github.hatake716.pixelcity.game.City
+import io.github.hatake716.pixelcity.game.Campaign
 import io.github.hatake716.pixelcity.game.Monument
 import io.github.hatake716.pixelcity.game.TileKind
 import io.github.hatake716.pixelcity.game.Tutorial
+import io.github.hatake716.pixelcity.game.TutorialDistrict
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * ゲーム画面。論理解像度 160×144 へ描いてから整数倍で引き伸ばす。
+ * ゲーム画面。3D由来の都市と文字を端末の解像度で直接描画する。
  *
  * 入力・描画・毎月の進行をここでまとめて扱う。
  */
@@ -31,17 +36,10 @@ class GameView(
     context: Context,
     var city: City,
     var tutorial: Tutorial,
-) : View(context) {
+    val planet: Planet? = null,
+) : FrameLayout(context) {
 
     companion object {
-        /**
-         * 論理解像度。DMG の 160×144 の2倍。
-         *
-         * 日本語のドットフォント DotGothic16 は 16px 四方の格子で設計されていて、
-         * 8px で描くと1ドットが半ピクセルに落ちて字が崩れる。実解像度にこだわるより、
-         * 2倍にして文字を 16px で描くほうが読みやすく、情報量も足りる。
-         * タイルは 8×8 のドット絵を2倍に拡大して使うので、見た目の粒は変わらない。
-         */
         /**
          * 論理解像度の横幅。
          *
@@ -60,7 +58,7 @@ class GameView(
         /** 縦の既定値。実際の高さは端末の縦横比にあわせて決まる。 */
         const val LOGICAL_H = 420
         /** 横に取りうる上限。極端に横長の画面でも、間延びしすぎないようにする。 */
-        const val LOGICAL_W_MAX = 900
+        const val LOGICAL_W_MAX = 2400
 
         /**
          * 端末の大きさから、拡大率と論理解像度を決める。
@@ -77,8 +75,8 @@ class GameView(
         fun layoutFor(w: Int, h: Int): Triple<Int, Int, Int> {
             var scale = max(1, w / LOGICAL_W_BASE)
             while (scale > 1 && h / scale < LOGICAL_H) scale--
-            val lw = (w / scale).coerceIn(LOGICAL_W_BASE, LOGICAL_W_MAX)
-            val lh = (h / scale).coerceIn(LOGICAL_H, LOGICAL_H_MAX)
+            val lw = (w / scale).coerceIn(1, LOGICAL_W_MAX)
+            val lh = (h / scale).coerceIn(1, LOGICAL_H_MAX)
             // 横幅はここで決めてしまう。タイトル画面など、ゲーム画面より先に
             // 表示されるものからも参照されるので、最初に呼ばれた時点で入れておく。
             LOGICAL_W = lw
@@ -103,7 +101,7 @@ class GameView(
         private val SPEEDS = intArrayOf(0, 1, 2, 4, 10, 30)
 
         /** 1フレームで進める月数の上限。早送りでも描画が止まらないようにする。 */
-        private const val MAX_STEPS_PER_FRAME = 4
+        private const val MAX_STEPS_PER_FRAME = 1
 
         /**
          * 拡大率の段（分子, 分母）。広いマップを見渡せるよう、引いた画を厚くしてある。
@@ -111,7 +109,7 @@ class GameView(
          */
         /**
          * 拡大率の分母。描画は整数で行うので、倍率はこの分母の分数で表す。
-         * 64 なら、1/16 から 1/1 までを 1% 未満の誤差で表せる。
+         * 256分率でピンチの連続倍率を表す。
          */
         private const val ZOOM_DEN = 256
 
@@ -140,10 +138,10 @@ class GameView(
         private const val PINCH_RATIO = 1.5f
 
         /** 「じっこう」「やめる」の帯の高さ。 */
-        private const val SELECTION_BAR_H = 42
+        private const val SELECTION_BAR_H = 76
 
         /** ツールバーの一番下の段（情報・予算・けんちく）の高さ。 */
-        private const val BOTTOM_ROW_H = 30
+        private const val BOTTOM_ROW_H = 64
 
         /**
          * 車を描き始める拡大率。
@@ -157,17 +155,17 @@ class GameView(
         /** 人口の節目。越えるたびに短い音が鳴る。 */
         private val MILESTONES = intArrayOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 
-        private const val SPEED_X = 150
-        private const val ZOOM_X = 196
+        private const val SPEED_X = 14
+        private const val ZOOM_X = 166
         private const val INFO_X = 316
         private const val BUDGET_X = 370
         private const val MONUMENT_X = 420
         private const val BANNER_H = 104
         private const val PANEL_MARGIN = 16
-        private const val TAX_MINUS_X = 200
-        private const val TAX_PLUS_X = 240
+        private const val TAX_MINUS_X = 286
+        private const val TAX_PLUS_X = 382
         /** 本文の文字の大きさ。折り返しの計算と描画で必ず同じ値を使う。 */
-        private const val BODY_SIZE = 15
+        private const val BODY_SIZE = 21
 
         /**
          * 吹き出しの本文を折り返す幅。
@@ -187,12 +185,12 @@ class GameView(
         /** 補助的な文字。 */
         private const val C_DIM = Palette.UI_DIM
         /** モニュメント一覧の行の高さ。 */
-        private const val MONUMENT_ROW_H = 20
-        private val CLOSE_X: Int get() = LOGICAL_W - 84
+        private const val MONUMENT_ROW_H = 72
+        private val CLOSE_X: Int get() = LOGICAL_W - 164
     }
 
     /** 画面の状態。 */
-    enum class Screen { PLAYING, BUDGET, MONUMENTS, MESSAGE, GAME_OVER, INFO, STYLE_EDIT }
+    enum class Screen { PLAYING, BUDGET, MONUMENTS, MESSAGE, GAME_OVER, INFO, STYLE_EDIT, CAMPAIGN }
 
     var screen: Screen = Screen.PLAYING
         private set
@@ -213,15 +211,22 @@ class GameView(
      * 状態表示の帯の下端。通知の欄のぶんだけ下げる。
      * 地図はこの下から始まる。
      */
-    private val statusBottom: Int get() = insetTop + Hud.STATUS_HEIGHT
+    val landscape: Boolean get() = width > height
+    var constructionMenuVisible = false
+        private set
+    var hiyoriMessagesVisible = true
+        private set
+    private val statusBottom: Int get() = insetTop + if(landscape) 80 else Hud.STATUS_HEIGHT
+    private val mapTop: Int get() = statusBottom
+    private val buildPanelWidth: Int get() = minOf(348,LOGICAL_W/3)
+    private val mapWidth: Int get() = LOGICAL_W - if(landscape && constructionMenuVisible) buildPanelWidth else 0
 
     /**
      * ツールバーの上端。操作の欄のぶんだけ上げる。
      * 地図はここまで。
      */
-    private val toolbarTopY: Int get() = logicalH - insetBottom - Hud.TOOLBAR_HEIGHT
+    private val toolbarTopY: Int get() = logicalH - insetBottom - if(constructionMenuVisible && !landscape) Hud.TOOLBAR_HEIGHT else 0
     private var pixels = PixelCanvas(LOGICAL_W, LOGICAL_H)
-    private val renderer = CityRenderer()
 
     /** 道を走る車。見えている範囲ぶんだけ持つ。 */
     private val traffic = TrafficAnimation()
@@ -233,15 +238,6 @@ class GameView(
     val audio = Audio()
     private val styleEditor = StyleEditor(GbText(context))
     private val text = GbText(context)
-
-    private var frame = Bitmap.createBitmap(LOGICAL_W, LOGICAL_H, Bitmap.Config.ARGB_8888)
-    private var frameRow = IntArray(LOGICAL_W * LOGICAL_H)
-    private val blitPaint = Paint().apply {
-        isAntiAlias = false
-        isFilterBitmap = false  // ドットをドットのまま拡大する
-        isDither = false
-    }
-    private val dst = Rect()
 
     /** 論理ピクセル1つが画面上で何ピクセルになるか。 */
     private var scale = 1
@@ -260,19 +256,10 @@ class GameView(
      * 段ではなく連続した値にしてある。つまむ操作に段でついていくと、
      * 一定以上ひらいた瞬間に絵が跳ぶ。指の動きにそのまま追いたい。
      */
-    var zoom: Float = 1f / 16f
+    var zoom: Float = 1f / 8f
         private set(value) {
             field = value.coerceIn(ZOOM_MIN, ZOOM_MAX)
         }
-
-    /**
-     * いまの拡大率を分数で。描画は整数の掛け算で行うため。
-     *
-     * 分母を [ZOOM_DEN] に固定し、分子だけを変える。
-     * こうすると、どの倍率でも同じ式で描ける。
-     */
-    private val zoomNum: Int get() = Math.round(zoom * ZOOM_DEN).coerceAtLeast(1)
-    private val zoomDen: Int get() = ZOOM_DEN
 
     /** 段で切り替える釦のために、近い段を覚えておく。 */
     private val zoomStepIndex: Int
@@ -280,6 +267,10 @@ class GameView(
 
     /** 釦で拡大率を切り替える。決まった段を順に回る。 */
     fun cycleZoom() {
+        if(globe!=null) {
+            val levels=floatArrayOf(1f,6f,16f,32f,64f,96f)
+            globe.setZoom(levels.firstOrNull { it>planet!!.zoom*1.15f } ?: 1f);invalidate();return
+        }
         val next = (zoomStepIndex + 1) % ZOOM_PRESETS.size
         zoomAround(ZOOM_PRESETS[next], LOGICAL_W / 2, (statusBottom + toolbarTopY) / 2)
         clampCamera()
@@ -296,16 +287,12 @@ class GameView(
      */
     private fun zoomAround(target: Float, lx: Int, ly: Int): Boolean {
         val next = target.coerceIn(ZOOM_MIN, ZOOM_MAX)
-        // 描く側は分数に丸めるので、丸めた結果が同じなら何も変わらない
-        if (Math.round(next * ZOOM_DEN) == Math.round(zoom * ZOOM_DEN)) {
-            zoom = next
-            return false
-        }
+        if (next == zoom) return false
         // 変える前に、その点が指しているタイルを覚えておく
         val before = mapCoordsFree(lx, ly)
         zoom = next
         val after = mapCoordsFree(lx, ly)
-        if (before != null && after != null) {
+        run {
             // 同じ点が同じタイルを指すように、地図をずらす
             camX += before.first - after.first
             camY += before.second - after.second
@@ -347,7 +334,28 @@ class GameView(
 
     /** 道具を変える。選んであったマスは捨てられる。 */
     fun selectTool(kind: TileKind) {
+        setConstructionMenuVisible(true)
         selectedTool = kind
+        invalidate()
+    }
+
+    fun setConstructionMenuVisible(visible: Boolean) {
+        if(constructionMenuVisible==visible) return
+        constructionMenuVisible=visible
+        clearSelection();pendingMonument=null;inspecting=false
+        strokeCancelled=true;pointerDown=false;panning=false;pinched=false;globeGesture=false
+        draggingToolbar=false;draggingCategories=false
+        globe?.endCameraGesture();globe?.stopMotion()
+        toolScroll=0
+        if(isLaidOut) layoutGlobe()
+        requestLayout();invalidate()
+        if(tutorial.active) post { if(isAttachedToWindow) focusTutorialSite() }
+    }
+
+    /** Hide only the conversation overlay, keeping the current story, camera and selection. */
+    fun setHiyoriMessagesVisible(visible: Boolean) {
+        if(hiyoriMessagesVisible==visible) return
+        hiyoriMessagesVisible=visible
         invalidate()
     }
 
@@ -362,13 +370,25 @@ class GameView(
     }
 
     /** なぞって選んでいる最中に、足しているのか外しているのか。 */
+    private val hiyoriPortrait by lazy { HiyoriPortrait(context) }
+    private val tutorialPanel by lazy { TutorialPanel(text, context, hiyoriPortrait) }
+    private val campaignPanel by lazy { CampaignPanel(text, hiyoriPortrait) }
+    private var shownTutorialStep = -1
+    private var inspecting = false
     private var strokeAdding = true
+    private var selectionBeforeGesture: Set<Int> = emptySet()
 
     /** 選んだマスを全部実行したときの費用。 */
     private val selectionCost: Int
         get() {
-            if (selectedTool == TileKind.EMPTY) return selection.size * BuildCost.BULLDOZE
-            return selection.size * BuildCost.cost(selectedTool)
+            return selection.sumOf { index ->
+                val old = city.tiles[index].kind
+                when {
+                    old == selectedTool -> 0
+                    selectedTool == TileKind.EMPTY -> BuildCost.BULLDOZE
+                    else -> BuildCost.cost(selectedTool) + if (old != TileKind.EMPTY) BuildCost.BULLDOZE else 0
+                }
+            }
         }
     private var toolScroll = 0
     private var categoryScroll = 0
@@ -396,7 +416,7 @@ class GameView(
         }
 
     /** いま開いているツールの分類。 */
-    private var category: Hud.Category = Hud.Category.ZONE
+    private var category: Hud.Category = Hud.Category.TRANSPORT
 
     // 右下のボタンの位置。描いたときに覚えて、判定で使う。
     /** 一番下の段の上端。描いた位置をそのまま当たり判定に使う。 */
@@ -416,8 +436,59 @@ class GameView(
 
     /** 保存を促すための通知。Activity が受け取る。 */
     var onStateChanged: (() -> Unit)? = null
+    var onPlanetRequested: (() -> Unit)? = null
+    private var planetButtonX = 0 to 0
+    val globe: PlanetSurface? = planet?.let { PlanetSurface(context,it,true) }
+    private var highlightsKey=Int.MIN_VALUE
+    private var townRevision=0
+    private var globeOverlay=CityRenderer.Overlay.NONE
+    private var streetTick=0L
+    private val navigating: Boolean get() = !constructionMenuVisible
+    private var navigationButton=Rect()
+    private var homeButton=Rect()
+    private var globeButton=Rect()
+    private var coordinateButton=Rect()
+    private var hiyoriButton=Rect()
+    private var constructionButton=Rect()
+    private var inspectionButton=Rect()
+    private var speedButton=Rect()
+    private var zoomButton=Rect()
+    private var categoryButton=Rect()
+    private val landscapeTools=mutableListOf<Pair<Rect,Hud.Tool>>()
+    private var toolGridTop=0
+    private var toolGridBottom=0
+    private var panelScroll=0
+    private var panelMaxScroll=0
+    private var panelBodyTop=0
+    private var panelBodyBottom=0
+    private var panelKey=""
+    private var panelClipped=false
+    private var globeGesture=false
+    private var surfacePaused=false
+    private val terrainEditorDelegate=lazy { GlobeTerrainEditor(context,planet!!,globe!!) { terrainChanged() } }
+    private val terrainEditor by terrainEditorDelegate
+
+    private fun notifyStateChanged() {
+        townRevision++;globe?.updateTown(info.overlay);onStateChanged?.invoke()
+    }
+    fun openTerrainEditor() {
+        if(planet==null) { onPlanetRequested?.invoke();return }
+        setConstructionMenuVisible(false)
+        pauseClock();resume();clearSelection();terrainEditor.show();invalidate()
+    }
+    private fun terrainChanged() {
+        city.recomputeDerivedState();city.refreshBudgetForecast();notifyStateChanged();invalidate()
+        if(!terrainEditor.isEditing && isAttachedToWindow && !surfacePaused) resume()
+    }
+    fun pauseRenderer() { if(!surfacePaused) { globe?.onPause();surfacePaused=true } }
+    fun resumeRenderer() { if(surfacePaused) { globe?.onResume();surfacePaused=false } }
 
     init {
+        setWillNotDraw(true)
+        globe?.let { surface ->
+            addView(surface,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT))
+            surface.onCameraChanged={ surface.updateDetail();onStateChanged?.invoke();invalidate() }
+        }
         isFocusable = true
         keepScreenOn = true
         info.custom = city.customStyle
@@ -429,6 +500,7 @@ class GameView(
         // 街の様子にあう曲から始める
         updateBgm()
         showTutorialMessageIfNeeded()
+        showCampaignIfNeeded()
     }
 
     // ------------------------------------------------------------------
@@ -444,12 +516,12 @@ class GameView(
         if (toast != null && now > toastUntil) toast = null
 
         val speed = SPEEDS[speedIndex]
-        if (speed > 0 && screen == Screen.PLAYING && !city.gameOver) {
+        if (speed > 0 && screen == Screen.PLAYING && !city.gameOver && tutorial.allowsSpeedChange()) {
             monthAccumulator += delta * speed
             // 早送りでも、1フレームで進めすぎない。
             // まとめて何十か月も計算すると、その間 画面が固まる。
             var steps = 0
-            while (monthAccumulator >= MONTH_MILLIS && steps < MAX_STEPS_PER_FRAME) {
+            while (monthAccumulator >= MONTH_MILLIS && steps < MAX_STEPS_PER_FRAME && tutorial.allowsSpeedChange() && screen == Screen.PLAYING) {
                 monthAccumulator -= MONTH_MILLIS
                 advanceMonth()
                 steps++
@@ -464,7 +536,11 @@ class GameView(
             val carSpeed = (1f + speed * 0.35f).coerceAtMost(4f)
             traffic.advance(city, delta / 1000f * carSpeed)
         }
-        postInvalidateOnAnimation()
+        when {
+            screen == Screen.PLAYING && speed > 0 && tutorial.allowsSpeedChange() -> postInvalidateOnAnimation()
+            tutorial.active && screen == Screen.PLAYING -> postInvalidateDelayed(500L)
+            toast != null -> postInvalidateDelayed((toastUntil - now + 1).coerceAtLeast(1))
+        }
     }
 
     /** 前の月の災害。同じ災害で何度も鳴らさないために覚えておく。 */
@@ -475,8 +551,9 @@ class GameView(
     private fun advanceMonth() {
         val before = city.population
         city.step()
-        tutorial.onMonthPassed()
+        tutorial.onMonthPassed(city)
         showTutorialMessageIfNeeded()
+        showCampaignIfNeeded()
 
         // 災害。新しく起きたときだけ鳴らす。
         if (city.lastDisaster != null && city.lastDisaster != lastDisasterSeen) {
@@ -497,7 +574,7 @@ class GameView(
             speedIndex = 0
         }
         updateBgm()
-        onStateChanged?.invoke()
+        notifyStateChanged()
     }
 
     /**
@@ -514,22 +591,17 @@ class GameView(
      * 苦しいときは曲でも分かるようにしてある。
      */
     private fun updateBgm() {
-        val bgm = when {
-            // 資金が尽きかけ、または借金が続いている
-            city.funds < 0 || city.monthsInDebt > 0 -> Bgm.TROUBLE
-            // 育ってきた街
-            city.population >= 2_000 -> Bgm.CITY
-            else -> Bgm.DAWN
-        }
-        audio.setBgm(bgm)
+        audio.setBgm(Bgm.forCity(city.population, city.funds, city.monthsInDebt, city.campaign.route))
     }
 
     fun setSpeed(index: Int) {
         if (!tutorial.allowsSpeedChange()) {
-            showToast("いまは ステップの とおりに")
+            showToast("現在の目標に沿って進めましょう")
             return
         }
         speedIndex = index.coerceIn(0, SPEEDS.size - 1)
+        lastFrameTime = 0L
+        invalidate()
     }
 
     fun cycleSpeed() = setSpeed((speedIndex + 1) % SPEEDS.size)
@@ -546,20 +618,18 @@ class GameView(
         // 横も縦も、端末にあわせて論理解像度そのものを伸ばす。
         // 倍率で割り切った値にすると、拡大しても1ドットが正方形のまま、
         // かつ画面いっぱいに描けて余白が出ない。
-        val (s2, lw, lh) = layoutFor(w, h)
+        val availableW=(w-SystemBars.rawLeft-SystemBars.rawRight).coerceAtLeast(1)
+        val (s2, lw, lh) = layoutFor(availableW, h)
         scale = s2
         LOGICAL_W = lw
         logicalH = lh
         if (pixels.width != LOGICAL_W || pixels.height != logicalH) {
             pixels = PixelCanvas(LOGICAL_W, logicalH)
-            frame = Bitmap.createBitmap(LOGICAL_W, logicalH, Bitmap.Config.ARGB_8888)
-            frameRow = IntArray(LOGICAL_W * logicalH)
         }
         val drawW = LOGICAL_W * scale
         val drawH = logicalH * scale
-        offsetX = (w - drawW) / 2
+        offsetX = SystemBars.rawLeft + (availableW - drawW) / 2
         offsetY = (h - drawH) / 2
-        dst.set(offsetX, offsetY, offsetX + drawW, offsetY + drawH)
         // 画面の大きさが決まってから、見える範囲にあわせて収め直す。
         if (!cameraInitialised) {
             centerCamera()
@@ -569,42 +639,109 @@ class GameView(
         }
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        renderFrame()
+    private val realistic = RealisticCityRenderer(context)
 
-        // パレット索引を色へ変換して転送する
-        for (i in pixels.pixels.indices) {
-            frameRow[i] = Palette.of(pixels.pixels[i].toInt())
+    override fun dispatchDraw(canvas: Canvas) {
+        super.dispatchDraw(canvas)
+        if(globe==null || screen!=Screen.PLAYING) canvas.drawColor(Palette.BEZEL)
+        canvas.save()
+        canvas.translate(offsetX.toFloat(), offsetY.toFloat())
+        canvas.scale(scale.toFloat(), scale.toFloat())
+        canvas.clipRect(0, 0, LOGICAL_W, logicalH)
+        val mapTop = this.mapTop
+        val mapHeight = toolbarTopY - mapTop
+        if (screen == Screen.PLAYING && globe==null) realistic.draw(canvas, city, camX, camY, zoom, mapWidth,
+            mapTop, mapHeight, visibleCars(mapTop,mapHeight).orEmpty(), info.overlay, selection,
+            highlightForSelection(), placementHint(), blinkOn(), android.os.SystemClock.uptimeMillis()/1000f,
+            streetTime = android.os.SystemClock.uptimeMillis()/1000.0)
+        pixels.nativeCanvas = canvas
+        try { renderFrame() } finally { pixels.nativeCanvas = null }
+        if(globe!=null && screen==Screen.PLAYING) {
+            pixels.nativeCanvas=canvas
+            try { drawGlobeControls() } finally { pixels.nativeCanvas=null }
+            syncGlobeScene()
         }
-        frame.setPixels(frameRow, 0, LOGICAL_W, 0, 0, LOGICAL_W, logicalH)
-
-        canvas.drawColor(Palette.BEZEL)
-        canvas.drawBitmap(frame, null, dst, blitPaint)
+        if (screen == Screen.CAMPAIGN) campaignPanel.drawPortrait(canvas)
+        else if (screen == Screen.PLAYING && tutorial.active && hiyoriMessagesVisible) tutorialPanel.drawPortrait(canvas)
+        canvas.restore()
         tick()
+    }
+    override fun onLayout(changed: Boolean,l: Int,t: Int,r: Int,b: Int) {
+        // Insets can change without the outer size changing (rotation/cutout changes).
+        onSizeChanged(r-l,b-t,r-l,b-t)
+        super.onLayout(changed,l,t,r,b)
+        layoutGlobe()
+        if(changed && globe!=null && tutorial.active) focusTutorialSite()
+    }
+    private fun layoutGlobe() {
+        globe?.layout(offsetX,offsetY+mapTop*scale,offsetX+mapWidth*scale,offsetY+toolbarTopY*scale)
+    }
+    override fun onInterceptTouchEvent(event: MotionEvent)=true
+    private fun drawGlobeControls() {
+        val hasMessages=tutorial.active || city.campaign.visible
+        val labels=listOf("市政",if(city.destinations.isEmpty()) "街の中心" else "都市移動","全景","座標指定") + if(hasMessages) listOf("ひより") else emptyList()
+        val buttons=listOf(navigationButton,homeButton,globeButton,coordinateButton) + if(hasMessages) listOf(hiyoriButton) else emptyList()
+        if(!hasMessages) hiyoriButton.setEmpty()
+        val w=(mapWidth-6*(labels.size+1))/labels.size;val y=statusBottom+8
+        for(i in labels.indices) {
+            val x=6+i*(w+6);buttons[i].set(x,y,x+w,y+64)
+            val hiyori=buttons[i]===hiyoriButton
+            val on=hiyori && hiyoriMessagesVisible
+            pixels.fillRect(x,y,w,64,if(on) Palette.UI_ACCENT else C_BG)
+            text.textSize=19;text.drawCentered(pixels,labels[i],x+w/2,y+22,if(on) C_BG else C_TEXT)
+            // Leave an unread marker without forcing a hidden conversation back open.
+            if(hiyori && !on && (if(tutorial.active) !tutorial.briefingRead else city.campaign.needsBriefing))
+                pixels.fillRect(x+w-12,y+6,6,6,Palette.UI_ACCENT)
+        }
+    }
+    private fun syncGlobeScene() {
+        val surface=globe ?: return
+        val key=selection.hashCode()*31+tutorial.stepIndex*997+townRevision*131
+        if(key!=highlightsKey) {
+            val hints=if(tutorial.active && tutorial.briefingRead) TutorialDistrict.suggestions(city,tutorial).toIntArray() else IntArray(0)
+            surface.setHighlights(selection.toIntArray(),hints);highlightsKey=key
+        }
+        if(globeOverlay!=info.overlay) { globeOverlay=info.overlay;surface.updateTown(info.overlay) }
+        val now=android.os.SystemClock.uptimeMillis()
+        if(now-streetTick<80 || speedIndex==0) return
+        streetTick=now
+        val c=PlanetGeometry.tileIndex(surface.camera.focus);val x=c%512;val y=c/512
+        if(planet!!.zoom<12f) { surface.updateMovers(emptyList());return }
+        if(now-lastRefill>REFILL_MILLIS) {
+            traffic.refill(city,(x-16).coerceAtLeast(0),(y-16).coerceAtLeast(0),(x+16).coerceAtMost(511),(y+16).coerceAtMost(511));lastRefill=now
+        }
+        val movers=ArrayList<GlobeMover>()
+        // Keep a share of the visible street-life budget for pedestrians, even in busy cities.
+        for(car in traffic.all.sortedBy { (it.tx-x)*(it.tx-x)+(it.ty-y)*(it.ty-y) }.take(60)) {
+            val p=car.progress-.5f
+            val d=when(car.dir) { Vehicles.Dir.EAST->0;Vehicles.Dir.SOUTH->1;Vehicles.Dir.WEST->2;Vehicles.Dir.NORTH->3 }
+            val dx=when(d) { 0->p;2->-p;1->-.16f;else->.16f }
+            val dy=when(d) { 1->p;3->-p;0->.16f;else->-.16f }
+            movers.add(GlobeMover("CAR_${car.kind.ordinal}_$d",car.tx+dx,car.ty+dy))
+        }
+        val walkers=ArrayList<Pedestrians.Pose>()
+        for(yy in (y-10).coerceAtLeast(0)..(y+10).coerceAtMost(511)) for(xx in (x-10).coerceAtLeast(0)..(x+10).coerceAtMost(511)) {
+            Pedestrians.onTile(city,xx,yy,now/1000.0,walkers)
+        }
+        for(p in walkers.sortedBy { (it.x-x)*(it.x-x)+(it.y-y)*(it.y-y) }.take(40)) movers.add(GlobeMover(p.spriteId,p.x,p.y))
+        surface.updateMovers(movers)
     }
 
     private fun renderFrame() {
-        val mapTop = statusBottom
-        val mapHeight = toolbarTopY - statusBottom
-
-        renderer.draw(
-            pixels, city, camX, camY, zoomNum, zoomDen, mapTop, mapHeight, info.overlay,
-            highlightForSelection(),
-            selected = selection,
-            cars = visibleCars(mapTop, mapHeight),
-            suggest = placementHint(),
-            suggestOn = blinkOn(),
-            animationPhase = growthPhase(),
-        )
-
+        // The council notebook covers the entire screen; avoid redrawing the hidden city.
+        if(screen == Screen.CAMPAIGN) {
+            campaignPanel.draw(pixels,city,insetTop,insetBottom)
+            return
+        }
         drawStatusBar()
-        drawToolbar(mapTop + mapHeight)
+        if(constructionMenuVisible) {
+            if(landscape) drawLandscapeToolbar() else drawToolbar(toolbarTopY)
+        }
         // 選んでいるあいだだけ、ツールバーの上に帯を重ねる。
         // 地図の大きさは変えない。選ぶたびに地図が動くと、狙いが定まらない。
-        if (selection.isNotEmpty() && screen == Screen.PLAYING) {
+        if (selection.isNotEmpty() && screen == Screen.PLAYING && constructionMenuVisible && !landscape) {
             drawSelectionBar(selectionBarBottom())
-        } else {
+        } else if(!landscape || !constructionMenuVisible) {
             runButtonX = 0 to 0
             cancelButtonX = 0 to 0
         }
@@ -625,9 +762,13 @@ class GameView(
                 styleEditor.insetBottom = insetBottom
                 styleEditor.draw(pixels, city.customStyle, logicalH)
             }
+            Screen.CAMPAIGN -> campaignPanel.draw(pixels, city, insetTop, insetBottom)
             Screen.PLAYING -> {
                 if (info.overlay != CityRenderer.Overlay.NONE) drawOverlayBadge()
-                if (tutorial.active) drawTutorialBanner()
+                if(hiyoriMessagesVisible) {
+                    if (tutorial.active) drawTutorialBanner()
+                    else if(city.campaign.visible) campaignPanel.drawBanner(pixels,city,toolbarTopY,mapWidth)
+                }
                 toast?.let { drawToast(it) }
             }
         }
@@ -638,14 +779,13 @@ class GameView(
      * 「道路のとなり」と言われても、どこが該当するのかは初心者には分かりにくい。
      */
     private fun placementHint(): ((Int, Int) -> Boolean)? {
-        if (!tutorial.active) return null
-        val kind = tutorial.step?.highlightTool ?: return null
-        if (!kind.isZone && !kind.isPowerPlant) return null
-        return { x, y ->
-            city.tileAt(x, y).kind == TileKind.EMPTY &&
-                city.canBuildOn(x, y) &&
-                city.touchesRoad(x, y)
+        if (!tutorial.active || !tutorial.briefingRead) return null
+        if (tutorial.step?.goal is Tutorial.Goal.InspectHome) {
+            return { x, y -> city.tileAt(x, y).let { it.kind == TileKind.ZONE_R && it.stage > 0 } }
         }
+        val suggested = TutorialDistrict.suggestions(city, tutorial).toSet()
+        if (suggested.isEmpty()) return null
+        return { x, y -> city.index(x, y) in suggested }
     }
 
     private fun highlightForSelection(): IntArray? {
@@ -654,64 +794,86 @@ class GameView(
     }
 
     private fun drawStatusBar() {
-        // 通知の欄の裏まで地の色を敷き、その下に中身を置く
-        pixels.fillRect(0, 0, LOGICAL_W, statusBottom, C_BG)
-        pixels.fillRect(0, statusBottom - 2, LOGICAL_W, 2, C_LINE)
-
-        text.textSize = 16
-        text.draw(pixels, "$" + city.funds.toString(), 4, insetTop + 1, C_TEXT)
-
-        val year = 1900 + city.month / 12
-        val mon = city.month % 12 + 1
-        text.draw(pixels, "${year}ねん${mon}がつ", LOGICAL_W - 150, insetTop + 1, C_TEXT)
-
-        text.draw(pixels, "じんこう " + city.population, 4, insetTop + 20, C_TEXT)
-
-        // 需要バー R/C/I
-        Hud.drawDemandBars(pixels, city, 258, insetTop + 19, 28)
-
-        // 速度
-        val speedLabel = when (speedIndex) {
-            0 -> "‖"
-            1 -> "▶"
-            2 -> "▶▶"
-            3 -> "▶▶▶"
-            4 -> "×10"
-            else -> "×30"
+        pixels.fillRect(0,0,LOGICAL_W,statusBottom,C_BG)
+        val buttonWidth=if(landscape) minOf(144,(LOGICAL_W-286)/4-6) else (LOGICAL_W-36)/4
+        val controlsLeft=if(landscape) LOGICAL_W-12-(buttonWidth+6)*4 else 12
+        val controlsTop=insetTop+if(landscape) 8 else 73
+        text.textSize=23
+        text.draw(pixels,"人口 ${"%,d".format(city.population)}",14,insetTop+8,C_TEXT)
+        val funds="$${"%,d".format(city.funds)}"
+        if(landscape) {
+            text.textSize=21
+            text.draw(pixels,funds,14,insetTop+39,Palette.UI_ACCENT)
+            if(controlsLeft>510) { text.textSize=17;text.draw(pixels,"${1900+city.month/12}年 ${city.month%12+1}月  支持率 ${city.approval}%",235,insetTop+40,C_DIM) }
+        } else {
+            text.draw(pixels,funds,LOGICAL_W-14-text.measure(funds),insetTop+8,Palette.UI_ACCENT)
         }
-        text.draw(pixels, speedLabel, SPEED_X, insetTop + 20, C_TEXT)
-
-        // 拡大率の切り替え
-        val zoomLabel = when {
-            zoom <= 1f / 48f -> "ぜんたい"
-            zoom <= 1f / 24f -> "ひろい"
-            zoom <= 1f / 12f -> "ちゅう"
-            zoom <= 1f / 6f -> "ふつう"
-            else -> "よせる"
+        text.textSize=18
+        if(!landscape) text.draw(pixels,"${1900+city.month/12}年 ${city.month%12+1}月  /  支持率 ${city.approval}%",14,insetTop+39,C_DIM)
+        val labels=listOf("時間 ${if(speedIndex==0) "停止" else "×${SPEEDS[speedIndex]}"}",if(planet!=null) "拡大 ${planet.zoom.toInt()}倍" else "表示 ${Math.round(zoom*800)}%","調査","建設")
+        for((i,b) in listOf(speedButton,zoomButton,inspectionButton,constructionButton).withIndex()) {
+            val x=controlsLeft+i*(buttonWidth+6);b.set(x,controlsTop,x+buttonWidth,controlsTop+64)
+            val on=(i==2 && inspecting) || (i==3 && constructionMenuVisible)
+            pixels.fillRect(b.left,b.top,b.width(),b.height(),if(on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+            pixels.drawRect(b.left,b.top,b.width(),b.height(),if(i==3 && tutorial.active && tutorial.neededTool!=null && !constructionMenuVisible && blinkOn()) C_TEXT else C_LINE)
+            text.textSize=if(i<2) 18 else 21;text.drawCentered(pixels,labels[i],b.centerX(),b.top+20,if(on) C_BG else C_TEXT)
         }
-        pixels.drawRect(ZOOM_X, insetTop + 18, 64, 24, C_LINE)
-        text.textSize = 14
-        text.draw(pixels, zoomLabel, ZOOM_X + 5, insetTop + 21, C_TEXT)
-        text.textSize = 16
+        pixels.fillRect(0,statusBottom-1,LOGICAL_W,1,C_LINE)
+    }
 
-        // 警告は1行にまとめる
-        val warning = when {
-            city.powerSupply < city.powerDemand -> {
-                // どれだけ足りないのかを出す。「たりません」だけでは
-                // 発電所を何基 建てればよいのか分からない。
-                val short = city.powerDemand - city.powerSupply
-                val plants = (short + 1_999) / 2_000
-                "はつでんしょ あと${plants}"
+    private fun chooseCategory(value: Hud.Category) {
+        category=value;toolScroll=0
+        Hud.toolsIn(value).firstOrNull()?.let { if(tutorial.allowsBuild(it.kind) || it.kind==TileKind.EMPTY) selectedTool=it.kind }
+        invalidate()
+    }
+    private fun drawLandscapeToolbar() {
+        val left=mapWidth;val top=mapTop;val bottom=logicalH-insetBottom;val w=LOGICAL_W-left
+        pixels.fillRect(left,top,w,bottom-top,C_BG);pixels.fillRect(left,top,2,bottom-top,C_LINE)
+        categoryButton.set(left+8,top+6,LOGICAL_W-8,top+70)
+        pixels.fillRect(categoryButton.left,categoryButton.top,categoryButton.width(),64,Palette.UI_BG_LIGHT)
+        text.textSize=21;text.drawCentered(pixels,"分類：${category.label} ▾",categoryButton.centerX(),top+27,C_TEXT)
+        toolGridTop=top+80;toolGridBottom=bottom-if(selection.isEmpty()) 54 else 110
+        val tools=Hud.toolsIn(category);val cellW=(w-24)/3;val cellH=100
+        val contentH=((tools.size+2)/3)*cellH
+        toolScroll=toolScroll.coerceIn(0,max(0,contentH-(toolGridBottom-toolGridTop)))
+        landscapeTools.clear()
+        val c=pixels.nativeCanvas;c?.save();c?.clipRect(left,toolGridTop,LOGICAL_W,toolGridBottom)
+        for((i,tool) in tools.withIndex()) {
+            val x=left+8+(i%3)*(cellW+4);val y=toolGridTop+(i/3)*cellH-toolScroll
+            val b=Rect(x,y,x+cellW,y+94);landscapeTools.add(b to tool)
+            if(b.bottom<=toolGridTop || b.top>=toolGridBottom) continue
+            pixels.fillRect(x,y,cellW,94,if(tool.kind==selectedTool) Palette.UI_BG_LIGHT else C_BG)
+            pixels.drawRect(x,y,cellW,94,if(tool.kind==selectedTool) Palette.UI_ACCENT else C_LINE)
+            c?.let {
+                val bounds=android.graphics.RectF(x+8f,y+4f,x+cellW-8f,y+66f)
+                when {
+                    tool.kind==TileKind.EMPTY -> { text.textSize=34;text.drawCentered(pixels,"×",b.centerX(),y+12,Palette.RED) }
+                    tool.kind.isTransport -> realistic.drawTransportIcon(it,tool.kind,bounds)
+                    else -> realistic.drawIcon(it,if(tool.kind.isZone) "${tool.kind.name}_2_0" else tool.kind.name,bounds)
+                }
             }
-            else -> city.bankruptcyWarning()?.let { "はさんまで ${it}かげつ" }
+            text.textSize=17;text.drawCentered(pixels,tool.label,b.centerX(),y+71,C_TEXT)
+            if(!BuildCost.isUnlocked(tool.kind,city.population)) pixels.ditherRect(x,y,cellW,94,C_BG)
         }
-        if (warning != null) {
-            // 需要バーに かぶらない幅で切る。
-            text.textSize = 14
-            var w: String = warning
-            while (w.isNotEmpty() && text.measure(w) > 248) w = w.dropLast(1)
-            text.draw(pixels, w, 4, 37, C_TEXT)
+        c?.restore()
+        if(contentH>toolGridBottom-toolGridTop) {
+            val track=(toolGridBottom-toolGridTop).coerceAtLeast(1);val thumb=(track*track/contentH).coerceAtLeast(24)
+            pixels.fillRect(LOGICAL_W-4,toolGridTop+(track-thumb)*toolScroll/(contentH-track).coerceAtLeast(1),3,thumb,Palette.UI_ACCENT)
         }
+        pixels.fillRect(left,toolGridBottom,w,bottom-toolGridBottom,C_BG)
+        text.textSize=18
+        val price=if(selectedTool==TileKind.EMPTY) BuildCost.BULLDOZE else BuildCost.cost(selectedTool)
+        text.draw(pixels,if(selection.isEmpty()) "${Hud.labelOf(selectedTool)}  $$price" else "${selection.size}マス  $$selectionCost",left+12,toolGridBottom+12,C_TEXT)
+        if(selection.isNotEmpty()) {
+            selectionButtonY=bottom-72
+            val bw=(w-28)/2
+            runButtonX=left+8 to left+8+bw;cancelButtonX=left+16+bw to LOGICAL_W-8
+            for((pair,label) in listOf(runButtonX to "実行",cancelButtonX to "取消")) {
+                val accent=label=="実行" && city.funds>=selectionCost
+                pixels.fillRect(pair.first,selectionButtonY,pair.second-pair.first,64,if(accent) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
+                text.textSize=21;text.drawCentered(pixels,label,(pair.first+pair.second)/2,selectionButtonY+20,if(accent) C_BG else C_TEXT)
+            }
+        } else { runButtonX=0 to 0;cancelButtonX=0 to 0 }
     }
 
     private fun drawToolbar(top: Int) {
@@ -720,7 +882,7 @@ class GameView(
         pixels.fillRect(0, top, LOGICAL_W, 2, C_LINE)
 
         // --- 分類の帯 ---
-        text.textSize = 17
+        text.textSize = 21
         for ((i, cat) in Hud.Category.entries.withIndex()) {
             val x = Hud.categoryX(i) - categoryScroll
             if (x + Hud.CATEGORY_W < 0 || x > LOGICAL_W) continue
@@ -730,7 +892,7 @@ class GameView(
             pixels.drawRect(x, y, Hud.CATEGORY_W, Hud.CATEGORY_H, C_LINE)
             // 文字は枠の上下の真ん中に置く
             text.drawCentered(
-                pixels, cat.label, x + Hud.CATEGORY_W / 2, y + (Hud.CATEGORY_H - 17) / 2,
+                pixels, cat.label, x + Hud.CATEGORY_W / 2, y + (Hud.CATEGORY_H - 21) / 2,
                 if (on) Palette.UI_BG else C_TEXT,
             )
         }
@@ -748,31 +910,22 @@ class GameView(
                 pixels.drawRect(x + 2, toolTop + 2, Hud.TOOL_SIZE - 4, Hud.TOOL_SIZE - 4, C_TEXT)
             }
 
-            val sprite = iconFor(tool.kind)
-            if (sprite != null) {
-                drawIcon(sprite, x + 1, toolTop + 1, Hud.TOOL_SIZE - 2)
-            } else {
-                // 取り壊しは×印。枠の大きさに合わせて引く。
-                val pad = Hud.TOOL_SIZE / 5
-                val span = Hud.TOOL_SIZE - pad * 2
-                for (k in 0 until span) {
-                    for (t in 0 until 3) {
-                        pixels.set(x + pad + k + t, toolTop + pad + k, Palette.RED)
-                        pixels.set(x + pad + span - k + t, toolTop + pad + k, Palette.RED)
-                    }
-                }
+            pixels.nativeCanvas?.let { c ->
+                val id=if(tool.kind.isZone) "${tool.kind.name}_2_0" else tool.kind.name
+                if(tool.kind==TileKind.EMPTY) {
+                    text.textSize=34;text.drawCentered(pixels,"×",x+Hud.TOOL_SIZE/2,toolTop+8,Palette.RED)
+                } else if(tool.kind.isTransport) {
+                    realistic.drawTransportIcon(c,tool.kind,android.graphics.RectF((x+6).toFloat(),(toolTop+6).toFloat(),(x+Hud.TOOL_SIZE-6).toFloat(),(toolTop+Hud.TOOL_SIZE-30).toFloat()))
+                } else realistic.drawIcon(c,id,android.graphics.RectF((x+8).toFloat(),(toolTop+4).toFloat(),(x+Hud.TOOL_SIZE-8).toFloat(),(toolTop+Hud.TOOL_SIZE-26).toFloat()))
+                text.textSize=17;text.drawCentered(pixels,tool.label,x+Hud.TOOL_SIZE/2,toolTop+Hud.TOOL_SIZE-24,C_TEXT)
             }
 
             // 解禁されていないものは暗くする
             if (!BuildCost.isUnlocked(tool.kind, city.population)) {
-                for (yy in toolTop until toolTop + Hud.TOOL_SIZE) {
-                    for (xx in x until x + Hud.TOOL_SIZE) {
-                        if ((xx + yy) % 2 == 0) pixels.set(xx, yy, C_BG)
-                    }
-                }
+                pixels.ditherRect(x, toolTop, Hud.TOOL_SIZE, Hud.TOOL_SIZE, C_BG)
             }
 
-            if (tutorial.active && tutorial.step?.highlightTool == tool.kind && blinkOn()) {
+            if (tutorial.active && tutorial.neededTool == tool.kind && blinkOn()) {
                 pixels.drawRect(x - 3, toolTop - 3, Hud.TOOL_SIZE + 6, Hud.TOOL_SIZE + 6, C_TEXT)
             }
         }
@@ -780,7 +933,7 @@ class GameView(
         val rowH = BOTTOM_ROW_H
         val by = top + Hud.TOOLBAR_HEIGHT - rowH - 4
         bottomRowTop = by
-        val labelY = by + (rowH - 18) / 2
+        val labelY = by - 34
 
         val tool = Hud.TOOLS.firstOrNull { it.kind == selectedTool }
         if (tool != null) {
@@ -790,21 +943,27 @@ class GameView(
             text.textSize = 18
             val locked = !BuildCost.isUnlocked(tool.kind, city.population)
             val label =
-                if (locked) "${tool.label}（まだ つかえません）"
+                if (locked) "${tool.label}（未解禁）"
                 else "${tool.label} $${price}"
             text.draw(pixels, label, 6, labelY, if (locked) C_DIM else C_TEXT)
         }
 
+        text.textSize=18
+        for((i,entry) in listOf("R" to city.demandR,"C" to city.demandC,"I" to city.demandI).withIndex()) {
+            text.draw(pixels,"${entry.first} ${entry.second}",LOGICAL_W-238+i*78,labelY,if(entry.second>=0) Palette.UI_ACCENT else Palette.GOLD)
+        }
+
         // 右から詰める。文字の幅を測るので、重ならない。
-        text.textSize = 16
+        text.textSize = 22
         var bx = LOGICAL_W - 6
-        for ((label, id) in listOf("けんちく" to 2, "よさん" to 1, "じょうほう" to 0)) {
-            val w = text.measure(label) + 16
+        for ((label, id) in listOf("記念建築" to 2, "予算" to 1, "都市情報" to 0, (if(globe!=null) "地形編集" else "惑星") to 3)) {
+            val w = (LOGICAL_W - 36) / 4
             bx -= w + 6
             pixels.fillRect(bx, by, w, rowH, C_BG)
             pixels.drawRect(bx, by, w, rowH, C_LINE)
-            text.draw(pixels, label, bx + 8, by + (rowH - 16) / 2, C_TEXT)
+            text.draw(pixels, label, bx + 8, by + (rowH - 22) / 2, C_TEXT)
             when (id) {
+                3 -> planetButtonX = bx to (bx + w)
                 0 -> infoButtonX = bx to (bx + w)
                 1 -> budgetButtonX = bx to (bx + w)
                 else -> monumentButtonX = bx to (bx + w)
@@ -824,7 +983,7 @@ class GameView(
             )
         }
         if (tutorial.active && tutorial.step?.highlightSpeed == true && blinkOn()) {
-            pixels.drawRect(SPEED_X - 4, insetTop + 17, 40, 24, C_TEXT)
+            pixels.drawRect(SPEED_X - 2, insetTop + 71, 148, 68, C_TEXT)
         }
     }
 
@@ -855,11 +1014,11 @@ class GameView(
         val enough = city.funds >= cost
 
         // 何を、何マス、いくらで
-        text.textSize = 15
-        val what = if (selectedTool == TileKind.EMPTY) "こわす" else "たてる"
+        text.textSize = 21
+        val what = if (selectedTool == TileKind.EMPTY) "撤去" else "建設"
         val head = "$what ${selection.size}マス"
         text.draw(pixels, head, 6, y + 6, C_TEXT)
-        text.textSize = 14
+        text.textSize = 21
         text.draw(
             pixels, "$${cost}", 6 + text.measure(head) + 10, y + 8,
             if (enough) C_DIM else Palette.RED,
@@ -870,23 +1029,23 @@ class GameView(
         val bh = h - 8
         var bx = LOGICAL_W - 6
         run {
-            val label = "やめる"
-            val w = text.measure(label) + 16
+            val label = "取消"
+            val w = text.measure(label) + 32
             bx -= w
             pixels.fillRect(bx, by, w, bh, C_BG)
             pixels.drawRect(bx, by, w, bh, C_LINE)
-            text.draw(pixels, label, bx + 8, by + 4, C_TEXT)
+            text.draw(pixels, label, bx + 8, by + 18, C_TEXT)
             cancelButtonX = bx to (bx + w)
         }
         run {
-            val label = "じっこう"
-            val w = text.measure(label) + 20
+            val label = "実行"
+            val w = text.measure(label) + 32
             bx -= w + 8
             // 押せるときは目立たせる
             pixels.fillRect(bx, by, w, bh, if (enough) Palette.UI_ACCENT else C_BG)
             pixels.drawRect(bx, by, w, bh, C_LINE)
             text.draw(
-                pixels, label, bx + 10, by + 4,
+                pixels, label, bx + 10, by + 18,
                 if (enough) Palette.UI_BG else C_DIM,
             )
             runButtonX = bx to (bx + w)
@@ -914,7 +1073,7 @@ class GameView(
         text.textSize = 16
         val w = text.measure(label) + 20
         val x = 8
-        val y = statusBottom + 8
+        val y = mapTop + 80
         pixels.fillRect(x, y, w, 26, Palette.UI_BG)
         pixels.drawRect(x, y, w, 26, Palette.UI_ACCENT)
         text.draw(pixels, label, x + 10, y + 5, Palette.UI_ACCENT)
@@ -985,12 +1144,9 @@ class GameView(
     }
 
     /** チュートリアルの吹き出しの高さ。描画と判定で同じ値を使う。 */
-    private fun bannerHeight(): Int {
-        val step = tutorial.step ?: return 0
-        text.textSize = BODY_SIZE
-        val lines = text.wrap(step.body, BODY_WRAP_W).size
-        return 36 + lines * 18 + if (tutorial.awaitingContinue()) 30 else 6
-    }
+    private fun bannerHeight(): Int = if(!hiyoriMessagesVisible) 0
+        else if(tutorial.active) tutorialPanel.height(city, tutorial, mapWidth,landscape)
+        else if(city.campaign.visible) CampaignPanel.BANNER_HEIGHT else 0
 
     /**
      * 建物が せり上がる進み具合 0f..1f。
@@ -1011,68 +1167,16 @@ class GameView(
     /** 点滅の位相。0.5秒ごとに切り替える。 */
     private fun blinkOn(): Boolean = (System.currentTimeMillis() / 500L) % 2 == 0L
 
-    private fun drawTutorialBanner() {
-        val step = tutorial.step ?: return
-        text.textSize = BODY_SIZE
-        val lines = text.wrap(step.body, BODY_WRAP_W)
-        // 本文の行数と、進むボタンの有無で高さを決める。文字が欠けないようにする。
-        val h = bannerHeight()
-        val y = toolbarTopY - h
-        pixels.fillRect(0, y, LOGICAL_W, h, C_BG)
-        pixels.drawRect(0, y, LOGICAL_W, h, C_LINE)
-        pixels.drawRect(1, y + 1, LOGICAL_W - 2, h - 2, C_LINE)
-
-        // 見出しは「あと N」の手前で切る。重ねると両方読めなくなる。
-        val remain = tutorial.remaining()
-        val counter = if (remain > 0) "あと $remain" else ""
-        // 章の名前を小さく添える。どこまで進んだかが分かるように。
-        text.textSize = 11
-        // 章の見出し。マスを選んでいるあいだは、その帯と重なるので出さない。
-        if (selection.isEmpty()) {
-            val chapterLabel =
-                "${tutorial.chapterNumber()}/${tutorial.chapterCount()}　${step.chapter.summary}"
-            text.draw(pixels, chapterLabel, 8, y - 13, Palette.UI_DIM)
-        }
-
-        text.textSize = 16
-        val counterW = if (counter.isEmpty()) 0 else text.measure(counter) + 12
-        var title = step.title
-        while (title.isNotEmpty() && text.measure(title) > LOGICAL_W - 16 - counterW) {
-            title = title.dropLast(1)
-        }
-        text.draw(pixels, title, 8, y + 5, C_TEXT)
-        if (counter.isNotEmpty()) {
-            text.draw(pixels, counter, LOGICAL_W - text.measure(counter) - 8, y + 5, C_TEXT)
-        }
-        pixels.fillRect(8, y + 26, LOGICAL_W - 16, 2, C_LINE)
-
-        var ly = y + 32
-        for (line in lines) {
-            text.draw(pixels, line, 8, ly, C_TEXT)
-            ly += 18
-        }
-
-        if (tutorial.awaitingContinue()) {
-            text.textSize = 16
-            val label = if (tutorial.stepIndex == Tutorial.STEPS.size - 1) "はじめる" else "つぎへ ▶"
-            val w = text.measure(label) + 16
-            val bx = LOGICAL_W - w - 8
-            val by = ly + 2
-            pixels.fillRect(bx, by, w, 24, C_BG)
-            pixels.drawRect(bx, by, w, 24, C_LINE)
-            if (blinkOn()) pixels.drawRect(bx - 2, by - 2, w + 4, 28, C_TEXT)
-            text.draw(pixels, label, bx + 8, by + 3, C_TEXT)
-        }
-    }
+    private fun drawTutorialBanner() = tutorialPanel.draw(pixels, city, tutorial, toolbarTopY,mapWidth,landscape)
 
     private fun drawToast(msg: String) {
-        text.textSize = 16
-        val w = text.measure(msg) + 20
-        val x = (LOGICAL_W - w) / 2
-        val y = toolbarTopY - 36
-        pixels.fillRect(x, y, w, 26, C_BG)
-        pixels.drawRect(x, y, w, 26, C_LINE)
-        text.draw(pixels, msg, x + 10, y + 4, C_TEXT)
+        text.textSize=20
+        val lines=text.wrap(msg,mapWidth-48)
+        val w=(lines.maxOfOrNull { text.measure(it) } ?: 0)+24
+        val h=lines.size*28+18;val x=(mapWidth-w)/2
+        val y=selectionBarBottom()-(if(selection.isEmpty()) 10 else SELECTION_BAR_H+10)-h
+        pixels.fillRect(x,y,w,h,C_BG);pixels.drawRect(x,y,w,h,C_LINE)
+        for((i,line) in lines.withIndex()) text.draw(pixels,line,x+12,y+7+i*28,C_TEXT)
     }
 
     /** いま開いているパネルの高さ。中身に合わせて決まる。 */
@@ -1092,88 +1196,90 @@ class GameView(
      */
     private fun drawPanel(title: String, contentHeight: Int): Int {
         val m = PANEL_MARGIN
-        panelHeight = 44 + contentHeight + 40
+        if(panelKey!="$screen:$title") { panelKey="$screen:$title";panelScroll=0 }
+        panelHeight = minOf(62 + contentHeight + 84,logicalH-insetTop-insetBottom-16)
         val top = panelTop()
+        pixels.clear(C_BG)
         pixels.fillRect(m, top, LOGICAL_W - m * 2, panelHeight, C_BG)
         pixels.drawRect(m, top, LOGICAL_W - m * 2, panelHeight, C_LINE)
         pixels.drawRect(m + 1, top + 1, LOGICAL_W - m * 2 - 2, panelHeight - 2, C_LINE)
-        text.textSize = 16
-        text.drawCentered(pixels, title, LOGICAL_W / 2, top + 6, C_TEXT)
-        pixels.fillRect(m + 8, top + 28, LOGICAL_W - m * 2 - 16, 2, C_LINE)
-        return top + 36
+        text.textSize = 24
+        text.drawCentered(pixels, title, LOGICAL_W / 2, top + 14, C_TEXT)
+        pixels.fillRect(m + 8, top + 50, LOGICAL_W - m * 2 - 16, 2, C_LINE)
+        panelBodyTop=top+62;panelBodyBottom=top+panelHeight-84
+        panelMaxScroll=(contentHeight-(panelBodyBottom-panelBodyTop)).coerceAtLeast(0)
+        panelScroll=panelScroll.coerceIn(0,panelMaxScroll)
+        pixels.nativeCanvas?.let { it.save();it.clipRect(m,panelBodyTop,LOGICAL_W-m,panelBodyBottom);it.translate(0f,-panelScroll.toFloat());panelClipped=true }
+        return top + 62
     }
+
+    private var taxButtonY = 0
 
     private fun drawBudget() {
         val rows = 6 + if (city.tourismIncome > 0) 1 else 0
-        var y = drawPanel("よさん", 28 + rows * 20 + 40)
-        text.textSize = 16
-        text.draw(pixels, "ぜいりつ ${city.taxRate}%", 30, y, C_TEXT)
+        var y = drawPanel("予算・現在の街での見込み", 80 + rows * 34 + 74)
+        text.textSize = 22
+        text.draw(pixels, "税率 ${city.taxRate}%", 30, y, C_TEXT)
+        taxButtonY = y - 2
         // 税率の増減ボタン
-        pixels.drawRect(TAX_MINUS_X, y - 2, 26, 22, C_LINE)
-        text.drawCentered(pixels, "-", TAX_MINUS_X + 13, y - 1, C_TEXT)
-        pixels.drawRect(TAX_PLUS_X, y - 2, 26, 22, C_LINE)
-        text.drawCentered(pixels, "+", TAX_PLUS_X + 13, y - 1, C_TEXT)
-        y += 28
+        pixels.drawRect(TAX_MINUS_X, y - 2, 80, 64, C_LINE)
+        text.drawCentered(pixels, "-", TAX_MINUS_X + 40, y + 16, C_TEXT)
+        pixels.drawRect(TAX_PLUS_X, y - 2, 80, 64, C_LINE)
+        text.drawCentered(pixels, "+", TAX_PLUS_X + 40, y + 16, C_TEXT)
+        y += 80
 
-        text.textSize = 15
-        text.draw(pixels, "しゅうにゅう  $${city.lastIncome}", 30, y, C_TEXT); y += 20
-        text.draw(pixels, "ししゅつ    $${city.lastUpkeep}", 30, y, C_TEXT); y += 20
+        text.textSize = 21
+        text.draw(pixels, "収入  $${city.lastIncome}", 30, y, C_TEXT); y += 34
+        text.draw(pixels, "支出    $${city.lastUpkeep}", 30, y, C_TEXT); y += 34
         val balance = city.lastIncome - city.lastUpkeep
-        text.draw(pixels, "さしひき    $${balance}", 30, y, C_TEXT); y += 24
+        text.draw(pixels, "収支    $${balance}", 30, y, C_TEXT); y += 38
         val powerLabel = if (city.powerSupply < city.powerDemand) {
-            "でんりょく  ${city.powerSupply}/${city.powerDemand} ふそく"
+            "電力  ${city.powerSupply}/${city.powerDemand} 不足"
         } else {
-            "でんりょく  ${city.powerSupply}/${city.powerDemand}"
+            "電力  ${city.powerSupply}/${city.powerDemand}"
         }
-        text.draw(pixels, powerLabel, 30, y, C_TEXT); y += 20
-        text.draw(pixels, "しごと     ${city.jobs}", 30, y, C_TEXT); y += 20
+        text.draw(pixels, powerLabel, 30, y, C_TEXT); y += 34
+        text.draw(pixels, "雇用     ${city.jobs}", 30, y, C_TEXT); y += 34
         if (city.tourismIncome > 0) {
-            text.draw(pixels, "かんこう    $${city.tourismIncome}", 30, y, C_TEXT); y += 20
+            text.draw(pixels, "観光    $${city.tourismIncome}", 30, y, C_TEXT); y += 34
         }
 
-        text.textSize = 14
-        text.draw(pixels, "ぜいりつが たかいと", 30, y + 4, C_DIM)
-        text.draw(pixels, "ひとが でていきます", 30, y + 22, C_DIM)
+        text.textSize = 20
+        text.draw(pixels, "税率が高いと", 30, y + 4, C_DIM)
+        text.draw(pixels, "住民が転出します", 30, y + 32, C_DIM)
         drawCloseButton()
     }
 
     /** モニュメント一覧の1行目の y。描画と判定で共有する。 */
-    private fun monumentListTop(): Int {
-        // drawPanel と同じ高さの計算をして、本文の開始位置を求める。
-        val content = Monument.entries.size * MONUMENT_ROW_H + 28
-        val height = 44 + content + 40
-        val top = ((logicalH - height) / 2).coerceAtLeast(24)
-        return top + 36
-    }
+    private fun monumentListTop(): Int = panelTop()+62
 
     private fun drawMonuments() {
-        var y = drawPanel("せかいの けんちく", Monument.entries.size * MONUMENT_ROW_H + 28)
-        text.textSize = 14
+        var y = drawPanel("世界の記念建築", Monument.entries.size * MONUMENT_ROW_H + 28)
+        text.textSize = 21
         val all = Monument.entries
         for (m in all) {
             val built = m in city.builtMonuments
             val unlocked = city.population >= m.unlockPopulation
-            val label = when {
-                built -> "✓ ${m.label}"
-                unlocked -> "${m.label} $${m.cost}"
-                else -> "${m.label}（じんこう${m.unlockPopulation}）"
-            }
             val shade = if (built || unlocked) C_TEXT else C_DIM
-            text.draw(pixels, label, 30, y, shade)
+            pixels.fillRect(24,y,LOGICAL_W-48,MONUMENT_ROW_H-4,Palette.UI_BG_LIGHT)
+            pixels.nativeCanvas?.let { realistic.drawIcon(it,m.name,android.graphics.RectF(30f,y.toFloat(),90f,(y+64).toFloat())) }
+            text.textSize=22;text.draw(pixels,m.label,100,y+6,shade)
+            val detail=when { built -> "建設済み";unlocked -> "$${"%,d".format(m.cost)}";else -> "人口 ${"%,d".format(m.unlockPopulation)} 人で解禁" }
+            text.textSize=18;text.draw(pixels,detail,100,y+37,C_DIM)
             y += MONUMENT_ROW_H
         }
-        text.draw(pixels, "えらんで マップを タップ", 30, y + 4, C_TEXT)
+        text.draw(pixels, "建築を選択し、地図上の敷地をタップ", 30, y + 4, C_TEXT)
         drawCloseButton()
     }
 
     private fun drawMessage() {
-        text.textSize = 15
+        text.textSize = 21
         val lines = text.wrap(message ?: "", LOGICAL_W - PANEL_MARGIN * 2 - 28)
-        var y = drawPanel(messageTitle, lines.size * 20)
-        text.textSize = 15
+        var y = drawPanel(messageTitle, lines.size * 32)
+        text.textSize = 21
         for (line in lines) {
             text.draw(pixels, line, 30, y, C_TEXT)
-            y += 20
+            y += 32
         }
         drawCloseButton()
     }
@@ -1183,28 +1289,30 @@ class GameView(
         // 画面の高さは端末で変わるので、中央から組み立てる。
         val mid = logicalH / 2
         text.textSize = 20
-        text.drawCentered(pixels, "ざいせい はさん", LOGICAL_W / 2, mid - 80, C_TEXT)
+        text.drawCentered(pixels, "財政破綻", LOGICAL_W / 2, mid - 80, C_TEXT)
         text.textSize = 15
-        text.drawCentered(pixels, "しきんが つきました", LOGICAL_W / 2, mid - 40, C_TEXT)
-        text.drawCentered(pixels, "さいだい じんこう ${city.population}", LOGICAL_W / 2, mid - 16, C_TEXT)
+        text.drawCentered(pixels, "資金が尽きました", LOGICAL_W / 2, mid - 40, C_TEXT)
+        text.drawCentered(pixels, "人口 ${city.population}", LOGICAL_W / 2, mid - 16, C_TEXT)
         text.textSize = 16
         pixels.drawRect(LOGICAL_W / 2 - 70, restartButtonY(), 140, 28, C_LINE)
-        text.drawCentered(pixels, "もういちど", LOGICAL_W / 2, restartButtonY() + 4, C_TEXT)
+        text.drawCentered(pixels, "再開", LOGICAL_W / 2, restartButtonY() + 4, C_TEXT)
     }
 
     /** もういちどボタンの y。描画と判定で共有する。 */
     private fun restartButtonY(): Int = logicalH / 2 + 30
 
     /** とじるボタンの y。パネルの下端に合わせ、描画と判定で共有する。 */
-    private fun closeButtonY(): Int = panelTop() + panelHeight - 34
+    private fun closeButtonY(): Int = panelTop() + panelHeight - 76
 
     private fun drawCloseButton() {
+        if(panelClipped) { pixels.nativeCanvas?.restore();panelClipped=false }
         val x = CLOSE_X
         val y = closeButtonY()
-        pixels.fillRect(x, y, 64, 26, C_BG)
-        pixels.drawRect(x, y, 64, 26, C_LINE)
+        pixels.fillRect(x, y, 144, 64, Palette.UI_BG_LIGHT)
+        pixels.drawRect(x, y, 144, 64, C_LINE)
         text.textSize = 15
-        text.draw(pixels, "とじる", x + 8, y + 4, C_TEXT)
+        text.textSize=22
+        text.drawCentered(pixels, "閉じる", x + 72, y + 18, C_TEXT)
     }
 
     // ------------------------------------------------------------------
@@ -1228,6 +1336,25 @@ class GameView(
         val lx = toLogicalX(event.x)
         val ly = toLogicalY(event.y)
 
+        if(globe!=null && screen==Screen.PLAYING) {
+            if(event.actionMasked==MotionEvent.ACTION_DOWN) {
+                globeGesture=isOnMap(lx,ly) && !navigationButton.contains(lx,ly) && !homeButton.contains(lx,ly) &&
+                    !globeButton.contains(lx,ly) && !coordinateButton.contains(lx,ly) && !hiyoriButton.contains(lx,ly)
+            }
+            if(globeGesture && (navigating || terrainEditor.isEditing)) {
+                val local=MotionEvent.obtain(event);local.offsetLocation(-globe.left.toFloat(),-globe.top.toFloat())
+                globe.onTileSelected={ index ->
+                    if(terrainEditor.isEditing) {
+                        planet!!.select(index%512,index/512);globe.select(index,false);terrainEditor.updateSelection();onStateChanged?.invoke()
+                    } else if(inspecting) inspectPlot(index)
+                    invalidate()
+                }
+                globe.onTouchEvent(local);local.recycle()
+                if(event.actionMasked==MotionEvent.ACTION_UP || event.actionMasked==MotionEvent.ACTION_CANCEL) globeGesture=false
+                return true
+            }
+        }
+
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 lastTouchX = event.x
@@ -1236,14 +1363,17 @@ class GameView(
                 pointerDown = true
                 panning = false
                 strokeCancelled = false
+                pinched = false
+                selectionBeforeGesture = selection.toSet()
                 // パネルを開いている間は、下のツールバーに触れさせない。
                 val tbTop = toolbarTopY
-                draggingCategories = screen == Screen.PLAYING &&
+                draggingCategories = constructionMenuVisible && !landscape && screen == Screen.PLAYING &&
                     ly >= tbTop + 4 && ly < tbTop + 4 + Hud.CATEGORY_H
-                draggingToolbar = screen == Screen.PLAYING && ly >= tbTop && !draggingCategories
+                draggingToolbar = constructionMenuVisible && screen == Screen.PLAYING &&
+                    (if(landscape) lx>=mapWidth && ly in toolGridTop until toolGridBottom else ly>=tbTop && !draggingCategories)
                 // マップ上なら、押した時点から選び始める（なぞってまとめて選べる）
-                if (screen == Screen.PLAYING && isOnMap(ly) && pendingMonument == null &&
-                    !onOverlayBadge(lx, ly)
+                if (screen == Screen.PLAYING && constructionMenuVisible && isOnMap(lx,ly) && !inspecting && pendingMonument == null &&
+                    !onOverlayBadge(lx, ly) && (globe==null || globeGesture)
                 ) {
                     // すでに選んであるマスを押したら、なぞるあいだは「外す」側にする。
                     // 選びすぎたときに、同じ動きで取り消せる。
@@ -1256,19 +1386,34 @@ class GameView(
 
             // 2本目の指が触れたら、置くのをやめて地図を動かす操作に切り替える。
             MotionEvent.ACTION_POINTER_DOWN -> {
+                if (screen != Screen.PLAYING || (globe!=null && !globeGesture)) return true
+                selection.clear()
+                selection.addAll(selectionBeforeGesture)
+                strokeCancelled = true
+                draggingToolbar = false
+                draggingCategories = false
                 panning = true
-                lastTouchX = event.x
-                lastTouchY = event.y
+                lastTouchX = (event.getX(0)+event.getX(1))/2f
+                lastTouchY = (event.getY(0)+event.getY(1))/2f
+                globe?.let { it.beginCameraGesture(lastTouchX-it.left,lastTouchY-it.top) }
                 pinchBase = pinchSpan(event)
                 pinched = false
                 return true
             }
 
             MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount <= 2) {
-                    panning = false
-                    pinchBase = 0f
+                val remaining=(0 until event.pointerCount).filter { it != event.actionIndex }
+                if (remaining.size >= 2) {
+                    val a=remaining[0];val b=remaining[1]
+                    lastTouchX=(event.getX(a)+event.getX(b))/2f
+                    lastTouchY=(event.getY(a)+event.getY(b))/2f
+                    globe?.let { it.beginCameraGesture(lastTouchX-it.left,lastTouchY-it.top) }
+                    pinchBase=kotlin.math.hypot(event.getX(a)-event.getX(b),event.getY(a)-event.getY(b))
+                } else {
+                    globe?.endCameraGesture();panning=false;pinchBase=0f
+                    lastTouchX=event.getX(remaining[0]);lastTouchY=event.getY(remaining[0])
                 }
+                pinched=true;strokeCancelled=true
                 return true
             }
 
@@ -1277,6 +1422,25 @@ class GameView(
                 val dy = event.y - lastTouchY
                 if (abs(dx) > scale * 2 || abs(dy) > scale * 2) dragged = true
 
+                if (screen == Screen.STYLE_EDIT) {
+                    styleEditor.scrollBy((-dy/scale).toInt())
+                    lastTouchX=event.x;lastTouchY=event.y;invalidate();return true
+                }
+                if (screen == Screen.INFO) {
+                    info.scrollBy((-dy/scale).toInt())
+                    lastTouchX=event.x;lastTouchY=event.y
+                    invalidate();return true
+                }
+                if(screen in setOf(Screen.BUDGET,Screen.MONUMENTS,Screen.MESSAGE)) {
+                    panelScroll=(panelScroll-(dy/scale).toInt()).coerceIn(0,panelMaxScroll)
+                    lastTouchX=event.x;lastTouchY=event.y;invalidate();return true
+                }
+                if(globe==null && navigating && screen==Screen.PLAYING && isOnMap(lx,ly) && event.pointerCount==1) {
+                    val before=mapCoordsFree((lastTouchX-offsetX)/scale,(lastTouchY-offsetY)/scale)
+                    val after=mapCoordsFree((event.x-offsetX)/scale,(event.y-offsetY)/scale)
+                    camX+=before.first-after.first;camY+=before.second-after.second;clampCamera()
+                    lastTouchX=event.x;lastTouchY=event.y;invalidate();return true
+                }
                 if (draggingCategories) {
                     val stripW = Hud.categoryX(Hud.Category.entries.size)
                     categoryScroll = (categoryScroll - (dx / scale).toInt())
@@ -1288,7 +1452,7 @@ class GameView(
                 }
 
                 if (draggingToolbar) {
-                    toolScroll = (toolScroll - (dx / scale).toInt())
+                    toolScroll = if(landscape) (toolScroll-(dy/scale).toInt()).coerceAtLeast(0) else (toolScroll - (dx / scale).toInt())
                         .coerceIn(0, max(0, Hud.toolStripWidth(category) - LOGICAL_W))
                     lastTouchX = event.x
                     lastTouchY = event.y
@@ -1296,44 +1460,30 @@ class GameView(
                     return true
                 }
 
-                // つまんで拡大・縮小。地図送りより先に見る。
                 if (panning && event.pointerCount >= 2 && pinchBase > 0f) {
-                    val span = pinchSpan(event)
-                    // 指の開きの比を、そのまま倍率の比にする。
-                    // 段で追うと、一定以上ひらいた瞬間に絵が跳ぶ。
-                    val ratio = span / pinchBase
-                    if (Math.abs(ratio - 1f) > 0.004f) {
-                        // 2本指の中点を軸にする
-                        val mx = toLogicalX((event.getX(0) + event.getX(1)) / 2f)
-                        val my = toLogicalY((event.getY(0) + event.getY(1)) / 2f)
-                        if (zoomAround(zoom * ratio, mx, my)) {
-                            pinched = true
-                            dragged = true
-                        }
-                        // いまの開きを次の基準にする
-                        pinchBase = span
+                    val mx=(event.getX(0)+event.getX(1))/2f
+                    val my=(event.getY(0)+event.getY(1))/2f
+                    val span=pinchSpan(event)
+                    if(globe!=null) {
+                        globe.moveCamera(mx-lastTouchX,my-lastTouchY,if(pinchBase>0) span/pinchBase else 1f,mx-globe.left,my-globe.top)
+                        pinchBase=span;lastTouchX=mx;lastTouchY=my;pinched=true;dragged=true
+                        invalidate();return true
                     }
-                    // つまんでいるあいだも、中点の移動ぶんだけ地図を送る
-                    lastTouchX = event.x
-                    lastTouchY = event.y
-                }
-
-                if (panning) {
-                    // 指の動きにあわせて地図を送る
-                    // 画面の移動量を、斜めの軸にほどいてタイル座標へ変換する
-                    val lx2 = dx / scale * zoomDen / zoomNum
-                    val ly2 = dy / scale * zoomDen / zoomNum
-                    camX -= (lx2 / (Iso.TILE_W / 2f) + ly2 / (Iso.TILE_H / 2f)) / 2f
-                    camY -= (ly2 / (Iso.TILE_H / 2f) - lx2 / (Iso.TILE_W / 2f)) / 2f
-                    clampCamera()
-                    lastTouchX = event.x
-                    lastTouchY = event.y
-                    invalidate()
+                    if (span>0f) {
+                        val before=mapCoordsFree((lastTouchX-offsetX)/scale,(lastTouchY-offsetY)/scale)
+                        zoom=(zoom*span/pinchBase).coerceIn(ZOOM_MIN,ZOOM_MAX)
+                        val after=mapCoordsFree((mx-offsetX)/scale,(my-offsetY)/scale)
+                        camX+=before.first-after.first;camY+=before.second-after.second
+                        clampCamera()
+                        pinchBase=span
+                    }
+                    lastTouchX=mx;lastTouchY=my;pinched=true;dragged=true
+                    postInvalidateOnAnimation()
                     return true
                 }
 
-                if (screen == Screen.PLAYING && isOnMap(ly) &&
-                    pendingMonument == null && !strokeCancelled && !onOverlayBadge(lx, ly)
+                if (screen == Screen.PLAYING && constructionMenuVisible && isOnMap(lx,ly) &&
+                    !inspecting && pendingMonument == null && !strokeCancelled && !onOverlayBadge(lx, ly) && (globe==null || globeGesture)
                 ) {
                     // なぞって連続で選ぶ
                     selectAt(lx, ly)
@@ -1343,9 +1493,29 @@ class GameView(
                 return true
             }
 
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_CANCEL -> {
+                globe?.endCameraGesture()
+                selection.clear()
+                selection.addAll(selectionBeforeGesture)
                 pointerDown = false
-                if (!dragged && !panning && !pinched) handleTap(lx, ly)
+                panning = false
+                pinched = false
+                draggingToolbar = false
+                draggingCategories = false
+                strokeCancelled = true
+                pinchBase = 0f
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                globe?.endCameraGesture()
+                pointerDown = false
+                if(globe!=null && (pinched || panning)) { globe.updateDetail();onStateChanged?.invoke() }
+                if (!dragged && !panning && !pinched) {
+                    // Time spent reading a panel must not be charged to the first frame back in town.
+                    if (screen != Screen.PLAYING) lastFrameTime = System.currentTimeMillis()
+                    handleTap(lx, ly)
+                }
                 draggingToolbar = false
                 draggingCategories = false
                 panning = false
@@ -1366,7 +1536,7 @@ class GameView(
      * 住宅・商業・工業のどれを敷いているか分かる。
      */
     private fun sfxForTool(tool: TileKind): Sfx = when {
-        tool == TileKind.ROAD -> Sfx.ROAD
+        tool == TileKind.ROAD || tool == TileKind.AVENUE -> Sfx.ROAD
         tool == TileKind.ZONE_R -> Sfx.ZONE_R
         tool == TileKind.ZONE_C -> Sfx.ZONE_C
         tool == TileKind.ZONE_I -> Sfx.ZONE_I
@@ -1381,20 +1551,29 @@ class GameView(
      */
     private fun selectionBarBottom(): Int {
         var bottom = toolbarTopY
-        if (tutorial.active && tutorial.step != null) bottom -= bannerHeight()
+        bottom -= bannerHeight()
         return bottom
     }
 
-    private fun isOnMap(ly: Int): Boolean {
-        if (ly < statusBottom) return false
-        var bottom = toolbarTopY
+    private fun isOnMap(lx: Int,ly: Int): Boolean {
+        if(lx !in 0 until mapWidth || ly < mapTop) return false
+        var bottom = selectionBarBottom()
         // 帯が出ているあいだは、その上だけが地図。
         // でないと、釦を押したときに下のマスまで選んでしまう。
-        if (selection.isNotEmpty()) bottom = selectionBarBottom() - SELECTION_BAR_H
+        if (selection.isNotEmpty() && !landscape) bottom = selectionBarBottom() - SELECTION_BAR_H
         return ly < bottom
     }
 
     private fun handleTap(lx: Int, ly: Int) {
+        if(globe!=null && screen==Screen.PLAYING) {
+            when {
+                navigationButton.contains(lx,ly) -> { showCivicMenu();return }
+                homeButton.contains(lx,ly) -> { showCityDestinations();return }
+                globeButton.contains(lx,ly) -> { globe.setZoom(1f);clearSelection();invalidate();return }
+                coordinateButton.contains(lx,ly) -> { pauseClock();resume();terrainEditor.chooseCoordinate();return }
+                hiyoriButton.contains(lx,ly) -> { setHiyoriMessagesVisible(!hiyoriMessagesVisible);return }
+            }
+        }
         when (screen) {
             Screen.GAME_OVER -> {
                 if (ly in restartButtonY()..(restartButtonY() + 28)) onRestartRequested?.invoke()
@@ -1402,12 +1581,12 @@ class GameView(
             }
             Screen.BUDGET -> {
                 // 税率の増減（drawBudget の配置と同じ値を使う）
-                if (ly in 58..80) {
-                    if (lx in TAX_MINUS_X..(TAX_MINUS_X + 26)) {
-                        city.taxRate = (city.taxRate - 1).coerceAtLeast(0); onStateChanged?.invoke()
+                if (ly in panelBodyTop until panelBodyBottom && ly+panelScroll in taxButtonY until taxButtonY + 64) {
+                    if (lx in TAX_MINUS_X..(TAX_MINUS_X + 80)) {
+                        city.taxRate = (city.taxRate - 1).coerceAtLeast(0); city.refreshBudgetForecast(); notifyStateChanged()
                     }
-                    if (lx in TAX_PLUS_X..(TAX_PLUS_X + 26)) {
-                        city.taxRate = (city.taxRate + 1).coerceAtMost(20); onStateChanged?.invoke()
+                    if (lx in TAX_PLUS_X..(TAX_PLUS_X + 80)) {
+                        city.taxRate = (city.taxRate + 1).coerceAtMost(20); city.refreshBudgetForecast(); notifyStateChanged()
                     }
                 }
                 if (isCloseTapped(lx, ly)) {
@@ -1423,7 +1602,8 @@ class GameView(
                     return
                 }
                 // 一覧から選ぶ。行の位置は描画と同じ式で求める。
-                val idx = (ly - monumentListTop()) / MONUMENT_ROW_H
+                if (lx < 24 || lx >= LOGICAL_W-24 || ly !in panelBodyTop until panelBodyBottom || ly+panelScroll < monumentListTop()) return
+                val idx = (ly+panelScroll - monumentListTop()) / MONUMENT_ROW_H
                 val m = Monument.entries.getOrNull(idx)
                 if (m != null) selectMonument(m)
                 return
@@ -1444,6 +1624,7 @@ class GameView(
                 handleStyleEditTap(lx, ly)
                 return
             }
+            Screen.CAMPAIGN -> { handleCampaignTap(lx,ly); return }
             Screen.PLAYING -> {}
         }
 
@@ -1461,16 +1642,16 @@ class GameView(
             }
         }
 
-        // チュートリアルの「つぎへ」
-        if (tutorial.active && tutorial.awaitingContinue()) {
-            val bannerTop = toolbarTopY - bannerHeight()
-            if (ly >= bannerTop && ly < toolbarTopY) {
-                tutorial.onContinuePressed()
-                showTutorialMessageIfNeeded()
-                if (tutorial.finished) onTutorialFinished?.invoke()
-                onStateChanged?.invoke()
-                return
-            }
+        // Only the rendered reply buttons advance dialogue. Reading text never places a tile.
+        if (hiyoriMessagesVisible && tutorial.active && lx<mapWidth && ly in (toolbarTopY - bannerHeight()) until toolbarTopY) {
+            handleTutorialAction(tutorialPanel.actionAt(lx,ly))
+            notifyStateChanged()
+            return
+        }
+
+        if (hiyoriMessagesVisible && !tutorial.active && city.campaign.visible && lx<mapWidth && ly in (toolbarTopY-bannerHeight()) until toolbarTopY) {
+            if(campaignPanel.actionAt(lx,ly) == CampaignPanel.Action.OPEN) openCampaign()
+            return
         }
 
         val toolbarTop = toolbarTopY
@@ -1487,31 +1668,56 @@ class GameView(
             return
         }
 
-        val statusRow = (insetTop + 17)..(insetTop + 44)
-        if (ly in statusRow && lx in (SPEED_X - 4)..(SPEED_X + 36)) { cycleSpeed(); return }
-        // 拡大率
-        if (ly in statusRow && lx in ZOOM_X..(ZOOM_X + 64)) { cycleZoom(); return }
+        if(constructionButton.contains(lx,ly)) { setConstructionMenuVisible(!constructionMenuVisible);audio.play(Sfx.TAP);return }
+        if(inspectionButton.contains(lx,ly)) {
+            inspecting=!inspecting;clearSelection()
+            if(inspecting) showToast("建築をタップして調査します")
+            return
+        }
+        if(speedButton.contains(lx,ly)) { cycleSpeed();return }
+        if(zoomButton.contains(lx,ly)) { cycleZoom();return }
+        if(constructionMenuVisible && landscape) {
+            if(categoryButton.contains(lx,ly)) {
+                android.app.AlertDialog.Builder(context).setTitle("建設する施設の分類")
+                    .setItems(Hud.Category.entries.map { it.label }.toTypedArray()) { _,i -> chooseCategory(Hud.Category.entries[i]) }.show()
+                return
+            }
+            if(lx>=mapWidth && ly in toolGridTop until toolGridBottom) {
+                landscapeTools.firstOrNull { it.first.contains(lx,ly) }?.second?.let { tool ->
+                    if(tutorial.allowsBuild(tool.kind) || tool.kind==TileKind.EMPTY) { selectedTool=tool.kind;pendingMonument=null }
+                    else showToast("現在の目標で指定された道具を選択してください")
+                };return
+            }
+        }
 
         // 情報・予算・けんちく
-        if (ly >= bottomRowTop && ly < bottomRowTop + BOTTOM_ROW_H) {
+        if (constructionMenuVisible && !landscape && ly >= bottomRowTop && ly < bottomRowTop + BOTTOM_ROW_H) {
+            if (lx in planetButtonX.first..planetButtonX.second) {
+                clearSelection()
+                openTerrainEditor()
+                return
+            }
             if (lx in infoButtonX.first..infoButtonX.second) {
-                if (!tutorial.allowsInfo()) { showToast("いまは ステップの とおりに"); return }
+                if (!tutorial.allowsInfo()) { showToast("現在の目標に沿って進めましょう"); return }
                 screen = Screen.INFO
                 audio.play(Sfx.OPEN)
-                tutorial.onInfoOpened()
+                tutorial.onInfoOpened(city)
                 showTutorialMessageIfNeeded()
+                notifyStateChanged()
                 return
             }
             if (lx in budgetButtonX.first..budgetButtonX.second) {
-                if (!tutorial.allowsBudget()) { showToast("いまは ステップの とおりに"); return }
+                if (!tutorial.allowsBudget()) { showToast("現在の目標に沿って進めましょう"); return }
+                city.refreshBudgetForecast()
                 screen = Screen.BUDGET
                 audio.play(Sfx.OPEN)
-                tutorial.onBudgetOpened()
+                tutorial.onBudgetOpened(city)
                 showTutorialMessageIfNeeded()
+                notifyStateChanged()
                 return
             }
             if (lx >= monumentButtonX.first) {
-                if (tutorial.active) { showToast("チュートリアルの あとで"); return }
+                if (tutorial.active) { showToast("チュートリアル終了後に利用できます"); return }
                 screen = Screen.MONUMENTS
                 audio.play(Sfx.OPEN)
                 return
@@ -1519,7 +1725,7 @@ class GameView(
         }
 
         // 分類の選択
-        if (ly >= toolbarTop + 4 && ly < toolbarTop + 4 + Hud.CATEGORY_H) {
+        if (constructionMenuVisible && !landscape && ly >= toolbarTop + 4 && ly < toolbarTop + 4 + Hud.CATEGORY_H) {
             val hit = (lx + categoryScroll - Hud.TOOL_GAP) / (Hud.CATEGORY_W + Hud.TOOL_GAP)
             Hud.Category.entries.getOrNull(hit)?.let {
                 category = it
@@ -1536,12 +1742,12 @@ class GameView(
 
         // ツールの選択
         val toolTop = toolbarTop + 4 + Hud.CATEGORY_H + 4
-        if (ly >= toolTop && ly < toolTop + Hud.TOOL_SIZE) {
+        if (constructionMenuVisible && !landscape && ly >= toolTop && ly < toolTop + Hud.TOOL_SIZE) {
             val hit = (lx + toolScroll - Hud.TOOL_GAP) / (Hud.TOOL_SIZE + Hud.TOOL_GAP)
             val tool = Hud.toolsIn(category).getOrNull(hit)
             if (tool != null) {
                 if (!tutorial.allowsBuild(tool.kind) && tool.kind != TileKind.EMPTY) {
-                    showToast("いまは ちがう どうぐです")
+                    showToast("現在の目標で指定された道具を選択してください")
                     return
                 }
                 selectedTool = tool.kind
@@ -1551,22 +1757,99 @@ class GameView(
         }
 
         // マップ（モニュメントの設置）
-        if (isOnMap(ly)) {
+        if (isOnMap(lx,ly)) {
+            if (inspecting) {
+                val index = if(globe!=null) tileIndexAt(lx,ly) else realistic.buildingAtScreen(city, camX, camY, zoom,
+                    LOGICAL_W, statusBottom, toolbarTopY - statusBottom, lx, ly) ?: tileIndexAt(lx, ly)
+                index?.let { inspectPlot(it) }
+                return
+            }
             val m = pendingMonument
-            if (m != null) {
+            if (m != null && constructionMenuVisible) {
                 placeMonument(m, lx, ly)
             }
         }
+    }
+
+    private fun handleTutorialAction(action: TutorialPanel.Action?) {
+            when (action) {
+                TutorialPanel.Action.REPLY -> {
+                    val before = tutorial.stepIndex
+                    tutorial.acknowledge(city)
+                    showTutorialMessageIfNeeded()
+                    if(tutorial.active && tutorial.briefingRead) focusTutorialSite()
+                    if (tutorial.allowsSpeedChange() && tutorial.active && tutorial.stepIndex == before) setSpeed(2)
+                    if (tutorial.finished) {
+                        inspecting = false
+                        setSpeed(1)
+                        audio.play(Sfx.MILESTONE)
+                        onTutorialFinished?.invoke()
+                        showCampaignIfNeeded()
+                    }
+                }
+                TutorialPanel.Action.PARKS -> { tutorial.choose(Tutorial.Priority.PARKS, city); showTutorialMessageIfNeeded() }
+                TutorialPanel.Action.CLINIC -> { tutorial.choose(Tutorial.Priority.CLINIC, city); showTutorialMessageIfNeeded() }
+                TutorialPanel.Action.ADVICE -> { tutorial.reopenBriefing(); speedIndex = 0; monthAccumulator = 0; clearSelection() }
+                TutorialPanel.Action.FOCUS -> focusTutorialSite()
+                TutorialPanel.Action.DIALOG -> showTutorialDialog()
+                null -> {}
+            }
+        notifyStateChanged();requestLayout();invalidate()
+    }
+
+    private fun showTutorialDialog() {
+        if(!tutorial.active) return
+        val text=if(tutorial.briefingRead) tutorial.objective(city)+"\n\n"+tutorial.advice(city) else tutorial.briefing(city)
+        val d=android.app.AlertDialog.Builder(context)
+            .setTitle("ひより：${tutorial.step!!.title}").setMessage(text)
+        if(tutorial.awaitingChoice()) {
+            d.setPositiveButton("公園を整備") { _,_ -> handleTutorialAction(TutorialPanel.Action.PARKS) }
+                .setNegativeButton("診療所を整備") { _,_ -> handleTutorialAction(TutorialPanel.Action.CLINIC) }
+        } else {
+            val advance=!tutorial.briefingRead || tutorial.isRunningGoal()
+            d.setPositiveButton(if(!tutorial.briefingRead) tutorial.step!!.reply else if(advance) "時間を進める" else "閉じる") { _,_ ->
+                if(advance) handleTutorialAction(TutorialPanel.Action.REPLY)
+            }
+            if(tutorial.briefingRead && (tutorial.neededTool!=null || tutorial.step?.goal is Tutorial.Goal.InspectHome))
+                d.setNeutralButton("候補地へ") { _,_ -> focusTutorialSite() }
+        }
+        d.show()
+    }
+
+    private fun inspectPlot(index: Int) {
+        city.recomputeDerivedState()
+        val tile = city.tiles[index]
+        val x = index % city.width
+        val y = index / city.width
+        messageTitle = tile.monument?.label ?: Hud.labelOf(tile.kind).ifBlank { "空地" }
+        fun state(value: Boolean) = if (value) "有" else "無"
+        message = buildString {
+            append("場所 ($x, $y)  成長 ${tile.stage}/3\n")
+            append("道路 ${state(tile.connected)} / 電力 ${state(tile.powered)}\n")
+            append("水道 ${state(tile.watered)}\n")
+            append("地価 ${tile.landValue} / 公害 ${tile.pollution}\n")
+            append("安全 ${tile.safety} / 教育 ${tile.education}\n")
+            append("健康 ${tile.health} / 犯罪 ${tile.crime}\n")
+            if (tile.kind.isTransport) append("交通 ${tile.traffic} / ${io.github.hatake716.pixelcity.game.Traffic.capacityPerHour(tile.kind)}\n")
+            if (tile.kind == TileKind.LANDFILL) append("埋立量 ${tile.landfillFill} / ${BuildCost.LANDFILL_TOTAL}\n")
+            if (tile.kind.isZone) append("\n" + city.growthStatus(x, y))
+            else append("\n維持費 $${BuildCost.upkeep(tile.kind)} / 月")
+        }
+        screen = Screen.MESSAGE
+        audio.play(Sfx.OPEN)
+        tutorial.onHomeInspected(city, index)
+        showTutorialMessageIfNeeded()
+        notifyStateChanged()
     }
 
     /** 情報画面のタップ。 */
     private fun handleInfoTap(lx: Int, ly: Int) {
         // とじる
         val cy = info.closeButtonY(logicalH)
-        if (ly >= cy && ly < cy + 28) {
+        if (ly >= cy && ly < cy + 64) {
             screen = Screen.PLAYING
             audio.play(Sfx.CLOSE)
-            onStateChanged?.invoke()
+            notifyStateChanged()
             return
         }
         // 見出し
@@ -1578,7 +1861,7 @@ class GameView(
             // いちいち閉じさせるより、そのまま見せたほうが早い。
             screen = Screen.PLAYING
             audio.play(if (it == CityRenderer.Overlay.NONE) Sfx.CLOSE else Sfx.OPEN)
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1587,14 +1870,14 @@ class GameView(
         // 街並みの様式
         info.styleAt(lx, ly, logicalH)?.let { st ->
             city.style = st
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
         // 災害の多さ
         info.disasterAt(lx, ly)?.let { lv ->
             city.disasterLevel = lv
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1612,7 +1895,7 @@ class GameView(
                 Settings.setBgmEnabled(context, audio.bgmEnabled)
                 if (audio.bgmEnabled) updateBgm()
             }
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1622,7 +1905,7 @@ class GameView(
             info.custom = city.customStyle
             screen = Screen.STYLE_EDIT
             audio.play(Sfx.OPEN)
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1632,10 +1915,9 @@ class GameView(
                 city.ordinances.remove(o)
             } else {
                 city.ordinances.add(o)
-                tutorial.onOrdinanceEnabled()
                 if (tutorial.finished) onTutorialFinished?.invoke()
             }
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1644,17 +1926,17 @@ class GameView(
     private fun handleStyleEditTap(lx: Int, ly: Int) {
         // もどる
         val by = styleEditor.backButtonY(logicalH)
-        if (ly >= by && ly < by + 28) {
+        if (ly >= by && ly < by + 64) {
             screen = Screen.INFO
             audio.play(Sfx.CLOSE)
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
         // もとに もどす
         if (styleEditor.resetTapped(lx, ly, logicalH)) {
             city.customStyle.reset()
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
@@ -1667,28 +1949,29 @@ class GameView(
         // 色を割り当てる
         styleEditor.colourAt(lx, ly, logicalH)?.let { c ->
             city.customStyle[styleEditor.slot] = c
-            onStateChanged?.invoke()
+            notifyStateChanged()
             invalidate()
             return
         }
     }
 
     private fun isCloseTapped(lx: Int, ly: Int): Boolean =
-        lx >= CLOSE_X && lx <= CLOSE_X + 64 &&
-            ly >= closeButtonY() && ly <= closeButtonY() + 26
+        lx >= CLOSE_X && lx <= CLOSE_X + 144 &&
+            ly >= closeButtonY() && ly <= closeButtonY() + 64
 
     private fun selectMonument(m: Monument) {
         val blocker = when {
-            m in city.builtMonuments -> "すでに たてられています"
-            city.population < m.unlockPopulation -> "じんこう ${m.unlockPopulation} で かいきん"
-            city.funds < m.cost -> "しきんが たりません"
+            m in city.builtMonuments -> "建設済みです"
+            city.population < m.unlockPopulation -> "人口 ${m.unlockPopulation} 人で解禁"
+            city.funds < m.cost -> "資金不足です"
             else -> null
         }
         if (blocker != null) { showToast(blocker); return }
+        setConstructionMenuVisible(true)
         pendingMonument = m
         screen = Screen.PLAYING
         audio.play(Sfx.TAP)
-        showToast("ばしょを タップ")
+        showToast("建設場所をタップ")
     }
 
     private fun placeMonument(m: Monument, lx: Int, ly: Int) {
@@ -1701,7 +1984,7 @@ class GameView(
             message = m.blurb
             screen = Screen.MESSAGE
             audio.play(Sfx.MONUMENT)
-            onStateChanged?.invoke()
+            notifyStateChanged()
         }
     }
 
@@ -1711,43 +1994,20 @@ class GameView(
      * 描画と同じ原点を使って、画面座標を菱形の格子へ戻す。
      */
     private fun mapCoords(lx: Int, ly: Int): Pair<Int, Int>? {
-        if (!isOnMap(ly)) return null
-        val mapTop = statusBottom
-        val mapHeight = toolbarTopY - statusBottom
-        // 描く側（CityRenderer）と同じ式でなければ、押した場所と
-        // 実際に選ばれるマスがずれる。
-        val originX = LOGICAL_W / 2 -
-            Math.round(Iso.screenX2(camX, camY) * zoomNum / zoomDen)
-        val originY = mapTop + mapHeight / 2 -
-            Math.round(Iso.screenY2(camX, camY) * zoomNum / zoomDen)
-        // 菱形の中心を基準に戻す
-        val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
-        val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
-        val (tx, ty) = Iso.tileAt(sx, sy)
-        if (!city.inBounds(tx, ty)) return null
-        return tx to ty
+        if (!isOnMap(lx,ly)) return null
+        if(globe!=null) {
+            val index=globe.pick((lx*scale+offsetX-globe.left).toFloat(),(ly*scale+offsetY-globe.top).toFloat()) ?: return null
+            return index%512 to index/512
+        }
+        val p=mapCoordsFree(lx.toFloat(),ly.toFloat())
+        val tx=kotlin.math.floor(p.first+.5f).toInt()
+        val ty=kotlin.math.floor(p.second+.5f).toInt()
+        return if(city.inBounds(tx,ty)) tx to ty else null
     }
 
-    /**
-     * 画面の点が指すタイル座標。[mapCoords] と違い、
-     * 盤の外でも切り捨てずに実数で返す。拡大の軸を求めるのに使う。
-     */
-    private fun mapCoordsFree(lx: Int, ly: Int): Pair<Float, Float>? {
-        val mapTop = statusBottom
-        val mapHeight = toolbarTopY - statusBottom
-        // 描く側（CityRenderer）と同じ式でなければ、押した場所と
-        // 実際に選ばれるマスがずれる。
-        val originX = LOGICAL_W / 2 -
-            Math.round(Iso.screenX2(camX, camY) * zoomNum / zoomDen)
-        val originY = mapTop + mapHeight / 2 -
-            Math.round(Iso.screenY2(camX, camY) * zoomNum / zoomDen)
-        val sx = (lx - originX).toFloat() * zoomDen / zoomNum - Iso.TILE_W / 2f
-        val sy = (ly - originY).toFloat() * zoomDen / zoomNum - Iso.TILE_H / 2f
-        // Iso.tileAt と同じ式。切り捨てずに実数のまま返す。
-        val a = sx / (Iso.TILE_W / 2f)
-        val b = sy / (Iso.TILE_H / 2f)
-        return ((a + b) / 2f) to ((b - a) / 2f)
-    }
+    private fun mapCoordsFree(lx: Int, ly: Int): Pair<Float,Float> = mapCoordsFree(lx.toFloat(),ly.toFloat())
+    private fun mapCoordsFree(lx: Float, ly: Float): Pair<Float,Float> =
+        RealisticCityRenderer.unproject(lx,ly,camX,camY,zoom,LOGICAL_W,statusBottom,toolbarTopY-statusBottom)
 
     /** 画面の点が指すタイルの番号。マップ外なら null。 */
     private fun tileIndexAt(lx: Int, ly: Int): Int? {
@@ -1792,26 +2052,23 @@ class GameView(
      */
     private fun selectionBlocker(tx: Int, ty: Int): String? {
         if (selectedTool == TileKind.EMPTY) {
-            if (tutorial.active) return "いまは こわせません"
+            if (!tutorial.allowsBuild(TileKind.EMPTY)) return "ひよりの話を聞いてから、手を入れましょう"
+            if (city.tileAt(tx, ty).kind == TileKind.EMPTY) return "何もありません"
             return null
         }
-        if (!tutorial.allowsBuild(selectedTool)) return "いまは ちがう どうぐです"
+        if (!tutorial.allowsBuild(selectedTool)) return "現在の目標で指定された道具を選択してください"
         // 求められた数を超えて選ばせない。余分な設置は資金と土地の無駄になり、
         // 「あと N」の意味も分からなくなる。
-        if (tutorial.active && tutorial.step?.highlightTool != null &&
+        if (tutorial.active && tutorial.placementGoal()?.kind == selectedTool &&
             tutorial.remaining() <= selection.size
         ) {
-            return "つぎの ステップへ すすみます"
+            return "次の目標へ進みます"
         }
         // すでに同じものが建っているところは選ばない（払い損になる）
-        if (city.tileAt(tx, ty).kind == selectedTool) return null
+        if (city.tileAt(tx, ty).kind == selectedTool) return "設置済みです"
         city.buildBlocker(tx, ty, selectedTool)?.let { return it }
-        // チュートリアル中は、道路に接していない区分・発電所を断る
-        if (tutorial.active && !city.touchesRoad(tx, ty) &&
-            (selectedTool.isZone || selectedTool.isPowerPlant)
-        ) {
-            return "どうろの となりに おいてください"
-        }
+        if (tutorial.active) TutorialDistrict.placementBlocker(city, tx, ty, selectedTool, selection)?.let { return it }
+
         return null
     }
 
@@ -1839,11 +2096,11 @@ class GameView(
             else BuildCost.cost(selectedTool)
             val affordable = if (each <= 0) selection.size else city.funds / each
             if (affordable <= 0) {
-                showToast("しきんが たりません")
+                showToast("資金不足です")
                 audio.play(Sfx.DENIED)
                 return
             }
-            showToast("しきんが たりないので ${affordable}マスだけ")
+            showToast("資金不足のため${affordable}区画のみ建設します")
         }
 
         var done = 0
@@ -1856,19 +2113,16 @@ class GameView(
                 if (city.tileAt(tx, ty).kind == selectedTool) false
                 else city.build(tx, ty, selectedTool)
             }
-            if (ok) {
-                done++
-                if (selectedTool != TileKind.EMPTY) {
-                    tutorial.onBuilt(selectedTool)
-                }
-            }
+            if (ok) done++
         }
 
         if (done > 0) {
+            city.recomputeDerivedState()
+            tutorial.onCityChanged(city)
             audio.play(if (selectedTool == TileKind.EMPTY) Sfx.BULLDOZE else sfxForTool(selectedTool))
             showTutorialMessageIfNeeded()
             if (tutorial.finished) onTutorialFinished?.invoke()
-            onStateChanged?.invoke()
+            notifyStateChanged()
         } else {
             audio.play(Sfx.DENIED)
         }
@@ -1890,10 +2144,19 @@ class GameView(
      */
     private fun showTutorialMessageIfNeeded() {
         if (!tutorial.active) return
-        // 手順どおりに進めれば資金が尽きないように補う。
-        if (city.funds < 2_000) city.funds += Tutorial.GRANT
-
-        val needed = tutorial.step?.highlightTool ?: return
+        if (shownTutorialStep != tutorial.stepIndex) {
+            val previous = shownTutorialStep
+            shownTutorialStep = tutorial.stepIndex
+            speedIndex = 0
+            monthAccumulator = 0
+            inspecting = false
+            clearSelection()
+            strokeCancelled = true
+            if (previous >= 0) audio.play(Sfx.PROGRESS)
+            focusTutorialSite()
+            if (tutorial.step?.goal is Tutorial.Goal.OpenBudget) city.refreshBudgetForecast()
+        }
+        val needed = tutorial.neededTool ?: return
         if (selectedTool != needed) {
             selectedTool = needed
             pendingMonument = null
@@ -1902,7 +2165,13 @@ class GameView(
             strokeCancelled = true
         }
         // 選んだ道具が画面の外なら、見えるところまでツールバーを送る。
-        val index = Hud.TOOLS.indexOfFirst { it.kind == needed }
+        val nextCategory = Hud.Category.entries.firstOrNull { c -> Hud.toolsIn(c).any { it.kind == needed } }
+        if (nextCategory != null && category != nextCategory) {
+            category = nextCategory
+            toolScroll = 0
+            categoryScroll = (Hud.categoryX(category.ordinal) - LOGICAL_W / 3).coerceAtLeast(0)
+        }
+        val index = Hud.toolsIn(category).indexOfFirst { it.kind == needed }
         if (index >= 0) {
             val x = Hud.toolX(index)
             val maxScroll = max(0, Hud.toolStripWidth(category) - LOGICAL_W)
@@ -1912,13 +2181,118 @@ class GameView(
         }
     }
 
+    private fun showCampaignIfNeeded() {
+        if(tutorial.active || city.gameOver) return
+        if(tutorial.finished) city.campaign.offer()
+        if(hiyoriMessagesVisible && city.campaign.needsBriefing) openCampaign()
+    }
+
+    private fun openCampaign() {
+        clearSelection();inspecting=false;pendingMonument=null;monthAccumulator=0;lastFrameTime=0
+        screen=Screen.CAMPAIGN;campaignPanel.open();invalidate()
+    }
+
+    private fun handleCampaignTap(x: Int,y: Int) {
+        val action=campaignPanel.actionAt(x,y) ?: return
+        val a=city.campaign
+        when(action) {
+            CampaignPanel.Action.METROPOLIS -> a.select(Campaign.Route.METROPOLIS,city)
+            CampaignPanel.Action.GARDEN -> a.select(Campaign.Route.GARDEN,city)
+            CampaignPanel.Action.INDUSTRIAL -> a.select(Campaign.Route.INDUSTRIAL,city)
+            CampaignPanel.Action.OPTION_0,CampaignPanel.Action.OPTION_1 -> {
+                if(landscape) {
+                    val index=if(action==CampaignPanel.Action.OPTION_0) 0 else 1
+                    val policy=a.current!!.options[index]
+                    android.app.AlertDialog.Builder(context).setTitle(policy.label)
+                        .setMessage("導入費 $${policy.cost} / 月額 $${policy.upkeep(city.population)}\n\n${policy.detail}")
+                        .setPositiveButton("この施策を実施") { _,_ ->
+                            if(!a.choose(index,city)) showToast("施策の導入資金が不足しています")
+                            updateBgm();notifyStateChanged();invalidate()
+                        }.setNegativeButton("戻る",null).show()
+                    return
+                }
+                if(!a.choose(if(action==CampaignPanel.Action.OPTION_0)0 else 1,city)) audio.play(Sfx.DENIED)
+                else audio.play(Sfx.PROGRESS)
+            }
+            CampaignPanel.Action.CLOSE -> {
+                a.acknowledge();screen=Screen.PLAYING;monthAccumulator=0;lastFrameTime=0
+                if(a.completed) frameCompletedCity()
+            }
+            else -> campaignPanel.navigate(action)
+        }
+        updateBgm();notifyStateChanged();invalidate()
+    }
+
+    /** Reveal the city the mayor actually built, including towns away from the map's centre. */
+    private fun frameCompletedCity() {
+        val built=city.tiles.indices.filter { city.tiles[it].kind != TileKind.EMPTY }
+        if(built.isEmpty()) return
+        val minX=built.minOf { it%city.width };val maxX=built.maxOf { it%city.width }
+        val minY=built.minOf { it/city.width };val maxY=built.maxOf { it/city.width }
+        val span=(maxX-minX+maxY-minY+4).toFloat()
+        if(globe!=null) {
+            focusOnTile((minX+maxX)/2,(minY+maxY)/2)
+            globe.setZoom((600f/span).coerceIn(1f,48f));return
+        }
+        val visibleHeight=(toolbarTopY-statusBottom-bannerHeight()-40).coerceAtLeast(80)
+        zoom=min((LOGICAL_W-32)/(span*Iso.TILE_W/2f),visibleHeight/((span+4)*Iso.TILE_H/2f))
+        val shift=bannerHeight()/(2f*Iso.TILE_H*zoom)
+        camX=(minX+maxX)/2f+shift;camY=(minY+maxY)/2f+shift
+        clampCamera()
+    }
+
+    private fun focusTutorialSite() {
+        val candidates = if (tutorial.step?.goal is Tutorial.Goal.InspectHome) {
+            city.tiles.indices.filter { city.tiles[it].kind == TileKind.ZONE_R && city.tiles[it].stage > 0 }
+        } else TutorialDistrict.suggestions(city, tutorial)
+        val x = if (candidates.isEmpty()) city.originX.toFloat() else candidates.map { it % city.width }.average().toFloat()
+        val y = if (candidates.isEmpty()) city.originY.toFloat() else candidates.map { it / city.width }.average().toFloat()
+        if(globe!=null) {
+            focusOnTile(x.toInt(),y.toInt())
+            if(globe.width>0 && globe.height>0 && tutorial.briefingRead) {
+                // Keep every suggested lot above both the notebook and the commit bar.
+                val land=PlanetGeometry.Landscape(PlanetGeometry.Snapshot.of(planet!!))
+                val sites=(if(candidates.isEmpty()) listOf(city.index(x.toInt(),y.toInt())) else candidates)
+                    .map { land.ground(it%city.width+.5f,it/city.width+.5f) }
+                val top=80f*scale
+                val bottom=((selectionBarBottom()-(if(landscape) 0 else SELECTION_BAR_H)-mapTop-24)*scale).toFloat().coerceAtLeast(top+80)
+                fun bounds(): FloatArray {
+                    val cam=globe.camera;val aspect=globe.width.toFloat()/globe.height;val hh=cam.halfHeight(aspect)
+                    val px=sites.map { globe.width*(.5f+(it-cam.focus*cam.focusRadius).dot(cam.right)/(2*hh*aspect)) }
+                    val py=sites.map { globe.height*(.5f-(it-cam.focus*cam.focusRadius).dot(cam.up)/(2*hh)) }
+                    return floatArrayOf(px.min(),py.min(),px.max(),py.max())
+                }
+                var b=bounds()
+                val fit=min((globe.width-64f*scale)/(b[2]-b[0]+48f*scale),(bottom-top)/(b[3]-b[1]+48f*scale)).coerceIn(.2f,1f)
+                globe.setZoom(planet.zoom*fit)
+                repeat(2) {
+                    b=bounds();val cx=(b[0]+b[2])/2;val cy=(b[1]+b[3])/2
+                    val targetX=globe.width/2f;val targetY=(top+bottom)/2
+                    globe.moveCamera(targetX-cx,targetY-cy,1f,targetX,targetY)
+                }
+                globe.updateDetail()
+            }
+            return
+        }
+        // Raise the point of interest into the visible area above the secretary's notebook.
+        val shift = bannerHeight() / (2f * Iso.TILE_H * zoom)
+        camX = x + shift; camY = y + shift
+        clampCamera()
+        invalidate()
+    }
+
     var onTutorialFinished: (() -> Unit)? = null
     var onRestartRequested: (() -> Unit)? = null
 
     /** カメラを街の中央へ。 */
     fun centerCamera() {
-        camX = city.width / 2f
-        camY = city.height / 2f
+        if(globe!=null) {
+            if(tutorial.active) focusTutorialSite()
+            return
+        }
+        camX = city.originX.toFloat()
+        camY = city.originY.toFloat()
+        if (tutorial.active) focusTutorialSite()
         clampCamera()
     }
 
@@ -1931,9 +2305,62 @@ class GameView(
         camY = camY.coerceIn(-2f, city.height + 2f)
     }
 
-    fun pause() {
+    fun focusOnTile(x: Int, y: Int) {
+        // An explicit destination must survive the first layout of a newly created city view.
+        cameraInitialised=true
+        if(globe!=null) {
+            planet!!.select(x,y);globe.select(planet.selectedIndex,true,true)
+            invalidate();return
+        }
+        camX=x.toFloat(); camY=y.toFloat()
+        clampCamera()
+        invalidate()
+    }
+
+    fun showCityDestinations() {
+        if(city.destinations.isEmpty()) { focusOnTile(city.originX,city.originY);return }
+        android.app.AlertDialog.Builder(context).setTitle("都市移動")
+            .setItems(city.destinations.map { "${it.name}（${it.region}）" }.toTypedArray()) { _,i ->
+                val d=city.destinations[i]
+                clearSelection()
+                globe?.setZoom(24f);focusOnTile(d.x,d.y)
+                notifyStateChanged()
+            }.setNegativeButton("閉じる",null).show()
+    }
+
+    /** Civic tools stay reachable even with the construction tray closed. */
+    fun showCivicMenu() {
+        android.app.AlertDialog.Builder(context).setTitle("市政")
+            .setItems(arrayOf("都市情報","予算","地形編集","記念建築","市政手帳")) { _,i ->
+                when(i) {
+                    0 -> {
+                        if(!tutorial.allowsInfo()) { showToast("現在の目標に沿って進めましょう");return@setItems }
+                        screen=Screen.INFO;tutorial.onInfoOpened(city);showTutorialMessageIfNeeded()
+                    }
+                    1 -> {
+                        if(!tutorial.allowsBudget()) { showToast("現在の目標に沿って進めましょう");return@setItems }
+                        city.refreshBudgetForecast();screen=Screen.BUDGET;tutorial.onBudgetOpened(city);showTutorialMessageIfNeeded()
+                    }
+                    2 -> openTerrainEditor()
+                    3 -> {
+                        if(tutorial.active) { showToast("チュートリアル終了後に利用できます");return@setItems }
+                        screen=Screen.MONUMENTS
+                    }
+                    4 -> if(tutorial.active) showTutorialDialog() else openCampaign()
+                }
+                lastFrameTime=0;notifyStateChanged();invalidate()
+            }.setNegativeButton("閉じる",null).show()
+    }
+
+    private fun pauseClock() {
         speedIndex = 0
+        lastFrameTime = 0L
+    }
+
+    fun pause() {
+        pauseClock()
         audio.pause()
+        invalidate()
     }
 
     /** 画面に戻ってきた。曲を鳴らし直す。 */
@@ -1954,14 +2381,14 @@ class GameView(
         super.onAttachedToWindow()
         audio.resume()
         updateBgm()
-        // 建物の絵は別の糸で作る。できあがったら描き直す。
-        IsoBuildings.onSpriteReady = { postInvalidate() }
     }
 
     override fun onDetachedFromWindow() {
+        pauseRenderer()
+        if(terrainEditorDelegate.isInitialized()) terrainEditor.dispose()
         super.onDetachedFromWindow()
+        realistic.releaseCaches()
         audio.pause()
-        IsoBuildings.onSpriteReady = null
     }
 
     /** 画面から離れる。音を止めて、機械の資源を返す。 */

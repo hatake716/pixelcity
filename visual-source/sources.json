@@ -1,0 +1,429 @@
+[
+  {
+    "id": "TOKYO_TOWER",
+    "type": "photographic model reference",
+    "title": "Tokyo Tower close up 1.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Tokyo_Tower_close_up_1.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Tokyo_Tower_close_up_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Simiprof",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/TOKYO_TOWER.jpg",
+    "sha256": "79be868346dfee3122fc6d8fa3f12eaabe62db274c733161d98ab7bf2760b1ce",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "ARC_DE_TRIOMPHE",
+    "type": "photographic model reference",
+    "title": "Arc de Triomphe (27710590284).jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Arc_de_Triomphe_(27710590284).jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/0/07/Arc_de_Triomphe_%2827710590284%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Gary Todd from Xinzheng, China",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/ARC_DE_TRIOMPHE.jpg",
+    "sha256": "b86debf8513e97ed57dab34d578af95e795eef3a08ae205bfb3c67bbd2261a86",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "COLOSSEUM",
+    "type": "photographic model reference",
+    "title": "Colosseum romanum.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Colosseum_romanum.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Colosseum_romanum.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "maiterozas",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/COLOSSEUM.jpg",
+    "sha256": "1073c3a5e3cf00d3273d286e6bd8cc1219a415b819261ea399af45bfcc57a6d4",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "STATUE_OF_LIBERTY",
+    "type": "photographic model reference",
+    "title": "Front view of Statue of Liberty with pedestal and base 2024.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Front_view_of_Statue_of_Liberty_with_pedestal_and_base_2024.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Front_view_of_Statue_of_Liberty_with_pedestal_and_base_2024.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "AskALotl",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/STATUE_OF_LIBERTY.jpg",
+    "sha256": "0f4442040afab269789c65ac4bc8f85bcfd24b20f38023dd9a1a38064096666c",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "BIG_BEN",
+    "type": "photographic model reference",
+    "title": "Big Ben in 2025.01.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_Ben_in_2025.01.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Big_Ben_in_2025.01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "CAPTAIN RAJU",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/BIG_BEN.jpg",
+    "sha256": "902ee656f5196d4a3a22f7de9e51f5711232fcac8f7c6bc9a20cbb498c33e622",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "LEANING_TOWER",
+    "type": "photographic model reference",
+    "title": "Leaning Tower of Pisa, 2023.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Leaning_Tower_of_Pisa,_2023.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Leaning_Tower_of_Pisa%2C_2023.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Julian Lupyan",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/LEANING_TOWER.jpg",
+    "sha256": "1aea619b55767ef114c7f60625c94048c3c3b1ecbadccc76dda118cfac1a7f04",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "TAJ_MAHAL",
+    "type": "photographic model reference",
+    "title": "Taj Mahal 2018.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Taj_Mahal_2018.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/2/21/Taj_Mahal_2018.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Almbauer",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/TAJ_MAHAL.jpg",
+    "sha256": "be175c4d2bcf7acccab0c152a0d9c54fe2d910555d3cae99c3e706c412042d73",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "PYRAMID",
+    "type": "photographic model reference",
+    "title": "Great Pyramid (Pyramid of Cheops Khufu), Giza, GG, EGY (40936205113).jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Great_Pyramid_(Pyramid_of_Cheops_Khufu),_Giza,_GG,_EGY_(40936205113).jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Great_Pyramid_%28Pyramid_of_Cheops_Khufu%29%2C_Giza%2C_GG%2C_EGY_%2840936205113%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "author": "Warren LeMay from Chicago, IL, United States",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "file": "visual-source/references/PYRAMID.jpg",
+    "sha256": "a1263b87ccc778bd2737c85fc638ea5fc91819dad76a40d5a375fab70e21ecf7",
+    "modification": "Unmodified reference photo. Proportions, colour and architectural features interpreted in authored 3D geometry; not photogrammetry."
+  },
+  {
+    "id": "aerial_grass_rock",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/aerial_grass_rock",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/aerial_grass_rock_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_grass_rock/aerial_grass_rock_diff_1k.jpg",
+        "sha256": "57b8041bfe0d0f01430e4dbaad45e7ddddf0a9fc97317f90dbc51f7b0d9e1b5d"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/aerial_grass_rock_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_grass_rock/aerial_grass_rock_rough_1k.jpg",
+        "sha256": "b9f3f76aba74007f708333c0dbe73c52eb83ea0c4187a13e2e994f888a25114a"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/aerial_grass_rock_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_grass_rock/aerial_grass_rock_nor_gl_1k.jpg",
+        "sha256": "1aa3e23bff453f152e089b9f83aa36b4901651e019f7e2ca01d5331a9bbbda78"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "aerial_asphalt_01",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/aerial_asphalt_01",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/aerial_asphalt_01_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_asphalt_01/aerial_asphalt_01_diff_1k.jpg",
+        "sha256": "28bfd71288b364f825e0feb750e487410422d80bf3c31d32da01cae3bf085b58"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/aerial_asphalt_01_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_asphalt_01/aerial_asphalt_01_rough_1k.jpg",
+        "sha256": "19ca745417e36a1cd1114411801933b3144a351d1409d0d9caa1046b9a20c0ec"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/aerial_asphalt_01_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_asphalt_01/aerial_asphalt_01_nor_gl_1k.jpg",
+        "sha256": "7a58cb4460f75b66359b8e19bc92585554a79c2b0009e2b9e21eccac0a58d3f6"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "red_bricks_04",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/red_bricks_04",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/red_bricks_04_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_bricks_04/red_bricks_04_diff_1k.jpg",
+        "sha256": "c3a51662fd3e859242d949843e88e8ca7ae50dd3bb57c4cad5b544d0a16111cd"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/red_bricks_04_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_bricks_04/red_bricks_04_rough_1k.jpg",
+        "sha256": "793b7206535ccdfe285d4f90366019cb13c56bae9cdcefab6bb49065155875dd"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/red_bricks_04_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_bricks_04/red_bricks_04_nor_gl_1k.jpg",
+        "sha256": "cb9d3da93ef192ddbe5f649b15bd940fe2631bb8715002ff31a0f19294b354da"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "grey_roof_tiles",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/grey_roof_tiles",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/grey_roof_tiles_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_diff_1k.jpg",
+        "sha256": "f61107b70cf56074c9db09384a332620c94c678ed2baabfae78029a8242e49a3"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/grey_roof_tiles_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_rough_1k.jpg",
+        "sha256": "edc3185b560a71b2b5f5f568710b8674da41becb39ca374f5e8efeca15b5794f"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/grey_roof_tiles_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_roof_tiles/grey_roof_tiles_nor_gl_1k.jpg",
+        "sha256": "99546fdc2978d0950a2c61fe94dbd4230bb7825944bb4e4e7ad586839fdc721d"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "white_plaster_rough_02",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/white_plaster_rough_02",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/white_plaster_rough_02_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_plaster_rough_02/white_plaster_rough_02_diff_1k.jpg",
+        "sha256": "1449dbca00e0c5c9588306313d910bbc8bfe201b4d8798dd4856fba822e47e09"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/white_plaster_rough_02_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_plaster_rough_02/white_plaster_rough_02_rough_1k.jpg",
+        "sha256": "2868a7b0b19bac754d32c40f29e8bc5c4e048fab0ef94af4dda3f81d5bb923c7"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/white_plaster_rough_02_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_plaster_rough_02/white_plaster_rough_02_nor_gl_1k.jpg",
+        "sha256": "95cb88137a13bc33a52c5215862ab2903a686dec7579d86a42aa1d765287349a"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "sandstone_blocks_04",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/sandstone_blocks_04",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/sandstone_blocks_04_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandstone_blocks_04/sandstone_blocks_04_diff_1k.jpg",
+        "sha256": "a1399a26a60b5024a832c8dd0f1a27bc7ad6c4d06fd60143d803ff6d93b778ed"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/sandstone_blocks_04_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandstone_blocks_04/sandstone_blocks_04_rough_1k.jpg",
+        "sha256": "cc6f9dcf548074bb96680188f2714f66f43b94963c1d16292b2d477a92427eb2"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/sandstone_blocks_04_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandstone_blocks_04/sandstone_blocks_04_nor_gl_1k.jpg",
+        "sha256": "4acdd23064d6fc7e31a5512d96adb21880f58899d100a01fd9fd62af61efe6d0"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "coast_sand_02",
+    "type": "PBR material",
+    "source": "https://polyhaven.com/a/coast_sand_02",
+    "author": [
+      "Rob Tuytel"
+    ],
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "files": [
+      {
+        "channel": "Diffuse",
+        "file": "visual-source/textures/coast_sand_02_Diffuse.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/coast_sand_02/coast_sand_02_diff_1k.jpg",
+        "sha256": "6854bc49936d7b2971b579095c21342ad2c8fd1495aa3382b840335202964f53"
+      },
+      {
+        "channel": "Rough",
+        "file": "visual-source/textures/coast_sand_02_Rough.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/coast_sand_02/coast_sand_02_rough_1k.jpg",
+        "sha256": "f2b99b9f81c7bd467107f61551ab6517cfa090efcdb10cc19bc2fc4ea347fd7f"
+      },
+      {
+        "channel": "nor_gl",
+        "file": "visual-source/textures/coast_sand_02_nor_gl.jpg",
+        "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/coast_sand_02/coast_sand_02_nor_gl_1k.jpg",
+        "sha256": "285a9b5c7f39215a1446c51a69d81228a01277ebafc48b9aeebd115066b4f796"
+      }
+    ],
+    "modification": "Used as PBR surface maps in Blender; UV scale and base colour adjusted for miniature city architecture."
+  },
+  {
+    "id": "tree_small_02",
+    "type": "CC0 botanical 3D model",
+    "source": "https://polyhaven.com/a/tree_small_02",
+    "author": {
+      "Rico Cilliers": "All"
+    },
+    "license": "CC0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Scaled and rotated; baked with city models into orthographic images.",
+    "files": [
+      {
+        "file": "visual-source/vegetation/tree_small_02/tree_small_02.gltf",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/tree_small_02/tree_small_02_1k.gltf",
+        "sha256": "3062a709614c05b80fdc1e56583998bc3cb1027b0d52f956c8ecfb882ff8ca6d"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_branch_nor_gl_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_branch_nor_gl_1k.jpg",
+        "sha256": "a2efae9e7fede259601188cd5cb7e561fc502bd87e04d862a9532b2d8e647a62"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_branch_diff_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_branch_diff_1k.jpg",
+        "sha256": "a71b768e330c0c6cca097e30314f6b4e842ef724a1370f6aab14b4434eec64cb"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_branch_arm_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_branch_arm_1k.jpg",
+        "sha256": "8968b46d76c67da09ebbf4eed04b8123c9e0ddf5b55d123968b35b32aa76d27a"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_leaves_nor_gl_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_leaves_nor_gl_1k.jpg",
+        "sha256": "8c72e04fb23e16ae1df79c01385a638473d1dd4dede3d51e83d70153c129f09b"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_leaves_diff_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_leaves_diff_1k.jpg",
+        "sha256": "261e7d7a5ac7d2e16ea8823ff8510be8f3f615999724232994039ad2885e5c36"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_leaves_arm_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_leaves_arm_1k.jpg",
+        "sha256": "71f81374daf5a8f3e6eb2c694264a1769fdb0bea508178e4105618eecea83c3e"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_nor_gl_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_nor_gl_1k.jpg",
+        "sha256": "9c83be074c950ea1b94c732c0c0291b53b9ba357f932d378bafe3ca3b4418871"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_diff_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_diff_1k.jpg",
+        "sha256": "4e0093f407b3a1120a36de49a48ebe5a465a9a9b77e361c7a3e66866e115e404"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/textures/tree_small_02_arm_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/tree_small_02/tree_small_02_arm_1k.jpg",
+        "sha256": "891c5a1bb124292984b01558e9f2b0302d27d2fa3ccf9dfc6c34f9ea4ca24e6c"
+      },
+      {
+        "file": "visual-source/vegetation/tree_small_02/tree_small_02.bin",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/tree_small_02/tree_small_02.bin",
+        "sha256": "8da6c3c389ad8748286d1b7488cd827f75ebdad9d8f59ef7dfb0916df5edc634"
+      }
+    ]
+  },
+  {
+    "id": "shrub_02",
+    "type": "CC0 botanical 3D model",
+    "source": "https://polyhaven.com/a/shrub_02",
+    "author": {
+      "Rico Cilliers": "All"
+    },
+    "license": "CC0",
+    "license_url": "https://polyhaven.com/license",
+    "modification": "Scaled and rotated; baked with city models into orthographic images.",
+    "files": [
+      {
+        "file": "visual-source/vegetation/shrub_02/shrub_02.gltf",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_02/shrub_02_1k.gltf",
+        "sha256": "99de0a70fe88ad414615cc8d8e020617c8512e2abfe08b911b153a6fcc40d93e"
+      },
+      {
+        "file": "visual-source/vegetation/shrub_02/textures/shrub_02_arm_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_arm_1k.jpg",
+        "sha256": "7186bf604d5c02f873aef6de2346cc06b6fa48f47d054edbef36d2c3772c0890"
+      },
+      {
+        "file": "visual-source/vegetation/shrub_02/textures/shrub_02_nor_gl_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_nor_gl_1k.jpg",
+        "sha256": "54c24e433365d5410223b7ebd2b33042b80831f80976e10768114db5ef6911d7"
+      },
+      {
+        "file": "visual-source/vegetation/shrub_02/shrub_02.bin",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/shrub_02/shrub_02.bin",
+        "sha256": "5c1b79da1cfdbac90599542ccd1f75ba433a3a4d356b1ea03655adb39b0e2c96"
+      },
+      {
+        "file": "visual-source/vegetation/shrub_02/textures/shrub_02_diff_1k.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_diff_1k.jpg",
+        "sha256": "9956eff294034d70516d867e9668428a23d782feb3d4c34061dce5e44bacd5a8"
+      }
+    ]
+  }
+]

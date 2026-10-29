@@ -1,368 +1,199 @@
 package io.github.hatake716.pixelcity
 
-import io.github.hatake716.pixelcity.game.City
-import io.github.hatake716.pixelcity.game.Terrain
-import io.github.hatake716.pixelcity.game.TileKind
-import io.github.hatake716.pixelcity.game.Tutorial
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import io.github.hatake716.pixelcity.data.SaveGame
+import io.github.hatake716.pixelcity.game.*
+import org.junit.Assert.*
 import org.junit.Test
 
 class TutorialTest {
-
-    @Test
-    fun `tutorial starts at the first step`() {
-        val t = Tutorial()
-        t.start()
-        assertTrue(t.active)
-        assertEquals(0, t.stepIndex)
-        assertNotNull(t.step)
+    private fun city(size: Int = 32) = City(size, size).apply {
+        tiles.forEach { it.terrain = Terrain.LAND }
+        disasterLevel = City.DisasterLevel.NONE
     }
-
-    @Test
-    fun `skipping leaves the tutorial inactive`() {
-        val t = Tutorial()
-        t.start()
-        t.skip()
-        assertFalse(t.active)
-        assertFalse(t.finished)
-        // スキップ後は何でも建てられる
-        assertTrue(t.allowsBuild(TileKind.ZONE_R))
-        assertTrue(t.allowsSpeedChange())
+    private fun put(c: City, t: Tutorial, x: Int, y: Int, kind: TileKind) {
+        assertNull("proposal cannot be built", TutorialDistrict.placementBlocker(c, x, y, kind, emptySet()))
+        assertTrue("build failed: $kind ($x,$y): ${c.buildBlocker(x,y,kind)}", c.build(x, y, kind))
+        c.recomputeDerivedState(); t.onCityChanged(c)
     }
-
-    /** 関係のない操作を弾くこと。初心者が手順から外れて詰まらないようにするため。 */
-    @Test
-    fun `only the step's own action is allowed`() {
-        val t = Tutorial()
-        t.start()
-        t.onContinuePressed()  // step0 -> 1
-        t.onContinuePressed()  // step1 -> 2 (道路のステップ)
-        assertTrue(t.allowsBuild(TileKind.ROAD))
-        assertFalse(t.allowsBuild(TileKind.ZONE_R))
-        assertFalse(t.allowsSpeedChange())
-        assertFalse(t.allowsBudget())
-    }
-
-    /** その手順が求める設置数。数を変えてもテストが追随するように定義から読む。 */
-    private fun requiredCount(kind: TileKind): Int =
-        Tutorial.STEPS.mapNotNull { it.goal as? Tutorial.Goal.Place }
-            .first { it.kind == kind }.count
-
-    @Test
-    fun `building the required count advances the step`() {
-        val t = Tutorial()
-        t.start()
-        t.onContinuePressed()
-        t.onContinuePressed()
+    private fun finishStep(c: City, t: Tutorial, priority: Tutorial.Priority) {
         val before = t.stepIndex
-        repeat(requiredCount(TileKind.ROAD)) { t.onBuilt(TileKind.ROAD) }
-        assertEquals(before + 1, t.stepIndex)
-    }
-
-    @Test
-    fun `irrelevant construction does not count toward progress`() {
-        val t = Tutorial()
-        t.start()
-        t.onContinuePressed()
-        t.onContinuePressed()
-        val step = t.stepIndex
-        // いまの手順が求めている数を、定義から読む
-        val want = (t.step?.goal as? Tutorial.Goal.Place)?.count
-        repeat(5) { t.onBuilt(TileKind.ZONE_R) }
-        assertEquals("an unrelated build advanced the step", step, t.stepIndex)
-        assertEquals("an unrelated build counted as progress", want, t.remaining())
-    }
-
-    @Test
-    fun `advancing months satisfies the time step`() {
-        val t = Tutorial()
-        t.start()
-        runThrough(t, upToGoalOfType = "advance")
-        assertTrue(t.allowsSpeedChange())
-        val step = t.stepIndex
-        // 進める月数は手順しだいなので、定義から読む
-        val months = (t.step?.goal as? Tutorial.Goal.Advance)?.months ?: 0
-        assertTrue("this step does not advance time", months > 0)
-        repeat(months) { t.onMonthPassed() }
-        assertEquals(step + 1, t.stepIndex)
-    }
-
-    @Test
-    fun `completing every step finishes the tutorial`() {
-        val t = Tutorial()
-        t.start()
-        completeAll(t)
-        assertTrue(t.finished)
-        assertFalse(t.active)
-        // 卒業後は自由に操作できる
-        assertTrue(t.allowsBuild(TileKind.HOSPITAL))
-        assertTrue(t.allowsBudget())
-    }
-
-    /** 求められた数だけ置いたら、その先は数えないこと（remaining が 0 で止まる）。 */
-    @Test
-    fun `remaining stops at zero and the step advances exactly once`() {
-        val t = Tutorial()
-        t.start()
-        t.onContinuePressed()
-        t.onContinuePressed()
-        val step = t.stepIndex
-        repeat(requiredCount(TileKind.ROAD)) { t.onBuilt(TileKind.ROAD) }
-        assertEquals(step + 1, t.stepIndex)
-        // 次のステップの目標に、前のステップの分が持ち越されていない
-        val nextGoal = t.step?.goal as? Tutorial.Goal.Place
-        assertEquals("progress carried over", nextGoal?.count, t.remaining())
-    }
-
-    @Test
-    fun `state survives save and restore`() {
-        val t = Tutorial()
-        t.start()
-        t.onContinuePressed()
-        t.onContinuePressed()
-        t.onBuilt(TileKind.ROAD)
-        t.onBuilt(TileKind.ROAD)
-        val saved = t.saveState()
-
-        val restored = Tutorial()
-        restored.restore(saved)
-        assertTrue(restored.active)
-        assertEquals(t.stepIndex, restored.stepIndex)
-        assertEquals(t.remaining(), restored.remaining())
-    }
-
-    /**
-     * チュートリアルが要求する設置数が、自分で敷かせた道路の周りに収まること。
-     *
-     * 道路6マスに対して区分16マスを求めていた時期があり、指示どおりに進めると
-     * 置く場所が足りなくなって、そこから先へ進めなくなっていた。
-     */
-    @Test
-    fun `the tutorial asks for no more tiles than its own road can host`() {
-        var roads = 0
-        var needed = 0
-        for (step in Tutorial.STEPS) {
-            val goal = step.goal
-            if (goal !is Tutorial.Goal.Place) continue
-            if (goal.kind == TileKind.ROAD) roads += goal.count else needed += goal.count
-        }
-        // 一直線の道路に接するマス: 上下に roads ずつ、両端に1つずつ
-        val hostable = roads * 2 + 2
-        assertTrue(
-            "needs $needed tiles but a $roads-tile road hosts only $hostable",
-            needed <= hostable,
-        )
-    }
-
-    /**
-     * 仕様の要: チュートリアルを完走したら、
-     * **財政が健全な中規模都市**が残ること。
-     *
-     * 手順どおりに建てた街を実際にシミュレートして確かめる。
-     * ここが崩れると、この手引きの意味がなくなる。
-     */
-    @Test
-    fun `a city built by following the tutorial is a healthy medium sized city`() {
-        val c = City().apply {
-            for (t in tiles) t.terrain = Terrain.LAND
-            clearStartingArea()
-        }
-        c.funds = Tutorial.GRANT
-        c.disasterLevel = City.DisasterLevel.NONE
-        val t = Tutorial().apply { start() }
-
-        val cx = 64
-        val cy = 64
-
-        /** 本編と同じく、チュートリアル中は資金が尽きないよう補填する。 */
-        fun grant() { if (c.funds < 2_000) c.funds += Tutorial.GRANT }
-        fun put(x: Int, y: Int, k: TileKind) {
-            grant()
-            if (c.build(x, y, k)) t.onBuilt(k)
-        }
-        fun months(n: Int) = repeat(n) { c.step(); t.onMonthPassed(); grant() }
-
-        /** 道路に接した空きマスへ、散らして置く。 */
-        fun spread(k: TileKind, n: Int) {
-            val spots = mutableListOf<Pair<Int, Int>>()
-            for (y in cy - 13..cy + 13) for (x in cx - 13..cx + 13) {
-                val tile = c.tileOrNull(x, y) ?: continue
-                if (tile.kind == TileKind.EMPTY && c.touchesRoad(x, y)) spots.add(x to y)
-            }
-            var done = 0
-            val stride = (spots.size / n.coerceAtLeast(1)).coerceAtLeast(1)
-            for (pass in 0..1) {
-                var i = 0
-                while (done < n && i < spots.size) {
-                    val (x, y) = spots[i]
-                    if (c.tileAt(x, y).kind == TileKind.EMPTY) { put(x, y, k); done++ }
-                    i += if (pass == 0) stride else 1
+        val goal = t.step!!.goal
+        if (goal is Tutorial.Goal.ChoosePriority) { t.choose(priority, c); return }
+        if (!t.briefingRead) t.acknowledge(c)
+        if (!t.active || before != t.stepIndex) return
+        when (goal) {
+            is Tutorial.Goal.Place, Tutorial.Goal.KeepPromise -> {
+                val kind = t.neededTool!!
+                val spots = TutorialDistrict.suggestions(c, t)
+                for (i in spots) {
+                    if (t.stepIndex != before) break
+                    put(c, t, i % c.width, i / c.width, kind)
                 }
             }
-        }
-
-        t.onContinuePressed(); t.onContinuePressed()
-
-        // 1章: 碁盤の目の道路、電気、水、区分
-        for (y in cy - 11..cy + 11 step 3) for (x in cx - 11..cx + 11) put(x, y, TileKind.ROAD)
-        for (x in cx - 11..cx + 11 step 4) for (y in cy - 11..cy + 11) put(x, y, TileKind.ROAD)
-        spread(TileKind.POWER_COAL, 3)
-        spread(TileKind.WATER_TOWER, 7)
-        spread(TileKind.ZONE_R, 70)
-        spread(TileKind.ZONE_C, 45)
-        spread(TileKind.ZONE_I, 20)
-        months(24)
-
-        // 2章: ゴミ、きれいな電気、交通
-        spread(TileKind.LANDFILL, 6)
-        if (c.population >= 1_000) spread(TileKind.POWER_WIND, 2)
-        else repeat(2) { t.onBuilt(TileKind.POWER_WIND) }
-        if (c.population >= 500) spread(TileKind.AVENUE, 6)
-        else repeat(6) { t.onBuilt(TileKind.AVENUE) }
-        if (c.population >= 800) spread(TileKind.BUS_STOP, 2)
-        else repeat(2) { t.onBuilt(TileKind.BUS_STOP) }
-        months(24)
-
-        // 3章: くらし
-        spread(TileKind.PARK, 8)
-        spread(TileKind.FARM, 8)
-        spread(TileKind.POLICE, 2)
-        spread(TileKind.FIRE, 2)
-        spread(TileKind.HOSPITAL, 2)
-        spread(TileKind.SCHOOL, 2)
-        months(48)
-
-        // 4章: しちょうの しごと
-        c.taxRate = 12
-        t.onBudgetOpened()
-        t.onInfoOpened()
-        t.onOrdinanceEnabled()
-        months(60)
-        t.onContinuePressed()
-
-        assertTrue("the tutorial did not finish", t.finished)
-
-        // --- 中規模都市であること ---
-        assertTrue("population is only ${c.population}", c.population >= 1_000)
-
-        // --- 財政が健全であること ---
-        assertTrue("the city is broke: ${c.funds}", c.funds > 0)
-        assertFalse("the city went bankrupt", c.gameOver)
-
-        // --- インフラが足りていること ---
-        assertTrue("not enough power: ${c.powerSupply}/${c.powerDemand}", c.powerSupply >= c.powerDemand)
-        assertTrue("not enough water: ${c.waterSupply}/${c.waterDemand}", c.waterSupply >= c.waterDemand)
-
-        // --- そのあと自走できること ---
-        repeat(36) { c.step() }
-        assertTrue("the city collapsed after the tutorial", c.population >= 1_000)
-        assertTrue(
-            "the city runs a deficit: income=${c.lastIncome} upkeep=${c.lastUpkeep}",
-            c.lastIncome > c.lastUpkeep,
-        )
-        assertTrue("funds ran dry", c.funds > 0)
-    }
-
-    /** 手引きが、ゲームの要素をひととおり扱っていること。 */
-    @Test
-    fun `the tutorial covers every part of the game`() {
-        val placed = Tutorial.STEPS.mapNotNull { (it.goal as? Tutorial.Goal.Place)?.kind }.toSet()
-        // 区分
-        assertTrue(TileKind.ZONE_R in placed)
-        assertTrue(TileKind.ZONE_C in placed)
-        assertTrue(TileKind.ZONE_I in placed)
-        // 交通
-        assertTrue(TileKind.ROAD in placed)
-        assertTrue(TileKind.AVENUE in placed)
-        assertTrue(TileKind.BUS_STOP in placed)
-        // 電力（火力と、公害のないもの）
-        assertTrue(TileKind.POWER_COAL in placed)
-        assertTrue(TileKind.POWER_WIND in placed)
-        // 水とゴミ
-        assertTrue(TileKind.WATER_TOWER in placed)
-        assertTrue(TileKind.LANDFILL in placed)
-        // サービス
-        assertTrue(TileKind.POLICE in placed)
-        assertTrue(TileKind.FIRE in placed)
-        assertTrue(TileKind.HOSPITAL in placed)
-        assertTrue(TileKind.SCHOOL in placed)
-        // みどり
-        assertTrue(TileKind.PARK in placed)
-        assertTrue(TileKind.FARM in placed)
-
-        // 画面まわり
-        val goals = Tutorial.STEPS.map { it.goal }
-        assertTrue("the budget screen is never shown", goals.any { it is Tutorial.Goal.OpenBudget })
-        assertTrue("the info screen is never shown", goals.any { it is Tutorial.Goal.OpenInfo })
-        assertTrue("ordinances are never tried", goals.any { it is Tutorial.Goal.EnableOrdinance })
-    }
-
-    /**
-     * 手順の文に書いた数と、実際の目標の数が食い違わないこと。
-     *
-     * 文だけ直して目標を直し忘れると、「10マス」と書いてあるのに
-     * 14マス求められる、という食い違いが起きる。
-     */
-    @Test
-    fun `the numbers in the text match the goals`() {
-        val digits = Regex("(\\d+)\\s*(マス|つ|こ|かげつ)")
-        for (step in Tutorial.STEPS) {
-            val stated = digits.findAll(step.body).map { it.groupValues[1].toInt() }.toList()
-            if (stated.isEmpty()) continue
-            val want = when (val g = step.goal) {
-                is Tutorial.Goal.Place -> g.count
-                is Tutorial.Goal.Advance -> g.months
-                else -> continue
+            is Tutorial.Goal.Population, Tutorial.Goal.GrowingStreet, is Tutorial.Goal.StableBudget -> {
+                repeat(24) { if (t.stepIndex == before) { c.step(); t.onMonthPassed(c) } }
             }
-            assertTrue(
-                "「${step.title}」says ${stated} but asks for $want",
-                want in stated,
-            )
+            Tutorial.Goal.InspectHome -> t.onHomeInspected(c, c.tiles.indexOfFirst { it.kind == TileKind.ZONE_R && it.stage > 0 })
+            Tutorial.Goal.OpenInfo -> t.onInfoOpened(c)
+            Tutorial.Goal.OpenBudget -> {
+                c.refreshBudgetForecast()
+                // Exercise a modest tax decision with room for changes in monthly demand.
+                c.taxRate = if (priority == Tutorial.Priority.CLINIC) 9 else 8
+                c.refreshBudgetForecast()
+                t.onBudgetOpened(c)
+            }
+            else -> error("Unexpected goal $goal")
+        }
+        assertNotEquals("Stuck at ${t.step?.title}: pop=${c.population} jobs=${c.jobs} funds=${c.funds} income=${c.lastIncome} upkeep=${c.lastUpkeep} power=${c.powerSupply}/${c.powerDemand} advice=${t.advice(c)}", before, t.stepIndex)
+    }
+    private fun reach(c: City, t: Tutorial, id: Int, priority: Tutorial.Priority = Tutorial.Priority.PARKS) {
+        while (t.active && t.step!!.id != id) finishStep(c, t, priority)
+        assertEquals(id, t.step?.id)
+    }
+
+    @Test fun bothPromisesReachARealSelfSupportingTownWithoutGrantsOrUnlockBypasses() {
+        for (size in listOf(32, 128)) for (choice in Tutorial.Priority.entries) {
+            val c = city(size); val t = Tutorial().apply { start() }
+            while (t.active) finishStep(c, t, choice)
+            assertTrue(t.finished)
+            assertEquals(choice, t.priority)
+            assertTrue("too long: ${c.month} months", c.month <= 18)
+            assertTrue(c.funds > 0 && c.population >= 120 && c.lastIncome > c.lastUpkeep)
+            assertTrue(c.tiles.count { it.kind == choice.kind } >= choice.count)
+            println("STORY $choice size=$size: month=${c.month}, population=${c.population}, funds=${c.funds}, balance=${c.lastIncome-c.lastUpkeep}")
+            repeat(24) { c.step() }
+            assertFalse(c.gameOver)
+            assertTrue("town collapsed: ${c.population}, ${c.funds}", c.population >= 120 && c.funds > 0)
+            assertTrue("town needs subsidy", c.lastIncome > c.lastUpkeep)
+        }
+    }
+    @Test fun bothPromisesCanCompleteOnNaturalEarthWithoutClearingARectangle() {
+        for(choice in Tutorial.Priority.entries) {
+            val save=SaveGame.expandToPlanet(SaveGame.Loaded(City(),Tutorial().apply { start() },1L))
+            val c=save.city;val t=save.tutorial;c.disasterLevel=City.DisasterLevel.NONE
+            while(t.active) finishStep(c,t,choice)
+            assertTrue(t.finished)
+            assertTrue(c.population>=120 && c.funds>0 && c.lastIncome>c.lastUpkeep)
+            assertEquals(PlanetTerrain.SEA,c.tileAt(256,256).biome)
         }
     }
 
-    /** 4つの章が、順に並んでいること。 */
-    @Test
-    fun `the steps are grouped into chapters in order`() {
-        val chapters = Tutorial.STEPS.map { it.chapter }
-        assertEquals("every chapter should be used", Tutorial.Chapter.entries.toSet(), chapters.toSet())
-        // 章が行ったり来たりしない
-        var last = -1
-        for (ch in chapters) {
-            assertTrue("chapters jump around: $ch after index $last", ch.ordinal >= last)
-            last = ch.ordinal
+    @Test fun calendarTimeAloneCannotWelcomeResidents() {
+        val c = city(); val t = Tutorial().apply { start() }
+        reach(c, t, 4)
+        t.acknowledge(c)
+        val plant = c.tiles.indexOfFirst { it.kind == TileKind.POWER_COAL }
+        c.bulldoze(plant%c.width,plant/c.width); c.recomputeDerivedState()
+        repeat(12) { c.step(); t.onMonthPassed(c) }
+        assertEquals(4,t.step?.id)
+        assertEquals(0,c.population)
+        assertTrue(t.advice(c).contains("電気") || t.advice(c).contains("道"))
+        put(c,t,plant%c.width,plant/c.width,TileKind.POWER_COAL)
+        repeat(6) { if (t.step?.id == 4) { c.step();t.onMonthPassed(c) } }
+        assertEquals(5,t.step?.id)
+    }
+    @Test fun briefingRequiresAnExplicitReplyAndDoesNotConsumeTimeOrFunds() {
+        val c=city();val t=Tutorial().apply { start() }
+        assertFalse(t.allowsBuild(TileKind.ROAD));assertFalse(t.allowsSpeedChange())
+        repeat(6) { t.onMonthPassed(c);t.onCityChanged(c) }
+        assertEquals(0,t.stepIndex)
+        t.acknowledge(c)
+        assertFalse(t.briefingRead)
+        t.acknowledge(c)
+        assertTrue(t.allowsBuild(TileKind.ROAD))
+        assertFalse(t.allowsBuild(TileKind.HOSPITAL))
+        assertEquals(City.STARTING_FUNDS,c.funds);assertEquals(0,c.month)
+        assertTrue(t.allowsBudget());assertTrue(t.allowsInfo())
+    }
+    @Test fun demolishedOrUnpoweredPlotsDoNotCountAsWorkingHomes() {
+        val c=city();val t=Tutorial().apply { start() };reach(c,t,3);t.acknowledge(c)
+        val spots=TutorialDistrict.suggestions(c,t)
+        put(c,t,spots[0]%c.width,spots[0]/c.width,TileKind.ZONE_R)
+        assertEquals(1,t.progress)
+        c.bulldoze(spots[0]%c.width,spots[0]/c.width);c.recomputeDerivedState();t.onCityChanged(c)
+        assertEquals(0,t.progress)
+        val far=c.index(2,2);assertTrue(c.build(2,2,TileKind.ZONE_R));c.recomputeDerivedState();t.onCityChanged(c)
+        assertFalse(c.tiles[far].powered);assertEquals(0,t.progress)
+    }
+    @Test fun disconnectedRoadFragmentsCannotCompleteTheFirstStreet() {
+        val c=city();val t=Tutorial().apply { start() };t.acknowledge(c);t.acknowledge(c)
+        for(x in 0..22 step 2) assertTrue(c.build(x,2,TileKind.ROAD))
+        c.recomputeDerivedState();t.onCityChanged(c)
+        assertEquals(1,t.progress);assertEquals(1,t.stepIndex)
+        assertNotNull(TutorialDistrict.placementBlocker(c,20,20,TileKind.ROAD,emptySet()))
+        assertNull(TutorialDistrict.placementBlocker(c,1,2,TileKind.ROAD,emptySet()))
+    }
+    @Test fun inspectionNeedsAnOccupiedHomeAndIsSavedAtTheNextBriefing() {
+        val c=city();val t=Tutorial().apply { start() };reach(c,t,6);t.acknowledge(c)
+        t.onHomeInspected(c,c.index(0,0));assertEquals(6,t.stepIndex)
+        val home=c.tiles.indexOfFirst { it.kind==TileKind.ZONE_R && it.stage>0 }
+        t.onHomeInspected(c,home);assertEquals(7,t.stepIndex)
+        val loaded=SaveGame.parse(SaveGame.encode(c,t,23))
+        assertEquals(7,loaded.tutorial.stepIndex);assertFalse(loaded.tutorial.briefingRead)
+    }
+    @Test fun decisionAndConsecutiveProfitSurviveARealSave() {
+        val c=city();val t=Tutorial().apply { start() };reach(c,t,16,Tutorial.Priority.CLINIC);t.acknowledge(c)
+        c.step();t.onMonthPassed(c)
+        assertEquals(1,t.progress)
+        val loaded=SaveGame.parse(SaveGame.encode(c,t,23))
+        assertEquals(Tutorial.Priority.CLINIC,loaded.tutorial.priority)
+        assertEquals(1,loaded.tutorial.progress)
+        loaded.tutorial.onMonthPassed(loaded.city)
+        assertEquals("same month's profit counted twice",1,loaded.tutorial.progress)
+        repeat(2) { loaded.city.step();loaded.tutorial.onMonthPassed(loaded.city) }
+        assertEquals(17,loaded.tutorial.stepIndex)
+    }
+    @Test fun serviceFailureOrDeficitBreaksTheProfitStreak() {
+        val c=city();val t=Tutorial().apply { start() };reach(c,t,16);t.acknowledge(c)
+        c.step();t.onMonthPassed(c);assertEquals(1,t.progress)
+        c.lastIncome=0;c.month++;t.onMonthPassed(c);assertEquals(0,t.progress)
+        c.step();t.onMonthPassed(c);assertEquals(1,t.progress)
+        val water=c.tiles.indexOfFirst { it.kind==TileKind.WATER_TOWER }
+        c.bulldoze(water%c.width,water/c.width);c.recomputeDerivedState();t.onCityChanged(c)
+        assertEquals(0,t.progress)
+        assertTrue(t.advice(c).contains("給水塔"))
+    }
+    @Test fun choiceChangesCostBuildingsAndTheClosingLetter() {
+        val results=Tutorial.Priority.entries.map { choice ->
+            val c=city();val t=Tutorial().apply { start() };reach(c,t,11)
+            val money=c.funds;t.choose(choice,c);finishStep(c,t,choice)
+            assertEquals(BuildCost.cost(choice.kind)*choice.count,money-c.funds)
+            reach(c,t,17,choice)
+            t.briefing(c)
         }
+        assertTrue(results[0].contains("広場"));assertTrue(results[1].contains("診療所"))
+    }
+    @Test fun legacyCourseRestartsOnlyTheJournalAndPreservesAnExistingCity() {
+        val c=city();assertTrue(c.build(4,4,TileKind.ROAD));c.funds=12345;c.month=100
+        val t=Tutorial().apply { restore(intArrayOf(1,23,17,0)) }
+        val loaded=SaveGame.parse(SaveGame.encode(c,t,99))
+        assertTrue(loaded.tutorial.inheritedCity);assertEquals(0,loaded.tutorial.stepIndex)
+        assertEquals(12345,loaded.city.funds);assertEquals(100,loaded.city.month)
+        assertEquals(TileKind.ROAD,loaded.city.tileAt(4,4).kind)
+        assertTrue(loaded.tutorial.briefing(loaded.city).contains("そのまま"))
+    }
+    @Test fun optionalInformationNeverSkipsAnUnreadStoryBeat() {
+        val c=city();val t=Tutorial().apply { start() };reach(c,t,14)
+        t.onInfoOpened(c);assertEquals(14,t.stepIndex)
+        t.acknowledge(c);t.onInfoOpened(c);assertEquals(15,t.stepIndex)
+        t.onBudgetOpened(c);assertEquals(15,t.stepIndex)
+        t.acknowledge(c);t.onBudgetOpened(c);assertEquals(16,t.stepIndex)
+    }
+    @Test fun skipAndOldFinishedSavesStayPlayable() {
+        val t=Tutorial().apply { start();skip() }
+        assertFalse(t.active);assertTrue(t.allowsBuild(TileKind.SCHOOL));assertTrue(t.allowsSpeedChange())
+        t.restore(intArrayOf(0,26,0,1));assertTrue(t.finished);assertFalse(t.active)
+    }
+    @Test fun suggestionsFollowAStreetBuiltAwayFromTheDefaultPlan() {
+        val c=city();val t=Tutorial().apply { start() };t.acknowledge(c);t.acknowledge(c)
+        assertTrue(c.build(2,3,TileKind.ROAD));c.recomputeDerivedState();t.onCityChanged(c)
+        assertTrue(TutorialDistrict.suggestions(c,t).all { c.touchesRoad(it%c.width,it/c.width) })
+        for(x in 3..13) assertTrue(c.build(x,3,TileKind.ROAD))
+        c.recomputeDerivedState();t.onCityChanged(c)
+        assertEquals(2,t.step?.id);t.acknowledge(c)
+        val suggestions=TutorialDistrict.suggestions(c,t)
+        assertTrue(suggestions.isNotEmpty())
+        assertTrue(suggestions.all { c.touchesRoad(it%c.width,it/c.width) })
     }
 
-    // --- helpers ---
-
-    private fun runThrough(t: Tutorial, upToGoalOfType: String) {
-        var guard = 0
-        while (t.active && guard++ < 100) {
-            val g = t.step?.goal ?: break
-            if (upToGoalOfType == "advance" && g is Tutorial.Goal.Advance) return
-            satisfy(t, g)
-        }
-    }
-
-    private fun completeAll(t: Tutorial) {
-        var guard = 0
-        while (t.active && guard++ < 100) {
-            satisfy(t, t.step?.goal ?: break)
-        }
-    }
-
-    private fun satisfy(t: Tutorial, g: Tutorial.Goal) {
-        when (g) {
-            is Tutorial.Goal.Continue -> t.onContinuePressed()
-            is Tutorial.Goal.Place -> repeat(g.count) { t.onBuilt(g.kind) }
-            is Tutorial.Goal.Advance -> repeat(g.months) { t.onMonthPassed() }
-            is Tutorial.Goal.OpenBudget -> t.onBudgetOpened()
-            is Tutorial.Goal.OpenInfo -> t.onInfoOpened()
-            is Tutorial.Goal.EnableOrdinance -> t.onOrdinanceEnabled()
-        }
-    }
 }

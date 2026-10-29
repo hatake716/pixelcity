@@ -1,0 +1,117 @@
+PIXELCITY — フェルトの街
+
+現在の建築・車・歩行者・樹木・地面・海は、独自制作の毛羽・布地・縫い目を用いて描画しています。素材と生成コード: PIXELCITY / MIT。実写テクスチャおよび外部の樹木モデルは現在の描画には使用していません。
+
+0.6.0の球体都市では、既存デザイン322種類を軽量な頂点・法線・頂点色の3Dモデルへ変換し、遠景用の簡略モデルとともに収録しています。織り目は独自シェーダーで描画。形状の来歴・ライセンスは既存の独自モデルから引き継ぎ、写真測量によるデータとは区別します。
+
+以下は記念建築の形状の参考写真、および以前の版の制作資料の出典です。
+
+PIXELCITY — 写真・3D・マテリアルの出典
+
+記念建築は実際の写真を参照して独自制作した3Dモデルです。測量・フォトグラメトリによる復元ではありません。写真に見えない面・細部は推定しています。
+
+Tokyo Tower close up 1.jpg
+作者: Simiprof
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Tokyo_Tower_close_up_1.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Arc de Triomphe (27710590284).jpg
+作者: Gary Todd from Xinzheng, China
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Arc_de_Triomphe_(27710590284).jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Colosseum romanum.jpg
+作者: maiterozas
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Colosseum_romanum.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Front view of Statue of Liberty with pedestal and base 2024.jpg
+作者: AskALotl
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Front_view_of_Statue_of_Liberty_with_pedestal_and_base_2024.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Big Ben in 2025.01.jpg
+作者: CAPTAIN RAJU
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Big_Ben_in_2025.01.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Leaning Tower of Pisa, 2023.jpg
+作者: Julian Lupyan
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Leaning_Tower_of_Pisa,_2023.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Taj Mahal 2018.jpg
+作者: Almbauer
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Taj_Mahal_2018.jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+Great Pyramid (Pyramid of Cheops Khufu), Giza, GG, EGY (40936205113).jpg
+作者: Warren LeMay from Chicago, IL, United States
+ライセンス: CC0
+出典: https://commons.wikimedia.org/wiki/File:Great_Pyramid_(Pyramid_of_Cheops_Khufu),_Giza,_GG,_EGY_(40936205113).jpg
+ライセンス全文: http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+aerial_grass_rock
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/aerial_grass_rock
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+aerial_asphalt_01
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/aerial_asphalt_01
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+red_bricks_04
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/red_bricks_04
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+grey_roof_tiles
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/grey_roof_tiles
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+white_plaster_rough_02
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/white_plaster_rough_02
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+sandstone_blocks_04
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/sandstone_blocks_04
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+coast_sand_02
+作者: Rob Tuytel
+ライセンス: CC0
+出典: https://polyhaven.com/a/coast_sand_02
+ライセンス全文: https://creativecommons.org/publicdomain/zero/1.0/
+
+tree_small_02
+作者: Rico Cilliers
+ライセンス: CC0
+出典: https://polyhaven.com/a/tree_small_02
+ライセンス全文: https://polyhaven.com/license
+
+shrub_02
+作者: Rico Cilliers
+ライセンス: CC0
+出典: https://polyhaven.com/a/shrub_02
+ライセンス全文: https://polyhaven.com/license
+
+独自制作の建物・車・水面: PIXELCITY / MIT
+タイトル書体: Outfit / SIL Open Font License 1.1（改変なし）
+日本語本文: Android標準フォント

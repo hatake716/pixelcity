@@ -126,8 +126,9 @@ class TrafficTest {
         City(40, 40).apply {
             funds = 5_000_000
             for (t in tiles) t.terrain = Terrain.LAND
+            population = 10_000 // 解禁済みの同一条件で道路を比較する
             // 横に1本の道
-            for (x in 4..34) build(x, 20, road)
+            for (x in 4..34) check(build(x, 20, road))
             build(3, 20, TileKind.POWER_COAL)
             // 西側に住宅、東側に職場
             for (x in 6..14) {
@@ -160,6 +161,10 @@ class TrafficTest {
     fun `widening the road reduces congestion`() {
         val narrow = commuterCity(TileKind.ROAD)
         val wide = commuterCity(TileKind.AVENUE)
+        assertTrue(wide.population > 0)
+        assertTrue(wide.tiles.any { it.kind == TileKind.AVENUE && it.traffic > 0 })
+        assertTrue(wide.tiles.filter { it.kind == TileKind.AVENUE }.maxOf { it.volumeCapacityRatio } <
+            narrow.tiles.filter { it.kind == TileKind.ROAD }.maxOf { it.volumeCapacityRatio })
         assertTrue(
             "the avenue was not less congested " +
                 "(${narrow.congestionRate}% vs ${wide.congestionRate}%)",

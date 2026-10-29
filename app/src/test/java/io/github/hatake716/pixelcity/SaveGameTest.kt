@@ -107,10 +107,10 @@ class SaveGameTest {
     fun `tutorial progress survives a round trip`() {
         val tutorial = Tutorial()
         tutorial.start()
-        tutorial.onContinuePressed()
-        tutorial.onContinuePressed()
-        tutorial.onBuilt(TileKind.ROAD)
-        val restored = SaveGame.parse(serialize(sampleCity(), tutorial, 0L)).tutorial
+        val city = sampleCity()
+        tutorial.acknowledge(city)
+        tutorial.acknowledge(city)
+        val restored = SaveGame.parse(serialize(city, tutorial, 0L)).tutorial
         assertTrue(restored.active)
         assertEquals(tutorial.stepIndex, restored.stepIndex)
         assertEquals(tutorial.remaining(), restored.remaining())

@@ -1,0 +1,73 @@
+{
+  "title": "Original wool-felt city finish",
+  "author": "PIXELCITY",
+  "license": "MIT",
+  "source": "tools/realistic/felt_materials.py",
+  "fibreSeed": 716,
+  "modifications": "Original procedural wool fibres, padded edges, embroidery and stuffed trees. No external textures or botanical meshes in this finish.",
+  "landmarkShapeReferences": "visual-source/sources.json",
+  "files": [
+    {
+      "file": "tools/realistic/felt_materials.py",
+      "sha256": "10a421fa9f9458b5794c3cc3646a2bf58034105cb40bb4b6e16d8a961834ffda"
+    },
+    {
+      "file": "tools/realistic/felt_ground.py",
+      "sha256": "5522bf2d6d872b3bba5daa3c54ef0e7eba4bfa009a394daad07f2b2d8eebc5f5"
+    },
+    {
+      "file": "tools/realistic/build_assets.py",
+      "sha256": "535b2a76e9639733695945d3431b12f951e9d92597c1419c7d75bff492fe0a31"
+    },
+    {
+      "file": "tools/realistic/theme_models.py",
+      "sha256": "34ac43eb40ce58ee777817dfb34099194c465b4bc3e4fdd964440121cc777261"
+    },
+    {
+      "file": "visual-source/city-themes.json",
+      "sha256": "5d4776ed3bcfe8f3345daa62593342244c91fabcd96cce5950bb144871e4d224"
+    },
+    {
+      "file": "app/src/main/assets/realistic/city-themes.json",
+      "sha256": "5d4776ed3bcfe8f3345daa62593342244c91fabcd96cce5950bb144871e4d224"
+    },
+    {
+      "file": "artifacts/felt/wool-fibres.png",
+      "sha256": "d70b3f334767089f6c00a08097856f0c169959effa3ef890bc8c393607713787"
+    },
+    {
+      "file": "artifacts/felt/grass.png",
+      "sha256": "4a5c5596e43c15da20c8a881f1cab2e1429d2866fec69f51e8f057b1cf3090ea"
+    },
+    {
+      "file": "artifacts/felt/sand.png",
+      "sha256": "d46ace569de926a78a8ad38b9df22230906750a6e2135bb1a661c5a8636a075d"
+    },
+    {
+      "file": "artifacts/felt/water.png",
+      "sha256": "4dac06643d3292b2da818cc13f59770f0ef58ac108687cafa8b5bd51908cca94"
+    },
+    {
+      "file": "artifacts/felt/asphalt.png",
+      "sha256": "8508e6530f8c597be05fd5cd1a968a312a2ee8ddf28e4c99b291c94ae29c98a8"
+    }
+  ],
+  "packagedGround": [
+    {
+      "file": "app/src/main/assets/realistic/ground_asphalt.webp",
+      "sha256": "abda17dc3b961827116c69ec6041bfa49e6f604fa79ec90f319c87a075e445c2"
+    },
+    {
+      "file": "app/src/main/assets/realistic/ground_grass.webp",
+      "sha256": "404c74b727be03305956f085396bc2a603590bf8836696708f95f4aa8e2569b4"
+    },
+    {
+      "file": "app/src/main/assets/realistic/ground_sand.webp",
+      "sha256": "ead3fa16c2f5aeaa821148c02c460f5239fbce19109f3a7231b84300c9ae98b9"
+    },
+    {
+      "file": "app/src/main/assets/realistic/ground_water.webp",
+      "sha256": "4c5674746d9f4f776d4789d2030df71e7863530021d1ed9be1358c6adfae57ec"
+    }
+  ]
+}

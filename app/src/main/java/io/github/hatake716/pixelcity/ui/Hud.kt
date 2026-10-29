@@ -16,8 +16,8 @@ object Hud {
      * 指で押すものは、48dp（この端末で約126px、論理で約63）を下回らないようにする。
      * それより小さいと、狙って押すのが難しくなる。
      */
-    const val STATUS_HEIGHT = 76
-    const val TOOLBAR_HEIGHT = 164
+    const val STATUS_HEIGHT = 150
+    const val TOOLBAR_HEIGHT = 274
 
     /**
      * ツールの分類。
@@ -26,14 +26,14 @@ object Hud {
      * まず分類を選び、その中の道具を選ぶ二段構えにする。
      */
     enum class Category(val label: String) {
-        ZONE("くかく"),
-        TRANSPORT("こうつう"),
-        POWER("でんりょく"),
-        WATER("すいどう"),
+        ZONE("区画"),
+        TRANSPORT("交通"),
+        POWER("電力"),
+        WATER("水道"),
         GARBAGE("ゴミ"),
-        SERVICE("サービス"),
-        GREEN("みどり"),
-        DEMOLISH("こわす"),
+        SERVICE("公共施設"),
+        GREEN("緑地"),
+        DEMOLISH("撤去"),
     }
 
     data class Tool(val kind: TileKind, val label: String)
@@ -41,50 +41,50 @@ object Hud {
     /** 分類ごとの道具。 */
     val TOOLS_BY_CATEGORY: Map<Category, List<Tool>> = mapOf(
         Category.ZONE to listOf(
-            Tool(TileKind.ZONE_R, "じゅうたく"),
-            Tool(TileKind.ZONE_C, "しょうぎょう"),
-            Tool(TileKind.ZONE_I, "こうぎょう"),
+            Tool(TileKind.ZONE_R, "住宅"),
+            Tool(TileKind.ZONE_C, "商業"),
+            Tool(TileKind.ZONE_I, "工業"),
         ),
         Category.TRANSPORT to listOf(
-            Tool(TileKind.ROAD, "どうろ"),
-            Tool(TileKind.AVENUE, "おおどおり"),
-            Tool(TileKind.HIGHWAY, "こうそく"),
-            Tool(TileKind.RAIL, "せんろ"),
-            Tool(TileKind.SUBWAY, "ちかてつ"),
-            Tool(TileKind.BUS_STOP, "バスてい"),
-            Tool(TileKind.SUBWAY_STATION, "えき"),
-            Tool(TileKind.AIRPORT, "くうこう"),
-            Tool(TileKind.SEAPORT, "みなと"),
+            Tool(TileKind.ROAD, "道路"),
+            Tool(TileKind.AVENUE, "大通り"),
+            Tool(TileKind.HIGHWAY, "高速道路"),
+            Tool(TileKind.RAIL, "鉄道"),
+            Tool(TileKind.SUBWAY, "地下鉄"),
+            Tool(TileKind.BUS_STOP, "バス停"),
+            Tool(TileKind.SUBWAY_STATION, "地下鉄駅"),
+            Tool(TileKind.AIRPORT, "空港"),
+            Tool(TileKind.SEAPORT, "港"),
         ),
         Category.POWER to listOf(
-            Tool(TileKind.POWER_COAL, "かりょく"),
-            Tool(TileKind.POWER_SOLAR, "たいようこう"),
-            Tool(TileKind.POWER_WIND, "ふうりょく"),
-            Tool(TileKind.POWER_LINE, "そうでんせん"),
+            Tool(TileKind.POWER_COAL, "火力"),
+            Tool(TileKind.POWER_SOLAR, "太陽光"),
+            Tool(TileKind.POWER_WIND, "風力"),
+            Tool(TileKind.POWER_LINE, "送電線"),
         ),
         Category.WATER to listOf(
-            Tool(TileKind.WATER_TOWER, "きゅうすいとう"),
-            Tool(TileKind.WATER_PLANT, "じょうすいじょう"),
-            Tool(TileKind.SEWAGE_PLANT, "げすいしょり"),
+            Tool(TileKind.WATER_TOWER, "給水塔"),
+            Tool(TileKind.WATER_PLANT, "浄水場"),
+            Tool(TileKind.SEWAGE_PLANT, "下水処理"),
         ),
         Category.GARBAGE to listOf(
-            Tool(TileKind.LANDFILL, "うめたてち"),
-            Tool(TileKind.INCINERATOR, "しょうきゃくじょう"),
+            Tool(TileKind.LANDFILL, "埋立地"),
+            Tool(TileKind.INCINERATOR, "焼却場"),
             Tool(TileKind.RECYCLING, "リサイクル"),
         ),
         Category.SERVICE to listOf(
-            Tool(TileKind.POLICE, "けいさつ"),
-            Tool(TileKind.FIRE, "しょうぼう"),
-            Tool(TileKind.HOSPITAL, "びょういん"),
-            Tool(TileKind.CLINIC, "しんりょうじょ"),
-            Tool(TileKind.SCHOOL, "がっこう"),
+            Tool(TileKind.POLICE, "警察"),
+            Tool(TileKind.FIRE, "消防"),
+            Tool(TileKind.HOSPITAL, "病院"),
+            Tool(TileKind.CLINIC, "診療所"),
+            Tool(TileKind.SCHOOL, "学校"),
         ),
         Category.GREEN to listOf(
-            Tool(TileKind.PARK, "こうえん"),
-            Tool(TileKind.FARM, "のうち"),
+            Tool(TileKind.PARK, "公園"),
+            Tool(TileKind.FARM, "農地"),
         ),
         Category.DEMOLISH to listOf(
-            Tool(TileKind.EMPTY, "こわす"),
+            Tool(TileKind.EMPTY, "撤去"),
         ),
     )
 
@@ -97,13 +97,13 @@ object Hud {
         TOOLS.firstOrNull { it.kind == kind }?.label ?: ""
 
     /** 分類の並ぶ1マスの大きさ。 */
-    const val CATEGORY_W = 92
-    const val CATEGORY_H = 44
+    const val CATEGORY_W = 104
+    const val CATEGORY_H = 64
 
     fun categoryX(index: Int): Int = TOOL_GAP + index * (CATEGORY_W + TOOL_GAP)
 
     /** ツールの並ぶ1マスの大きさ。 */
-    const val TOOL_SIZE = 58
+    const val TOOL_SIZE = 88
     const val TOOL_GAP = 8
 
     fun toolCount(): Int = TOOLS.size

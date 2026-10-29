@@ -1,176 +1,80 @@
 package io.github.hatake716.pixelcity.audio
 
-/**
- * 効果音。どれも [Waves] の式から作る。
- *
- * 街づくりの音は一日に何百回も鳴るので、
- *  - 短く（0.1〜0.3秒）
- *  - 音量は控えめに
- *  - 高すぎず、耳に刺さらないように
- * している。逆に、めったに鳴らない音（モニュメント完成・破産）は
- * 長めにして、出来事の大きさを伝える。
- */
+/** Tactile city-building sounds and a related family of soft civic notification chimes. */
 enum class Sfx {
-    /** 道を敷く。短く、軽く。 */
-    ROAD,
-    /** 区分を指定する。用途で高さを変え、住宅・商業・工業を聞き分けられるようにする。 */
-    ZONE_R,
-    ZONE_C,
-    ZONE_I,
-    /** 施設を建てる。区分より重い音。 */
-    BUILD,
-    /** 壊す。崩れる感じの雑音。 */
-    BULLDOZE,
-    /** 置けなかった。低く短い、拒む音。 */
-    DENIED,
-    /** 画面の釦を押す。 */
-    TAP,
-    /** 情報や予算の画面を開く。 */
-    OPEN,
-    /** 画面を閉じる。 */
-    CLOSE,
-    /** モニュメントが完成した。短い上昇音。 */
-    MONUMENT,
-    /** 人口の節目を越えた。 */
-    MILESTONE,
-    /** 災害が起きた。低くうなる。 */
-    DISASTER,
-    /** 破産。沈んでいく音。 */
-    BANKRUPT,
-    /** チュートリアルが1段進んだ。 */
-    PROGRESS,
-    ;
+    ROAD, ZONE_R, ZONE_C, ZONE_I, BUILD, BULLDOZE, DENIED, TAP, OPEN, CLOSE,
+    MONUMENT, MILESTONE, DISASTER, BANKRUPT, PROGRESS;
 
-    /** この効果音の波形。 */
     fun render(): ShortArray = when (this) {
-        ROAD -> build(0.10f) { t ->
-            // 砂利を撒くような、短い雑音
-            Waves.noise(t, 0, Waves.frames(0.08f), amp = 0.16f, decay = 34f, smooth = 3)
-            Waves.square(t, 0, Waves.frames(0.05f), Waves.freq(Waves.A3),
-                amp = 0.10f, duty = 0.25f, decay = 30f)
+        ROAD -> build(0.20f) { t ->
+            Instruments.texture(t, 0f, 0.16f, 0.28f, 71, 0.16f, 5f)
+            Instruments.kick(t, 0.012f, 0.20f)
+            tone(t, 0.045f, 0.11f, 48, Instruments.Voice.MALLET, 0.12f)
         }
-
-        // 区分の3つは、同じ形で高さだけ変える。並べて聞くと和音になる。
-        ZONE_R -> zoneTone(Waves.E4)
-        ZONE_C -> zoneTone(Waves.A4)
-        ZONE_I -> zoneTone(Waves.C4)
-
-        BUILD -> build(0.22f) { t ->
-            // 柱を打ち込むような、低い音の上に金属の響き
-            Waves.triangle(t, 0, Waves.frames(0.18f), Waves.freq(Waves.C3),
-                amp = 0.26f, decay = 14f)
-            Waves.noise(t, 0, Waves.frames(0.06f), amp = 0.14f, decay = 40f, smooth = 2)
-            Waves.square(t, Waves.frames(0.02f), Waves.frames(0.12f), Waves.freq(Waves.G4),
-                amp = 0.10f, duty = 0.125f, decay = 16f)
+        ZONE_R -> zone(64)
+        ZONE_C -> zone(69)
+        ZONE_I -> zone(57)
+        BUILD -> build(0.32f) { t ->
+            Instruments.kick(t, 0f, 0.30f)
+            Instruments.texture(t, 0f, 0.18f, 0.3f, 91, 0.12f, 6f)
+            tone(t, 0.045f, 0.22f, 55, Instruments.Voice.MALLET, 0.16f)
+            tone(t, 0.085f, 0.20f, 62, Instruments.Voice.KEYS, 0.11f)
         }
-
-        BULLDOZE -> build(0.28f) { t ->
-            // 崩れて散らばる音。こもった雑音を、だんだん静かに。
-            Waves.noise(t, 0, Waves.frames(0.26f), amp = 0.24f, decay = 9f, smooth = 5)
-            Waves.triangle(t, 0, Waves.frames(0.14f), Waves.freq(Waves.C3 - 5),
-                amp = 0.20f, decay = 12f)
+        BULLDOZE -> build(0.48f) { t ->
+            Instruments.texture(t, 0f, 0.42f, 0.48f, 23, 0.06f, 3f)
+            Instruments.kick(t, 0.015f, 0.27f)
+            for (i in 0..3) tone(t, i * 0.065f, 0.17f, 48 - i * 3, Instruments.Voice.MALLET, 0.09f)
         }
-
-        DENIED -> build(0.14f) { t ->
-            // 下がる2音。短く断る感じ。
-            Waves.square(t, 0, Waves.frames(0.06f), Waves.freq(Waves.E3),
-                amp = 0.18f, duty = 0.5f, decay = 10f)
-            Waves.square(t, Waves.frames(0.06f), Waves.frames(0.07f), Waves.freq(Waves.C3),
-                amp = 0.18f, duty = 0.5f, decay = 10f)
+        DENIED -> chime(0.27f, intArrayOf(57, 53), 0.085f, Instruments.Voice.FELT)
+        TAP -> build(0.075f) { t ->
+            tone(t, 0f, 0.060f, 76, Instruments.Voice.MALLET, 0.26f)
+            Instruments.texture(t, 0f, 0.025f, 0.10f, 4, 0.3f)
         }
-
-        TAP -> build(0.06f) { t ->
-            Waves.square(t, 0, Waves.frames(0.045f), Waves.freq(Waves.A5),
-                amp = 0.12f, duty = 0.25f, decay = 36f)
-        }
-
-        OPEN -> build(0.16f) { t ->
-            // 上がる2音
-            Waves.square(t, 0, Waves.frames(0.05f), Waves.freq(Waves.E5),
-                amp = 0.13f, duty = 0.25f, decay = 20f)
-            Waves.square(t, Waves.frames(0.05f), Waves.frames(0.09f), Waves.freq(Waves.A5),
-                amp = 0.13f, duty = 0.25f, decay = 16f)
-        }
-
-        CLOSE -> build(0.16f) { t ->
-            // 下がる2音。開くの逆。
-            Waves.square(t, 0, Waves.frames(0.05f), Waves.freq(Waves.A5),
-                amp = 0.13f, duty = 0.25f, decay = 20f)
-            Waves.square(t, Waves.frames(0.05f), Waves.frames(0.09f), Waves.freq(Waves.E5),
-                amp = 0.13f, duty = 0.25f, decay = 16f)
-        }
-
-        MONUMENT -> build(0.90f) { t ->
-            // ドミソド。短いファンファーレ。
-            val notes = intArrayOf(Waves.C5, Waves.E5, Waves.G5, Waves.C6)
-            for ((i, n) in notes.withIndex()) {
-                val at = Waves.frames(0.11f * i)
-                val len = if (i == notes.size - 1) Waves.frames(0.52f) else Waves.frames(0.16f)
-                Waves.square(t, at, len, Waves.freq(n), amp = 0.20f, duty = 0.5f, decay = 3.4f)
-                Waves.square(t, at, len, Waves.freq(n + 12), amp = 0.07f, duty = 0.25f, decay = 4f)
+        OPEN -> chime(0.28f, intArrayOf(64, 71), 0.055f)
+        CLOSE -> chime(0.24f, intArrayOf(71, 64), 0.045f, Instruments.Voice.FELT)
+        PROGRESS -> chime(0.48f, intArrayOf(67, 71, 74), 0.085f)
+        MILESTONE -> chime(0.95f, intArrayOf(64, 67, 74, 76), 0.12f)
+        MONUMENT -> build(1.75f) { t ->
+            for ((i, n) in intArrayOf(60, 67, 71, 74, 76).withIndex()) {
+                tone(t, i * 0.14f, 0.70f, n, Instruments.Voice.KEYS, 0.13f)
             }
-            Waves.triangle(t, 0, Waves.frames(0.86f), Waves.freq(Waves.C3), amp = 0.20f, decay = 2.2f)
+            for (n in intArrayOf(48, 55, 59, 64)) tone(t, 0.54f, 1.12f, n, Instruments.Voice.BRASS, 0.065f)
         }
-
-        MILESTONE -> build(0.52f) { t ->
-            val notes = intArrayOf(Waves.G4, Waves.C5, Waves.E5)
-            for ((i, n) in notes.withIndex()) {
-                val at = Waves.frames(0.09f * i)
-                Waves.square(t, at, Waves.frames(0.30f), Waves.freq(n),
-                    amp = 0.17f, duty = 0.25f, decay = 5f)
+        DISASTER -> build(1.25f) { t ->
+            // A restrained two-pulse alert, distinct from celebrations and continuous sirens.
+            for (at in listOf(0f, 0.40f)) {
+                tone(t, at, 0.35f, 57, Instruments.Voice.BRASS, 0.14f)
+                tone(t, at, 0.35f, 63, Instruments.Voice.BRASS, 0.09f)
             }
+            Instruments.texture(t, 0.03f, 1.12f, 0.22f, 51, 0.04f, 4f)
         }
-
-        DISASTER -> build(0.80f) { t ->
-            // 低くうなる音と、割れるような雑音
-            Waves.square(t, 0, Waves.frames(0.76f), Waves.freq(Waves.C3 - 12),
-                amp = 0.22f, duty = 0.5f, decay = 1.6f) { p -> 1f - p * 0.25f }
-            Waves.noise(t, 0, Waves.frames(0.70f), amp = 0.16f, decay = 3.4f, smooth = 7)
-        }
-
-        BANKRUPT -> build(1.10f) { t ->
-            // 半音ずつ下がっていく。沈む感じ。
-            for (i in 0 until 6) {
-                Waves.square(t, Waves.frames(0.16f * i), Waves.frames(0.26f),
-                    Waves.freq(Waves.A3 - i * 2), amp = 0.18f, duty = 0.5f, decay = 5f)
+        BANKRUPT -> build(1.7f) { t ->
+            for ((i, n) in intArrayOf(65, 64, 60, 57).withIndex()) {
+                tone(t, i * 0.24f, 0.72f, n, Instruments.Voice.FELT, 0.15f)
             }
-            Waves.triangle(t, 0, Waves.frames(1.05f), Waves.freq(Waves.C3 - 12),
-                amp = 0.18f, decay = 1.4f)
-        }
-
-        PROGRESS -> build(0.30f) { t ->
-            Waves.square(t, 0, Waves.frames(0.08f), Waves.freq(Waves.C5),
-                amp = 0.15f, duty = 0.25f, decay = 14f)
-            Waves.square(t, Waves.frames(0.08f), Waves.frames(0.20f), Waves.freq(Waves.G5),
-                amp = 0.15f, duty = 0.25f, decay = 7f)
+            tone(t, 0f, 1.55f, 38, Instruments.Voice.PAD, 0.11f)
         }
     }
 
-    /** 区分の音。用途ごとに高さだけ変える。 */
-    private fun zoneTone(note: Int): ShortArray = build(0.16f) { t ->
-        Waves.square(t, 0, Waves.frames(0.10f), Waves.freq(note),
-            amp = 0.16f, duty = 0.25f, decay = 16f)
-        Waves.square(t, Waves.frames(0.04f), Waves.frames(0.10f), Waves.freq(note + 7),
-            amp = 0.10f, duty = 0.125f, decay = 16f)
-        Waves.noise(t, 0, Waves.frames(0.03f), amp = 0.08f, decay = 50f, smooth = 2)
+    private fun tone(t: Waves.Track, at: Float, seconds: Float, midi: Int,
+                     voice: Instruments.Voice = Instruments.Voice.KEYS, amp: Float = 0.18f) =
+        Instruments.note(t, at, seconds, midi - 69, voice, amp)
+
+    private fun zone(midi: Int) = build(0.23f) { t ->
+        Instruments.texture(t, 0f, 0.045f, 0.18f, midi, 0.22f)
+        tone(t, 0f, 0.17f, midi, Instruments.Voice.MALLET, 0.19f)
+        tone(t, 0.045f, 0.16f, midi + 7, Instruments.Voice.KEYS, 0.12f)
+    }
+
+    private fun chime(seconds: Float, notes: IntArray, spacing: Float,
+                      voice: Instruments.Voice = Instruments.Voice.KEYS) = build(seconds) { t ->
+        for ((i, n) in notes.withIndex()) tone(t, i * spacing,
+            (seconds - i * spacing) * 0.85f, n, voice, 0.18f)
     }
 
     private fun build(seconds: Float, body: (Waves.Track) -> Unit): ShortArray {
-        val track = Waves.Track(Waves.frames(seconds))
-        body(track)
-        // 音量をそろえる。式のままだと控えめすぎて、
-        // 端末の音量を上げないと聞こえない。
-        return track.toPcm(gain = LOUDNESS)
-    }
-
-    private companion object {
-        /**
-         * 効果音全体の音量。
-         *
-         * 個々の音の振幅は「重ねたときに割れない」ことを優先して小さめにしてある。
-         * そのぶんを最後にまとめて持ち上げる。
-         * [Waves.Track.toPcm] が振り切れる前にならすので、割れることはない。
-         */
-        const val LOUDNESS = 2.6f
+        val t = Waves.Track(Waves.frames(seconds)); body(t)
+        // Common sounds remain short and quieter than major notifications.
+        return Instruments.finish(t, loop = false, targetRms = if (this == TAP) 0.085f else 0.13f)
     }
 }

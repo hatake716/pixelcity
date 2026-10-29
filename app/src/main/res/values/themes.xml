@@ -6,4 +6,13 @@
         <item name="android:navigationBarColor">@color/ui_bg</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <style name="Theme.PixelCity.Terrain" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#245E50</item>
+        <item name="android:textColorPrimary">#193034</item>
+        <item name="android:textColorSecondary">#4F625B</item>
+        <item name="android:textColorHint">#4F625B</item>
+        <item name="android:colorControlNormal">#4F625B</item>
+        <item name="android:windowBackground">#F7ECD7</item>
+        <item name="android:colorBackground">#F7ECD7</item>
+    </style>
 </resources>

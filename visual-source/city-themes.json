@@ -1,0 +1,10 @@
+{
+  "STANDARD": {"walls":["edaf36","e56855"],"roof":"285264","accent":"40a98a","grass":"8fb75b","water":"4aaec1","paving":"d7bea0","leaves":["287354","429343","82b842","d2b744"]},
+  "PRIME": {"walls":["3897d0","eef0dd"],"roof":"244765","accent":"d6538d","grass":"83ae83","water":"438fbb","paving":"d4d4c5","leaves":["266b60","48997e","67b4a1","a8bb57"]},
+  "RURAL": {"walls":["f2c251","97be66"],"roof":"b84639","accent":"347949","grass":"85b945","water":"49b4ac","paving":"dfc595","leaves":["286e36","489236","78b337","c9be3c"]},
+  "GRITTY": {"walls":["bd583c","e5a92f"],"roof":"344953","accent":"edb832","grass":"9aa05b","water":"548f9d","paving":"c4b18e","leaves":["346944","638243","98943c","d28b3b"]},
+  "ANCIENT": {"walls":["e1a551","f4d68f"],"roof":"d48b43","accent":"27978f","grass":"aab363","water":"4eb5b7","paving":"e7cea2","leaves":["548047","849a41","b4ac43","bf803c"]},
+  "FUTURE": {"walls":["a895db","78d4c4"],"roof":"505a9e","accent":"ed91bc","grass":"94b6a6","water":"71a9d1","paving":"dbd2e7","leaves":["528989","7ebead","a0a3d2","d792be"]},
+  "EUROPE": {"walls":["de685c","ebbc49"],"roof":"3b516c","accent":"409ab1","grass":"94b36b","water":"48adc1","paving":"dbc2a6","leaves":["387747","579751","a6b044","d1a552"]},
+  "JAPAN": {"walls":["f2d8ac","678d9f"],"roof":"344967","accent":"d85a45","grass":"9db66a","water":"6aacb6","paving":"d7cbb3","leaves":["e68da7","efb5c3","5e9357","8bae58"]}
+}

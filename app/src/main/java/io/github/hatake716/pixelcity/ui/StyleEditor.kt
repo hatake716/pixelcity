@@ -2,164 +2,59 @@ package io.github.hatake716.pixelcity.ui
 
 import io.github.hatake716.pixelcity.game.CustomStyle
 
-/**
- * 自分の様式の色を選ぶ画面。
- *
- * 左に「どこの色か」を並べ、選んだ場所に対して、
- * 右下のパレットから色を割り当てる。
- * いま選んでいる場所と色が、つねに見えるようにしてある。
- */
+/** Four material-preserving colour grades; old save palette entries remain intact. */
 class StyleEditor(private val text: GbText) {
-
-    /** いま編集している場所。 */
-    var slot: CustomStyle.Slot = CustomStyle.Slot.HOUSE_ROOF
-
-    private companion object {
-        const val MARGIN = 12
-        /** 場所の一覧の1行の高さ。 */
-        const val ROW_H = 26
-        /** パレットの1マス。 */
-        const val SWATCH = 28
-        const val SWATCH_GAP = 3
-        /** パレットの横に並ぶ数。 */
-        const val COLS = 8
-    }
-
-    /**
-     * 選べる色。パレット全部を出すと多すぎるので、
-     * 建物に使って様になるものだけを並べる。
-     */
-    private val choices: IntArray = intArrayOf(
-        // 白・灰・黒
-        Palette.WHITE, Palette.STONE_LIT, Palette.STONE, Palette.STONE_DARK,
-        Palette.STONE_EDGE, Palette.METAL_LIT, Palette.METAL, Palette.METAL_DARK,
-        // 赤・茶
-        Palette.RED, Palette.RED_DARK, Palette.HOUSE_ROOF, Palette.HOUSE_ROOF_DARK,
-        Palette.EURO_ROOF, Palette.EURO_ROOF_DARK, Palette.TRUNK, Palette.GRIT_ROOF,
-        // 砂・黄
-        Palette.SAND_LIT, Palette.SAND, Palette.SAND_DARK, Palette.GOLD,
-        Palette.GOLD_DARK, Palette.ANCIENT_ROOF, Palette.ANCIENT_WALL, Palette.WINDOW_LIT,
-        // 緑
-        Palette.TREE_LIT, Palette.TREE, Palette.TREE_DARK, Palette.GRASS_LIT,
-        Palette.GRASS, Palette.GRASS_DARK, Palette.RURAL_ROOF, Palette.RURAL_WALL,
-        // 青・水
-        Palette.SKY, Palette.SKY_DEEP, Palette.WATER_LIT, Palette.WATER,
-        Palette.WATER_DARK, Palette.GLASS_LIT, Palette.GLASS, Palette.FUTURE_GLOW,
-        // 建物の既定色
-        Palette.WALL_ROOF, Palette.WALL_LEFT, Palette.WALL_RIGHT, Palette.WALL_EDGE,
-        Palette.OFFICE_ROOF, Palette.OFFICE_LEFT, Palette.OFFICE_RIGHT, Palette.WINDOW_DARK,
-        // 様式の色
-        Palette.PRIME_ROOF, Palette.PRIME_LEFT, Palette.PRIME_GLASS, Palette.FUTURE_ROOF,
-        Palette.FUTURE_WALL, Palette.JP_ROOF, Palette.JP_WALL, Palette.BLACK,
-    )
-
-    /** 通知の欄・操作の欄の高さ。[GameView] から渡す。 */
-    var insetTop: Int = 0
-    var insetBottom: Int = 0
-
-    private fun listTop(): Int = insetTop + 68
-    private fun rowY(i: Int): Int = listTop() + i * ROW_H
-
-    /** パレットの上端。場所の一覧の下に置く。 */
-    private fun paletteTop(): Int = rowY(CustomStyle.Slot.entries.size) + 12
-
-    private fun swatchX(i: Int): Int = MARGIN + (i % COLS) * (SWATCH + SWATCH_GAP)
-    private fun swatchY(i: Int): Int = paletteTop() + 22 + (i / COLS) * (SWATCH + SWATCH_GAP)
-
-    fun backButtonY(logicalH: Int): Int = logicalH - insetBottom - 52
-    private fun resetButtonY(logicalH: Int): Int = logicalH - insetBottom - 92
-
-    fun draw(pixels: PixelCanvas, custom: CustomStyle, logicalH: Int) {
-        pixels.clear(Palette.UI_BG)
-
-        text.textSize = 18
-        text.drawCentered(
-            pixels, "いろを えらぶ", GameView.LOGICAL_W / 2,
-            insetTop + 12, Palette.UI_ACCENT,
-        )
-        text.textSize = 11
-        text.drawCentered(
-            pixels, "ばしょを えらんでから、したの いろを おします",
-            GameView.LOGICAL_W / 2, insetTop + 40, Palette.UI_DIM,
-        )
-
-        // --- どこの色か ---
-        for ((i, sl) in CustomStyle.Slot.entries.withIndex()) {
-            val y = rowY(i)
-            val on = sl == slot
-            pixels.fillRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, ROW_H - 2,
-                if (on) Palette.UI_ACCENT else Palette.UI_BG_LIGHT)
-            pixels.drawRect(MARGIN, y, GameView.LOGICAL_W - MARGIN * 2, ROW_H - 2, Palette.UI_LINE)
-            text.textSize = 12
-            text.draw(pixels, sl.label, MARGIN + 8, y + 3,
-                if (on) Palette.UI_BG else Palette.UI_TEXT)
-            // いま割り当てている色
-            val c = custom[sl]
-            val cx = GameView.LOGICAL_W - MARGIN - 30
-            pixels.fillRect(cx, y + 2, 26, ROW_H - 6, c)
-            pixels.drawRect(cx, y + 2, 26, ROW_H - 6, Palette.BLACK)
+    var slot=CustomStyle.Slot.HOUSE_WALL
+    var insetTop=0
+    var insetBottom=0
+    var scrollOffset=0
+        private set
+    private var maxScroll=0
+    private var bottom=0
+    private val slots=listOf(CustomStyle.Slot.HOUSE_WALL,CustomStyle.Slot.OFFICE_WALL,CustomStyle.Slot.FACTORY_WALL,CustomStyle.Slot.GENERIC_WALL)
+    private val labels=listOf("住宅の色調","商業の色調","工業の色調","公共施設の色調")
+    private val choices=intArrayOf(Palette.WHITE,Palette.STONE_LIT,Palette.STONE,Palette.METAL,Palette.HOUSE_LEFT,Palette.HOUSE_ROOF,Palette.RED,Palette.GOLD,Palette.SAND,Palette.ANCIENT_WALL,Palette.RURAL_WALL,Palette.TREE_LIT,Palette.TREE,Palette.TREE_DARK,Palette.GLASS_LIT,Palette.GLASS,Palette.SKY,Palette.SKY_DEEP,Palette.PRIME_LEFT,Palette.WATER,Palette.WATER_DARK,Palette.EURO_WALL,Palette.JP_WALL,Palette.FUTURE_WALL,Palette.GRIT_WALL,Palette.FACTORY_LEFT,Palette.WALL_LEFT,Palette.BLACK)
+    private fun top()=insetTop+100
+    private fun paletteTop()=top()+4*68+40
+    fun backButtonY(logicalH: Int)=logicalH-insetBottom-76
+    private fun resetY(logicalH: Int)=backButtonY(logicalH)-72
+    fun scrollBy(delta: Int) { scrollOffset=(scrollOffset+delta).coerceIn(0,maxScroll) }
+    fun draw(p: PixelCanvas,custom: CustomStyle,logicalH: Int) {
+        p.clear(Palette.UI_BG)
+        text.textSize=28;text.draw(p,"建物の色調",20,insetTop+12,Palette.UI_ACCENT)
+        text.textSize=18;text.draw(p,"建物を選び、好みの色をタップしてください。",20,insetTop+56,Palette.UI_DIM)
+        bottom=resetY(logicalH)-12
+        val c=p.nativeCanvas;c?.save();c?.clipRect(0,top(),p.width,bottom);c?.translate(0f,-scrollOffset.toFloat())
+        for((i,s) in slots.withIndex()) {
+            val y=top()+i*68
+            p.fillRect(20,y,p.width-40,62,if(s==slot) Palette.UI_BG_LIGHT else Palette.UI_BG)
+            p.drawRect(20,y,p.width-40,62,if(s==slot) Palette.UI_ACCENT else Palette.UI_LINE)
+            text.textSize=22;text.draw(p,labels[i],34,y+17,Palette.UI_TEXT)
+            p.fillRect(p.width-76,y+10,40,40,custom[s])
         }
-
-        // --- 色の見本 ---
-        val pt = paletteTop()
-        text.textSize = 12
-        text.draw(pixels, "「${slot.label}」の いろ", MARGIN, pt, Palette.UI_ACCENT)
-
-        val current = custom[slot]
-        for (i in choices.indices) {
-            val x = swatchX(i)
-            val y = swatchY(i)
-            if (y + SWATCH > logicalH - 90) break
-            pixels.fillRect(x, y, SWATCH, SWATCH, choices[i])
-            pixels.drawRect(x, y, SWATCH, SWATCH, Palette.BLACK)
-            if (choices[i] == current) {
-                // 選んでいる色を二重の枠で示す
-                pixels.drawRect(x - 2, y - 2, SWATCH + 4, SWATCH + 4, Palette.UI_ACCENT)
-                pixels.drawRect(x - 3, y - 3, SWATCH + 6, SWATCH + 6, Palette.UI_ACCENT)
-            }
+        text.textSize=20;text.draw(p,"素材の陰影を保ちながら色を重ねます。",20,paletteTop()-32,Palette.UI_DIM)
+        for((i,color) in choices.withIndex()) {
+            val x=20+(i%7)*70;val y=paletteTop()+(i/7)*70
+            p.fillRect(x,y,62,62,color)
+            if(color==custom[slot]) { p.drawRect(x-2,y-2,66,66,Palette.UI_ACCENT);p.drawRect(x+3,y+3,56,56,Palette.UI_BG) }
         }
-
-        // --- もとにもどす ---
-        val ry = resetButtonY(logicalH)
-        val rw = 120
-        val rx = (GameView.LOGICAL_W - rw) / 2
-        pixels.fillRect(rx, ry, rw, 26, Palette.UI_BG_LIGHT)
-        pixels.drawRect(rx, ry, rw, 26, Palette.UI_LINE)
-        text.textSize = 13
-        text.drawCentered(pixels, "もとに もどす", GameView.LOGICAL_W / 2, ry + 5, Palette.UI_TEXT)
-
-        // --- もどる ---
-        val by = backButtonY(logicalH)
-        val bw = 90
-        val bx = (GameView.LOGICAL_W - bw) / 2
-        pixels.fillRect(bx, by, bw, 28, Palette.UI_BG_LIGHT)
-        pixels.drawRect(bx, by, bw, 28, Palette.UI_LINE)
-        text.textSize = 15
-        text.drawCentered(pixels, "もどる", GameView.LOGICAL_W / 2, by + 5, Palette.UI_TEXT)
-    }
-
-    /** その座標にある場所。なければ null。 */
-    fun slotAt(lx: Int, ly: Int): CustomStyle.Slot? {
-        for ((i, sl) in CustomStyle.Slot.entries.withIndex()) {
-            val y = rowY(i)
-            if (ly >= y && ly < y + ROW_H - 2) return sl
+        maxScroll=(paletteTop()+4*70-bottom).coerceAtLeast(0)
+        c?.restore()
+        for((y,title) in listOf(resetY(logicalH) to "標準の色に戻す",backButtonY(logicalH) to "設定に戻る")) {
+            p.fillRect(20,y,p.width-40,64,Palette.UI_BG_LIGHT)
+            text.textSize=22;text.drawCentered(p,title,p.width/2,y+18,Palette.UI_TEXT)
         }
-        return null
     }
-
-    /** その座標にある色。なければ null。 */
-    fun colourAt(lx: Int, ly: Int, logicalH: Int): Int? {
-        for (i in choices.indices) {
-            val x = swatchX(i)
-            val y = swatchY(i)
-            if (y + SWATCH > logicalH - 90) break
-            if (lx >= x && lx < x + SWATCH && ly >= y && ly < y + SWATCH) return choices[i]
-        }
-        return null
+    fun slotAt(lx: Int,ly: Int): CustomStyle.Slot? {
+        if(lx<20 || lx>=GameView.LOGICAL_W-20 || ly<top() || ly>=bottom) return null
+        val index=(ly+scrollOffset-top())/68
+        return slots.getOrNull(index)
     }
-
-    fun resetTapped(lx: Int, ly: Int, logicalH: Int): Boolean {
-        val ry = resetButtonY(logicalH)
-        return ly >= ry && ly < ry + 26
+    fun colourAt(lx: Int,ly: Int,logicalH: Int): Int? {
+        if(ly<top() || ly>=bottom) return null
+        val yy=ly+scrollOffset-paletteTop();val xx=lx-20
+        if(xx<0 || yy<0 || xx/70>=7 || xx%70>=62 || yy%70>=62) return null
+        return choices.getOrNull(yy/70*7+xx/70)
     }
+    fun resetTapped(lx: Int,ly: Int,logicalH: Int)=lx in 20 until GameView.LOGICAL_W-20 && ly in resetY(logicalH) until resetY(logicalH)+64
 }
