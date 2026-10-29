@@ -35,9 +35,9 @@ class OverlayTest {
     fun `every kind of information can be shown on the map`() {
         val labels = CityRenderer.Overlay.entries.map { it.label }
         // 区分は3つとも別々に見られること
-        assertTrue("residential is missing", labels.any { it.contains("じゅうたく") })
-        assertTrue("commercial is missing", labels.any { it.contains("しょうぎょう") })
-        assertTrue("industrial is missing", labels.any { it.contains("こうぎょう") })
+        assertTrue("residential is missing", labels.any { it.contains("住宅") })
+        assertTrue("commercial is missing", labels.any { it.contains("商業") })
+        assertTrue("industrial is missing", labels.any { it.contains("工業") })
         // 名前が重なっていないこと
         assertEquals("some labels are duplicated", labels.size, labels.toSet().size)
     }

@@ -2,185 +2,202 @@ package io.github.hatake716.pixelcity.audio
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
-import android.os.Build
-import java.util.concurrent.atomic.AtomicBoolean
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
-/**
- * 音を鳴らす係。
- *
- * 波形は [Sfx] と [Bgm] が作る。ここは鳴らすことだけを受け持つ。
- *
- * ## 作りの方針
- *
- * - 効果音は [android.media.SoundPool] ではなく、短い [AudioTrack] を使い捨てる。
- *   SoundPool は音の入ったファイルを読む前提の仕組みで、
- *   ここでは配列を直接渡したいため。
- * - 曲は 1本の [AudioTrack] を静的モードで持ち、端末側で繰り返させる。
- *   自前で書き足し続けると、画面が重いときに音が途切れる。
- * - 波形を作るのは重い（数十ミリ秒）。作った結果は使い回す。
- * - 音を切っているときは、何も作らない。
- */
+/** Main-thread controller. Long PCM rendering and native buffer writes run on a worker. */
 class Audio {
+    private val handler = Handler(Looper.getMainLooper())
+    private val worker = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "Pixelcity-score").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }
+    }
+    private var pending: Future<*>? = null
+    private var generation = 0
+    private var paused = true
+    private var released = false
+    private var currentBgm: Bgm? = null
+    private var playingBgm: Bgm? = null
+    private var bgmTrack: AudioTrack? = null
+    private var fadingOut: AudioTrack? = null
+    private val fadeToken = Any()
+    // Accessed only by the worker; bounded to two scores (under 13 MB of PCM).
+    private val bgmCache = LinkedHashMap<Bgm, ShortArray>()
+    private val sfxCache = HashMap<Sfx, ShortArray>()
+    private val playing = ArrayList<AudioTrack>()
+    private val lastPlayed = HashMap<Sfx, Long>()
 
-    /** 効果音を鳴らすか。 */
-    var sfxEnabled: Boolean = true
-        set(value) {
-            field = value
-            if (!value) stopAllSfx()
-        }
-
-    /** 曲を流すか。 */
-    var bgmEnabled: Boolean = true
+    var sfxEnabled = true
+        set(value) { field = value; if (!value) stopAllSfx() }
+    var bgmEnabled = true
         set(value) {
             if (field == value) return
             field = value
-            if (value) restartBgm() else stopBgm()
+            if (value) startMusic() else stopMusic()
         }
-
-    /** 作った波形の置き場。同じ音を何度も作らない。 */
-    private val sfxCache = HashMap<Sfx, ShortArray>()
-    private val bgmCache = HashMap<Bgm, ShortArray>()
-
-    /** 鳴っている最中の効果音。止めるときに使う。 */
-    private val playing = ArrayList<AudioTrack>()
-
-    private var bgmTrack: AudioTrack? = null
-    private var currentBgm: Bgm? = null
-
-    /** 画面が消えているあいだは鳴らさない。 */
-    private val paused = AtomicBoolean(false)
-
-    // ------------------------------------------------------------------
-    // 効果音
-    // ------------------------------------------------------------------
 
     fun play(sfx: Sfx) {
-        if (!sfxEnabled || paused.get()) return
-        val pcm = sfxCache.getOrPut(sfx) { sfx.render() }
+        if (!sfxEnabled || paused || released) return
+        val now = SystemClock.uptimeMillis()
+        if (now - (lastPlayed[sfx] ?: -1_000L) < 75L) return
+        lastPlayed[sfx] = now
+        var track: AudioTrack? = null
         try {
-            val track = newTrack(pcm.size)
-            track.write(pcm, 0, pcm.size)
-            // 鳴り終わったものを片づけてから足す
-            reapFinished()
-            // 一度に鳴らしすぎると、音が濁って端末も苦しくなる
-            if (playing.size >= MAX_VOICES) {
-                playing.removeAt(0).runCatching { stop(); release() }
+            val pcm = sfxCache.getOrPut(sfx) { sfx.render() }
+            val sound = createTrack(pcm, music = false)
+            track = sound
+            if (playing.size >= MAX_VOICES) dispose(playing.removeAt(0))
+            playing.add(sound)
+            sound.setVolume(0.72f)
+            sound.play()
+            // MODE_STATIC does not necessarily change playState at the end of the buffer.
+            // Reap by playback head, even when no further input ever arrives.
+            val cleanup = object : Runnable {
+                override fun run() {
+                    if (sound !in playing) return
+                    if (runCatching { sound.playbackHeadPosition >= pcm.size }.getOrDefault(true)) {
+                        playing.remove(sound); dispose(sound)
+                    } else handler.postDelayed(this, 100L)
+                }
             }
-            playing.add(track)
-            track.play()
+            handler.postDelayed(cleanup, pcm.size * 1000L / Waves.RATE + 80L)
         } catch (e: Exception) {
-            // 音が鳴らないことで遊べなくなっては困るので、握りつぶす
-        }
-    }
-
-    /** 鳴り終わった音を片づける。 */
-    private fun reapFinished() {
-        val it = playing.iterator()
-        while (it.hasNext()) {
-            val t = it.next()
-            if (t.playState == AudioTrack.PLAYSTATE_STOPPED) {
-                t.runCatching { release() }
-                it.remove()
-            }
+            track?.let { playing.remove(it); dispose(it) }
+            Log.w("PixelcityAudio", "Could not play $sfx", e)
         }
     }
 
     private fun stopAllSfx() {
-        for (t in playing) t.runCatching { stop(); release() }
-        playing.clear()
+        playing.forEach(::dispose); playing.clear(); lastPlayed.clear()
     }
 
-    private fun newTrack(frames: Int): AudioTrack {
-        val bytes = frames * 2
-        val format = AudioFormat.Builder()
-            .setSampleRate(Waves.RATE)
-            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-            .build()
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_GAME)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            AudioTrack.Builder()
-                .setAudioAttributes(attrs)
-                .setAudioFormat(format)
-                .setBufferSizeInBytes(bytes)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-                .build()
-        } else {
-            @Suppress("DEPRECATION")
-            AudioTrack(
-                AudioManager.STREAM_MUSIC, Waves.RATE,
-                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                bytes, AudioTrack.MODE_STATIC,
-            )
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // 曲
-    // ------------------------------------------------------------------
-
-    /**
-     * 流す曲を決める。同じ曲なら何もしない。
-     * 曲が変わるときだけ、鳴らし直す。
-     */
-    fun setBgm(bgm: Bgm) {
-        if (currentBgm == bgm) return
-        currentBgm = bgm
-        if (bgmEnabled && !paused.get()) restartBgm()
-    }
-
-    private fun restartBgm() {
-        stopBgm()
-        val bgm = currentBgm ?: return
-        if (!bgmEnabled || paused.get()) return
+    private fun createTrack(pcm: ShortArray, music: Boolean): AudioTrack {
+        val track = AudioTrack.Builder()
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(if (music) AudioAttributes.CONTENT_TYPE_MUSIC
+                    else AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+            .setAudioFormat(AudioFormat.Builder().setSampleRate(Waves.RATE)
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
+            .setBufferSizeInBytes(pcm.size * 2)
+            .setTransferMode(AudioTrack.MODE_STATIC).build()
         try {
-            val pcm = bgmCache.getOrPut(bgm) { bgm.render() }
-            val track = newTrack(pcm.size)
-            track.write(pcm, 0, pcm.size)
-            // 端末側で繰り返させる。自前で書き足すと、画面が重いときに途切れる。
-            track.setLoopPoints(0, pcm.size, -1)
-            track.setVolume(BGM_VOLUME)
-            track.play()
-            bgmTrack = track
-        } catch (e: Exception) {
-            bgmTrack = null
+            check(track.write(pcm, 0, pcm.size) == pcm.size)
+            if (music) check(track.setLoopPoints(0, pcm.size, -1) == AudioTrack.SUCCESS)
+            return track
+        } catch (e: Exception) { dispose(track); throw e }
+    }
+
+    fun setBgm(bgm: Bgm) {
+        if (released || currentBgm == bgm) return
+        currentBgm = bgm
+        startMusic()
+    }
+
+    private fun cancelPending() {
+        generation++; pending?.cancel(true); pending = null
+    }
+
+    private fun startMusic() {
+        if (released || paused || !bgmEnabled) return
+        val bgm = currentBgm ?: return
+        if (playingBgm == bgm && bgmTrack != null) {
+            cancelPending()
+            bgmTrack?.runCatching { play() }
+            return
+        }
+        cancelPending()
+        val request = generation
+        pending = worker.submit {
+            var prepared: AudioTrack? = null
+            try {
+                val pcm = bgmCache[bgm] ?: bgm.render().also {
+                    bgmCache[bgm] = it
+                    if (bgmCache.size > 2) bgmCache.remove(bgmCache.keys.first())
+                }
+                if (Thread.currentThread().isInterrupted) return@submit
+                prepared = createTrack(pcm, music = true)
+                val ready = prepared
+                if (Thread.currentThread().isInterrupted) { dispose(ready); return@submit }
+                handler.post {
+                    if (released || paused || !bgmEnabled || request != generation) dispose(ready)
+                    else {
+                        pending = null
+                        crossfade(ready, bgm)
+                    }
+                }
+            } catch (e: Exception) {
+                prepared?.let(::dispose)
+                if (e !is java.util.concurrent.CancellationException && !Thread.currentThread().isInterrupted)
+                    Log.w("PixelcityAudio", "Could not prepare $bgm", e)
+            }
         }
     }
 
-    private fun stopBgm() {
-        bgmTrack?.runCatching { stop(); release() }
-        bgmTrack = null
+    private fun finishFade() {
+        handler.removeCallbacksAndMessages(fadeToken)
+        fadingOut?.let(::dispose); fadingOut = null
+        bgmTrack?.runCatching { setVolume(BGM_VOLUME) }
     }
 
-    // ------------------------------------------------------------------
-    // 画面の出入り
-    // ------------------------------------------------------------------
+    private fun crossfade(ready: AudioTrack, bgm: Bgm) {
+        finishFade()
+        fadingOut = bgmTrack
+        bgmTrack = ready; playingBgm = bgm
+        try {
+            ready.setVolume(0f); ready.play()
+            val began = SystemClock.uptimeMillis()
+            val ramp = object : Runnable {
+                override fun run() {
+                    if (released || paused || bgmTrack !== ready) return
+                    val blend = ((SystemClock.uptimeMillis() - began) / 600f).coerceIn(0f, 1f)
+                    ready.runCatching { setVolume(BGM_VOLUME * blend) }
+                    fadingOut?.runCatching { setVolume(BGM_VOLUME * (1f - blend)) }
+                    if (blend < 1f) handler.postAtTime(this, fadeToken, SystemClock.uptimeMillis() + 25)
+                    else finishFade()
+                }
+            }
+            ramp.run()
+        } catch (e: Exception) {
+            stopMusic(); Log.w("PixelcityAudio", "Could not start $bgm", e)
+        }
+    }
+
+    private fun stopMusic() {
+        cancelPending(); finishFade()
+        bgmTrack?.let(::dispose); bgmTrack = null; playingBgm = null
+    }
 
     fun pause() {
-        paused.set(true)
-        stopAllSfx()
-        stopBgm()
+        if (released || paused) return
+        paused = true; cancelPending(); stopAllSfx(); finishFade()
+        // Keep the loop's position while the player uses another screen/app.
+        bgmTrack?.runCatching { pause() }
     }
 
     fun resume() {
-        paused.set(false)
-        if (bgmEnabled) restartBgm()
+        if (released || !paused) return
+        paused = false; startMusic()
     }
 
     fun release() {
-        stopAllSfx()
-        stopBgm()
+        if (released) return
+        released = true; paused = true
+        stopAllSfx(); stopMusic(); worker.shutdownNow()
+        // Pending worker callbacks still check `released` and release their own prepared track.
+    }
+
+    private fun dispose(track: AudioTrack) {
+        track.runCatching { stop() }
+        track.runCatching { release() }
     }
 
     private companion object {
-        /** 同時に鳴らす効果音の上限。 */
         const val MAX_VOICES = 6
-        /** 曲の音量。効果音より控えめにして、操作の手ごたえを消さない。 */
-        const val BGM_VOLUME = 0.42f
+        const val BGM_VOLUME = 0.52f
     }
 }

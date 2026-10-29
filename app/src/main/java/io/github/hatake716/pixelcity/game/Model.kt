@@ -1,69 +1,69 @@
 package io.github.hatake716.pixelcity.game
 
 /** 地形。生成時に決まり、以後変化しない。 */
-enum class Terrain { LAND, WATER, SHORE }
+enum class Terrain(val saveId: Int) { LAND(0), WATER(1), SHORE(2) }
 
 /**
- * タイルに置かれているもの。順序は保存フォーマットの一部なので、
- * 既存の値の並びを変えず、追加は末尾に行うこと。
+ * タイルに置かれているもの。saveId は旧形式と互換の固定 ID。
+ * 並び替えに影響されない。既存 ID の変更・再利用はしないこと。
  */
-enum class TileKind {
-    EMPTY,
-    ROAD,
-    ZONE_R,
-    ZONE_C,
-    ZONE_I,
-    POWER_COAL,
-    POWER_SOLAR,
-    PARK,
-    POLICE,
-    FIRE,
-    SCHOOL,
-    HOSPITAL,
-    MONUMENT,
-    // ここから下は v0.4 で追加。保存は序数なので、必ず末尾に足すこと。
+enum class TileKind(val saveId: Int) {
+    EMPTY(0),
+    ROAD(1),
+    ZONE_R(2),
+    ZONE_C(3),
+    ZONE_I(4),
+    POWER_COAL(5),
+    POWER_SOLAR(6),
+    PARK(7),
+    POLICE(8),
+    FIRE(9),
+    SCHOOL(10),
+    HOSPITAL(11),
+    MONUMENT(12),
+    // ここから下は v0.4 で追加。固定 ID を割り当てる。
     /** 農地。食料を供給し、公害を吸う。 */
-    FARM,
+    FARM(13),
     /** 風力発電。公害なしだが出力は小さい。 */
-    POWER_WIND,
+    POWER_WIND(14),
     /** 鉄道。道路より輸送力が高く、公害を減らす。 */
-    RAIL,
+    RAIL(15),
 
     // --- v2: 交通 ---
     /** 大通り。道路より輸送力が高い。 */
-    AVENUE,
+    AVENUE(16),
     /** 高速道路。輸送力は最大だが、区分は直接つながらない。 */
-    HIGHWAY,
-    /** 地下鉄。用地を取らず、地価を下げない。 */
-    SUBWAY,
+    HIGHWAY(17),
+    /** 地下鉄。専用タイルとして配置する。 */
+    SUBWAY(18),
     /** バス停。まわりの交通量を減らす。 */
-    BUS_STOP,
+    BUS_STOP(19),
     /** 地下鉄の駅。 */
-    SUBWAY_STATION,
+    SUBWAY_STATION(20),
     /** 空港。商業需要を押し上げるが、公害と騒音を出す。 */
-    AIRPORT,
+    AIRPORT(21),
     /** 港。工業需要を押し上げる。水辺に要接続。 */
-    SEAPORT,
+    SEAPORT(22),
 
     // --- v2: 環境 ---
     /** 給水塔。 */
-    WATER_TOWER,
+    WATER_TOWER(23),
     /** 浄水場。 */
-    WATER_PLANT,
+    WATER_PLANT(24),
     /** 下水処理場。 */
-    SEWAGE_PLANT,
+    SEWAGE_PLANT(25),
     /** 埋立地。容量があり、満杯になると機能しない。 */
-    LANDFILL,
+    LANDFILL(26),
     /** 焼却場。 */
-    INCINERATOR,
+    INCINERATOR(27),
     /** リサイクル施設。 */
-    RECYCLING,
+    RECYCLING(28),
     /** 送電線。 */
-    POWER_LINE,
+    POWER_LINE(29),
 
     // --- v2: 保健 ---
     /** 診療所。安価で広く配れる。 */
-    CLINIC;
+    CLINIC(30);
 
     val isZone: Boolean get() = this == ZONE_R || this == ZONE_C || this == ZONE_I
     val isPowerPlant: Boolean
@@ -85,23 +85,15 @@ enum class TileKind {
     val isLocalRoad: Boolean
         get() = this == ROAD || this == AVENUE || this == RAIL
 
-    /** その道の輸送力。 */
-    val capacity: Int
-        get() = when (this) {
-            ROAD -> 100
-            AVENUE -> 300
-            HIGHWAY -> 800
-            RAIL -> 600
-            SUBWAY -> 900
-            else -> 0
-        }
+    /** 1時間相当の輸送力。渋滞判定・表示と同じ値。 */
+    val capacity: Int get() = Traffic.capacityPerHour(this)
 
     /** 電気を通すもの。 */
     val carriesPower: Boolean
         get() = this == POWER_LINE || isPowerPlant || isBuilding
-    /** 道路網に繋がる必要があり、維持費を払う建造物か。 */
+    /** 交通網や送電線を除いた、区画・施設か。 */
     val isBuilding: Boolean
-        get() = this != EMPTY && this != ROAD && this != RAIL
+        get() = this != EMPTY && !isTransport && this != POWER_LINE
 }
 
 /** 建てられる世界の有名建築。1都市につき各1つ。 */
@@ -115,27 +107,29 @@ enum class Monument(
     val needsWater: Boolean,
     val blurb: String,
 ) {
-    TOKYO_TOWER("とうきょうタワー", 2_000, 2_500, 12, 15, 80, false,
-        "1958ねん、とうきょうにたてられたでんぱとう。\nまちのシンボルとして ちかが あがる。"),
-    ARC_DE_TRIOMPHE("がいせんもん", 4_000, 3_000, 10, 20, 100, false,
-        "パリのちゅうしんに たつ かちどきのもん。\nひろばに ひとが あつまる。"),
+    TOKYO_TOWER("東京タワー", 2_000, 2_500, 12, 15, 80, false,
+        "1958年、東京に建てられた電波塔。\n街の象徴として地価が上がる。"),
+    ARC_DE_TRIOMPHE("凱旋門", 4_000, 3_000, 10, 20, 100, false,
+        "パリの中心に建つ勝利を記念する門。\n広場に人々が集まる。"),
     COLOSSEUM("コロッセオ", 6_000, 3_500, 12, 18, 130, false,
-        "ローマの えんけいとうぎじょう。\nふるいいしの ぶたいに かんこうきゃくが くる。"),
-    STATUE_OF_LIBERTY("じゆうのめがみ", 8_000, 4_000, 14, 20, 160, true,
-        "ニューヨークのみなとに たつぞう。\nみずべに たてると みなとまちが さかえる。"),
+        "ローマの円形闘技場。\n古い石の舞台に観光客が訪れる。"),
+    STATUE_OF_LIBERTY("自由の女神", 8_000, 4_000, 14, 20, 160, true,
+        "ニューヨークの港に立つ像。\n水辺に建てると港町が栄える。"),
     BIG_BEN("ビッグ・ベン", 10_000, 4_500, 12, 22, 180, false,
-        "ロンドンの とけいとう。\nかねのおとが まちに ひびく。"),
-    LEANING_TOWER("ピサのしゃとう", 12_000, 5_000, 10, 25, 200, false,
-        "かたむいたまま たちつづける しろいとう。\nめずらしさが ひとを よぶ。"),
+        "ロンドンの時計塔。\n鐘の音が街に響く。"),
+    LEANING_TOWER("ピサの斜塔", 12_000, 5_000, 10, 25, 200, false,
+        "傾いたまま建ち続ける白い塔。\n珍しい姿が人々を呼ぶ。"),
     TAJ_MAHAL("タージ・マハル", 15_000, 6_000, 14, 28, 240, false,
-        "インドの しろいだいりせきの びょう。\nうつくしさで しられる。"),
+        "インドの白い大理石の霊廟。\n美しい姿で知られる。"),
     PYRAMID("ギザのピラミッド", 20_000, 7_000, 16, 30, 300, false,
-        "4500ねんまえに つくられた きょだいなはか。\nさばくに そびえる せかいのふしぎ。"),
+        "約4500年前に造られた巨大な墓。\n砂漠にそびえる世界の不思議。"),
 }
 
 /** 1タイルの状態。マップは Tile の配列で保持する。 */
 class Tile {
     var terrain: Terrain = Terrain.LAND
+    var biome: PlanetTerrain = PlanetTerrain.PLAIN
+    var storedBuilding: StoredBuilding? = null
     var kind: TileKind = TileKind.EMPTY
 
     /** 区分の発展段階 0..3。区分以外では常に 0。 */
@@ -206,6 +200,9 @@ class Tile {
         stage = 0
         monument = null
         monumentAnchor = -1
+        landfillFill = 0
+        stageChangedMonth = -1
+        previousStage = 0
     }
 }
 

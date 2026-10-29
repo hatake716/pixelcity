@@ -14,8 +14,10 @@ import io.github.hatake716.pixelcity.game.TileKind
  * とすることで、手前の建物が奥の建物を正しく隠す。
  */
 class CityRenderer {
+    private var sceneKey: List<Any>? = null
+    private var cachedGround = ByteArray(0)
+    private var cachedBuildings = PixelCanvas(1, 1)
 
-    /** 地図に重ねて見る情報。 */
     /**
      * 地図に重ねて見る情報。
      *
@@ -23,27 +25,27 @@ class CityRenderer {
      * false のものは「多いほど悪い」ので黄〜赤で塗る。
      */
     enum class Overlay(val label: String, val good: Boolean = true) {
-        NONE("なし"),
+        NONE("無効"),
 
         // --- 区分の育ち具合 ---
-        RESIDENTIAL("じゅうたく みつど"),
-        COMMERCIAL("しょうぎょう みつど"),
-        INDUSTRIAL("こうぎょう みつど"),
+        RESIDENTIAL("住宅密度"),
+        COMMERCIAL("商業密度"),
+        INDUSTRIAL("工業密度"),
 
         // --- 土地の質 ---
-        LAND_VALUE("ちか"),
-        POLLUTION("こうがい", good = false),
-        CRIME("はんざい", good = false),
+        LAND_VALUE("地価"),
+        POLLUTION("公害", good = false),
+        CRIME("犯罪", good = false),
 
         // --- 足まわり ---
-        TRAFFIC("こうつうりょう", good = false),
-        POWER("でんりょく", good = false),
-        WATER("すいどう", good = false),
+        TRAFFIC("交通量", good = false),
+        POWER("電力", good = false),
+        WATER("水道", good = false),
 
         // --- くらし ---
-        HEALTH("けんこう"),
-        EDUCATION("きょういく"),
-        FIRE_RISK("しょうぼう"),
+        HEALTH("健康"),
+        EDUCATION("教育"),
+        FIRE_RISK("消防"),
     }
 
     /**
@@ -96,47 +98,78 @@ class CityRenderer {
         val clipTop = viewTop
         val clipBottom = viewTop + viewHeight
 
-        // --- 1周目: 地面 ---
-        forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
-            val tile = city.tileAt(tx, ty)
-            // 道の種類ごとに、つながる向きを見て絵を選ぶ
-            fun linked(kind: TileKind, dx: Int, dy: Int): Boolean =
-                city.tileOrNull(tx + dx, ty + dy)?.kind == kind
-            val ground = when {
-                tile.kind == TileKind.AVENUE -> IsoTiles.avenueFor(
-                    alongX = linked(TileKind.AVENUE, -1, 0) || linked(TileKind.AVENUE, 1, 0),
-                    alongY = linked(TileKind.AVENUE, 0, -1) || linked(TileKind.AVENUE, 0, 1),
-                )
-                tile.kind == TileKind.HIGHWAY -> IsoTiles.highwayFor(
-                    alongX = linked(TileKind.HIGHWAY, -1, 0) || linked(TileKind.HIGHWAY, 1, 0),
-                    alongY = linked(TileKind.HIGHWAY, 0, -1) || linked(TileKind.HIGHWAY, 0, 1),
-                )
-                tile.kind == TileKind.SUBWAY -> IsoTiles.subwayFor(
-                    alongX = linked(TileKind.SUBWAY, -1, 0) || linked(TileKind.SUBWAY, 1, 0),
-                    alongY = linked(TileKind.SUBWAY, 0, -1) || linked(TileKind.SUBWAY, 0, 1),
-                )
-                tile.kind == TileKind.LANDFILL -> IsoTiles.GRASS
-                tile.kind == TileKind.RAIL -> IsoTiles.railFor(
-                    alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.RAIL ||
-                        city.tileOrNull(tx + 1, ty)?.kind == TileKind.RAIL,
-                    alongY = city.tileOrNull(tx, ty - 1)?.kind == TileKind.RAIL ||
-                        city.tileOrNull(tx, ty + 1)?.kind == TileKind.RAIL,
-                )
-                tile.kind == TileKind.FARM -> IsoTiles.FARM
-                tile.kind == TileKind.ROAD -> IsoTiles.roadFor(
-                    alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.ROAD ||
-                        city.tileOrNull(tx + 1, ty)?.kind == TileKind.ROAD,
-                    alongY = city.tileOrNull(tx, ty - 1)?.kind == TileKind.ROAD ||
-                        city.tileOrNull(tx, ty + 1)?.kind == TileKind.ROAD,
-                )
-                tile.kind.isZone && tile.stage == 0 -> when (tile.kind) {
-                    TileKind.ZONE_R -> IsoTiles.ZONE_R_EMPTY
-                    TileKind.ZONE_C -> IsoTiles.ZONE_C_EMPTY
-                    else -> IsoTiles.ZONE_I_EMPTY
-                }
-                else -> IsoTiles.terrainTile(tile.terrain)
+        // Only the vehicles and interaction overlays change on most frames.
+        // Rebuild static layers when the map, camera, palette or growth phase changes.
+        var mapHash = 1
+        var rising = false
+        for (tile in city.tiles) {
+            mapHash = 31 * mapHash + tile.kind.saveId
+            mapHash = 31 * mapHash + tile.terrain.saveId
+            mapHash = 31 * mapHash + tile.stage
+            mapHash = 31 * mapHash + if (tile.powered) 1 else 0
+            mapHash = 31 * mapHash + (tile.monument?.ordinal ?: -1)
+            if (tile.stageChangedMonth == city.month && tile.stage > tile.previousStage) rising = true
+        }
+        val phase = if (rising) (animationPhase.coerceIn(0f, 1f) * 4).toInt() else 4
+        val nextKey = listOf(city, camX, camY, zoomNum, zoomDen, canvas.width, canvas.height,
+            viewTop, viewHeight, clearBackground, mapHash, city.style, city.customStyle.save().contentHashCode(), phase)
+        val refreshScene = nextKey != sceneKey
+        val startPixel = viewTop.coerceAtLeast(0) * canvas.width
+        val endPixel = (viewTop + viewHeight).coerceAtMost(canvas.height) * canvas.width
+        if (refreshScene) {
+            if (cachedGround.size != canvas.pixels.size || cachedBuildings.width != canvas.width || cachedBuildings.height != canvas.height) {
+                cachedBuildings = PixelCanvas(canvas.width, canvas.height)
+                cachedGround = ByteArray(canvas.pixels.size)
             }
-            blit(canvas, ground, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
+            // --- 1周目: 地面 ---
+            forEachVisibleTile(city, canvas, originX, originY, zoomNum, zoomDen, clipTop, clipBottom) { tx, ty, sx, sy ->
+                val tile = city.tileAt(tx, ty)
+                // 道の種類ごとに、つながる向きを見て絵を選ぶ
+                fun linked(kind: TileKind, dx: Int, dy: Int): Boolean =
+                    city.tileOrNull(tx + dx, ty + dy)?.kind?.let { if (kind.isRoad) it.isRoad else it == kind } == true
+                val ground = when {
+                    tile.kind == TileKind.AVENUE -> IsoTiles.avenueFor(
+                        alongX = linked(TileKind.AVENUE, -1, 0) || linked(TileKind.AVENUE, 1, 0),
+                        alongY = linked(TileKind.AVENUE, 0, -1) || linked(TileKind.AVENUE, 0, 1),
+                    )
+                    tile.kind == TileKind.HIGHWAY -> IsoTiles.highwayFor(
+                        alongX = linked(TileKind.HIGHWAY, -1, 0) || linked(TileKind.HIGHWAY, 1, 0),
+                        alongY = linked(TileKind.HIGHWAY, 0, -1) || linked(TileKind.HIGHWAY, 0, 1),
+                    )
+                    tile.kind == TileKind.SUBWAY -> IsoTiles.subwayFor(
+                        alongX = linked(TileKind.SUBWAY, -1, 0) || linked(TileKind.SUBWAY, 1, 0),
+                        alongY = linked(TileKind.SUBWAY, 0, -1) || linked(TileKind.SUBWAY, 0, 1),
+                    )
+                    tile.kind == TileKind.LANDFILL -> IsoTiles.GRASS
+                    tile.kind == TileKind.RAIL -> IsoTiles.railFor(
+                        alongX = city.tileOrNull(tx - 1, ty)?.kind == TileKind.RAIL ||
+                            city.tileOrNull(tx + 1, ty)?.kind == TileKind.RAIL,
+                        alongY = city.tileOrNull(tx, ty - 1)?.kind == TileKind.RAIL ||
+                            city.tileOrNull(tx, ty + 1)?.kind == TileKind.RAIL,
+                    )
+                    tile.kind == TileKind.FARM -> IsoTiles.FARM
+                    tile.kind == TileKind.ROAD -> IsoTiles.roadFor(
+                        alongX = city.tileOrNull(tx - 1, ty)?.kind?.isRoad == true ||
+                            city.tileOrNull(tx + 1, ty)?.kind?.isRoad == true,
+                        alongY = city.tileOrNull(tx, ty - 1)?.kind?.isRoad == true ||
+                            city.tileOrNull(tx, ty + 1)?.kind?.isRoad == true,
+                    )
+                    tile.kind.isZone && tile.stage == 0 -> when (tile.kind) {
+                        TileKind.ZONE_R -> IsoTiles.ZONE_R_EMPTY
+                        TileKind.ZONE_C -> IsoTiles.ZONE_C_EMPTY
+                        else -> IsoTiles.ZONE_I_EMPTY
+                    }
+                    else -> IsoTiles.terrainTile(tile.terrain)
+                }
+                drawGround(canvas, ground,
+                    originX + Iso.screenX(tx, ty).toDouble() * zoomNum / zoomDen,
+                    originY + Iso.screenY(tx, ty).toDouble() * zoomNum / zoomDen,
+                    clipTop, clipBottom, zoomNum, zoomDen)
+            }
+
+            canvas.pixels.copyInto(cachedGround, startPixel, startPixel, endPixel)
+        } else {
+            cachedGround.copyInto(canvas.pixels, startPixel, startPixel, endPixel)
         }
 
         // --- 2周目: 置ける場所の目印 ---
@@ -177,47 +210,64 @@ class CityRenderer {
 
         // --- 4周目: 建物。奥から手前へ ---
         // (tx+ty) が同じものは同じ奥行き。行ごとに描けば自然に前後が揃う。
-        val maxDepth = city.width + city.height
-        for (depth in 0 until maxDepth) {
-            var tx = minOf(depth, city.width - 1)
-            while (tx >= 0) {
-                val ty = depth - tx
-                if (ty >= city.height) { tx--; continue }
-                val tile = city.tileAt(tx, ty)
-                val raw = buildingFor(city, tx, ty, tile)
-                // 街の様式にあわせて色を変える。形は同じまま。
-                val sprite = raw?.let { IsoBuildings.styled(it, city.style, city.customStyle) }
-                if (sprite != null) {
-                    val sx = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
-                    // 建物の下端が、そのタイルの菱形に重なるよう持ち上げる
-                    var sy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen -
-                        (sprite.height - Iso.TILE_H) * zoomNum / zoomDen
+        if (refreshScene) {
+            val canvas = cachedBuildings
+            canvas.clearTo(Palette.TRANSPARENT)
+            val maxDepth = city.width + city.height
+            for (depth in 0 until maxDepth) {
+                var tx = minOf(depth, city.width - 1)
+                while (tx >= 0) {
+                    val ty = depth - tx
+                    if (ty >= city.height) { tx--; continue }
+                    val tile = city.tileAt(tx, ty)
+                    val groundX = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
+                    val groundY = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen
+                    val footprint = if (tile.monument != null) Iso.TILE_W * 2 else Iso.TILE_W
+                    if (groundX + footprint * zoomNum / zoomDen < 0 || groundX > canvas.width ||
+                        groundY + Iso.TILE_H * 2 * zoomNum / zoomDen < clipTop ||
+                        groundY - 1600 * zoomNum / zoomDen > clipBottom) { tx--; continue }
+                    val raw = buildingFor(city, tx, ty, tile)
+                    // 街の様式にあわせて色を変える。形は同じまま。
+                    val sprite = raw?.let { IsoBuildings.styled(it, city.style, city.customStyle) }
+                    if (sprite != null) {
+                        val sx = originX + Iso.screenX(tx, ty) * zoomNum / zoomDen
+                        // 建物の下端が、そのタイルの菱形に重なるよう持ち上げる
+                        var sy = originY + Iso.screenY(tx, ty) * zoomNum / zoomDen -
+                            (sprite.height - Iso.TILE_H) * zoomNum / zoomDen
 
-                    // 建ったばかりなら、地面から せり上がる形で見せる。
-                    // 街が育つ様子が、目で分かるようになる。
-                    val rising = tile.stageChangedMonth == city.month &&
-                        tile.stage > tile.previousStage
-                    if (rising && animationPhase < 1f) {
-                        val hidden = ((sprite.height - Iso.TILE_H) *
-                            (1f - animationPhase)).toInt() * zoomNum / zoomDen
-                        sy += hidden
-                        blitClipped(
-                            canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen,
-                            skipTop = (sprite.height - Iso.TILE_H) - ((sprite.height - Iso.TILE_H) *
-                                animationPhase).toInt(),
-                        )
-                    } else {
-                        blit(canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
-                    }
+                        // 建ったばかりなら、地面から せり上がる形で見せる。
+                        // 街が育つ様子が、目で分かるようになる。
+                        val rising = tile.stageChangedMonth == city.month &&
+                            tile.stage > tile.previousStage
+                        if (rising && animationPhase < 1f) {
+                            val hidden = ((sprite.height - Iso.TILE_H) *
+                                (1f - animationPhase)).toInt() * zoomNum / zoomDen
+                            sy += hidden
+                            blitClipped(
+                                canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen,
+                                skipTop = (sprite.height - Iso.TILE_H) - ((sprite.height - Iso.TILE_H) *
+                                    animationPhase).toInt(),
+                            )
+                        } else {
+                            blit(canvas, sprite, sx, sy, clipTop, clipBottom, zoomNum, zoomDen)
+                        }
 
-                    if (needsPowerMark(tile)) {
-                        val mx = sx + (Iso.TILE_W / 2 - 4) * zoomNum / zoomDen
-                        val my = sy - 6 * zoomNum / zoomDen
-                        blit(canvas, IsoBuildings.NO_POWER, mx, my, clipTop, clipBottom, zoomNum, zoomDen)
+                        if (needsPowerMark(tile)) {
+                            val mx = sx + (Iso.TILE_W / 2 - 4) * zoomNum / zoomDen
+                            val my = sy - 6 * zoomNum / zoomDen
+                            blit(canvas, IsoBuildings.NO_POWER, mx, my, clipTop, clipBottom, zoomNum, zoomDen)
+                        }
                     }
+                    tx--
                 }
-                tx--
             }
+
+            sceneKey = nextKey
+        }
+        // Vehicles remain between the cached ground and the transparent building layer.
+        for (i in startPixel until endPixel) {
+            val color = cachedBuildings.pixels[i]
+            if (color >= 0) canvas.pixels[i] = color
         }
 
         // --- 5周目: 情報の重ね表示 ---
@@ -275,6 +325,29 @@ class CityRenderer {
         }
     }
 
+    /** Hit the visible building, even when its roof projects over a plot behind it. */
+    fun buildingAtScreen(city: City, camX: Float, camY: Float, num: Int, den: Int,
+                         canvasWidth: Int, viewTop: Int, viewHeight: Int, px: Int, py: Int): Int? {
+        val ox = canvasWidth / 2 - Math.round(Iso.screenX2(camX, camY) * num / den)
+        val oy = viewTop + viewHeight / 2 - Math.round(Iso.screenY2(camX, camY) * num / den)
+        for(depth in (city.width + city.height - 2) downTo 0) {
+            for(tx in maxOf(0, depth - city.height + 1)..minOf(depth, city.width - 1)) {
+                val ty = depth - tx
+                val tile = city.tileAt(tx, ty)
+                if (!tile.kind.isBuilding || tile.kind.isZone && tile.stage == 0) continue
+                val sx = ox + Iso.screenX(tx, ty) * num / den
+                val gy = oy + Iso.screenY(tx, ty) * num / den
+                val span = if (tile.monument != null) 1024 else 512
+                if (px < sx || px >= sx + span * num / den || py > gy + 512 * num / den || py < gy - 1600 * num / den) continue
+                val sprite = buildingFor(city, tx, ty, tile) ?: continue
+                val sy = gy - (sprite.height - Iso.TILE_H) * num / den
+                val sampled = SpriteScale.of(sprite, num, den)
+                if (sampled.at(px - sx, py - sy) != Pix.TRANSPARENT) return city.index(tx, ty)
+            }
+        }
+        return null
+    }
+
     /**
      * 車の、タイルのなかでの位置。
      *
@@ -312,6 +385,9 @@ class CityRenderer {
         ty: Int,
         tile: io.github.hatake716.pixelcity.game.Tile,
     ): Sprite? = when {
+        tile.kind == TileKind.EMPTY && tile.terrain == Terrain.WATER && variantAt(tx, ty) % 59 == 0 -> Architecture.sailboat
+        tile.kind == TileKind.EMPTY && tile.terrain == Terrain.LAND && variantAt(tx, ty) % 11 == 0 &&
+            (kotlin.math.abs(tx - city.width / 2) > 5 || kotlin.math.abs(ty - city.height / 2) > 5) -> Architecture.grove
         // モニュメントは本体タイルでのみ描く（2×2 を1枚で覆う）
         tile.monument != null -> MonumentSprites.of(tile.monument!!)
         tile.kind == TileKind.MONUMENT -> null
@@ -373,6 +449,28 @@ class CityRenderer {
         }
     }
 
+    /** Rasterize adjacent tiles against the same pixel centres so fractional zoom cannot leave seams. */
+    private fun drawGround(canvas: PixelCanvas, source: Sprite, x: Double, y: Double,
+                           clipTop: Int, clipBottom: Int, num: Int, den: Int) {
+        val sampled = SpriteScale.of(source, num, den)
+        val ratio = num.toDouble() / den
+        val inverse = 1.0 / ratio
+        val fallback = source.at(source.width / 2, source.height / 2).toInt()
+        for(py in maxOf(clipTop, 0, kotlin.math.floor(y).toInt()) until minOf(clipBottom, canvas.height, kotlin.math.ceil(y + source.height * ratio).toInt())) {
+            val localY = (py + .5 - y) * inverse
+            if(localY < 0 || localY >= source.height) continue
+            for(px in maxOf(0, kotlin.math.floor(x).toInt()) until minOf(canvas.width, kotlin.math.ceil(x + source.width * ratio).toInt())) {
+                val localX = (px + .5 - x) * inverse
+                if(kotlin.math.abs(localX - source.width / 2.0) / (source.width / 2.0) +
+                    kotlin.math.abs(localY - source.height / 2.0) / (source.height / 2.0) > 1.000001) continue
+                val dx = (localX * sampled.width / source.width).toInt().coerceIn(0, sampled.width - 1)
+                val dy = (localY * sampled.height / source.height).toInt().coerceIn(0, sampled.height - 1)
+                val color = sampled.at(dx, dy).toInt()
+                canvas.set(px, py, if (color >= 0) color else fallback)
+            }
+        }
+    }
+
     /**
      * 上から [skipTop] 行を描かずに転送する。
      * 地面から せり上がってくる様子を出すために使う。
@@ -390,12 +488,12 @@ class CityRenderer {
     ) {
         val dw = s.width * zoomNum / zoomDen
         val dh = s.height * zoomNum / zoomDen
-        for (dy in 0 until dh) {
+        for (dy in maxOf(0, clipTop - y) until minOf(dh, clipBottom - y, canvas.height - y)) {
             val sy = dy * zoomDen / zoomNum
             if (sy < skipTop) continue
             val ty = y + dy
             if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
-            for (dx in 0 until dw) {
+            for (dx in maxOf(0, -x) until minOf(dw, canvas.width - x)) {
                 val tx = x + dx
                 if (tx < 0 || tx >= canvas.width) continue
                 val v = s.at(dx * zoomDen / zoomNum, sy)
@@ -419,18 +517,14 @@ class CityRenderer {
         zoomNum: Int,
         zoomDen: Int,
     ) {
-        val dw = s.width * zoomNum / zoomDen
-        val dh = s.height * zoomNum / zoomDen
-        for (dy in 0 until dh) {
+        val sampled = SpriteScale.of(s, zoomNum, zoomDen)
+        val dw = sampled.width
+        val dh = sampled.height
+        for (dy in maxOf(0, clipTop - y) until minOf(dh, clipBottom - y, canvas.height - y)) {
             val ty = y + dy
-            if (ty < clipTop || ty >= clipBottom || ty >= canvas.height) continue
-            val sy = dy * zoomDen / zoomNum
-            for (dx in 0 until dw) {
-                val tx = x + dx
-                if (tx < 0 || tx >= canvas.width) continue
-                val v = s.at(dx * zoomDen / zoomNum, sy)
-                if (v == Pix.TRANSPARENT) continue
-                canvas.set(tx, ty, v.toInt())
+            for (dx in maxOf(0, -x) until minOf(dw, canvas.width - x)) {
+                val v = sampled.data[dy * dw + dx]
+                if (v != Pix.TRANSPARENT) canvas.set(x + dx, ty, v.toInt())
             }
         }
     }
@@ -596,8 +690,8 @@ class CityRenderer {
                 Overlay.CRIME -> tile.crime / 20
 
                 Overlay.TRAFFIC ->
-                    if (tile.kind.capacity <= 0) 0
-                    else (tile.traffic * 5 / tile.kind.capacity.coerceAtLeast(1)).coerceAtMost(5)
+                    if (!tile.kind.isTransport) 0
+                    else (tile.volumeCapacityRatio * 4).toInt().coerceIn(0, 5)
                 // 来ているところは薄く、来ていないところを濃く出す。
                 // 「足りない場所」を探すための地図なので。
                 Overlay.POWER ->

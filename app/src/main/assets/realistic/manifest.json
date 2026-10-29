@@ -1,0 +1,3924 @@
+[
+  {
+    "id": "AIRPORT",
+    "width": 534,
+    "height": 434,
+    "anchorX": 266.86116015902536,
+    "anchorY": 292.9973248288008,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d71772c6d53f46af0c4ee44b104fa83a40c991d87905de9ebe452e62ffe97fec"
+  },
+  {
+    "id": "ANCIENT_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "138ae17d59c662271c5d25d6a56ebbea4a0ab8850cc08f99154ff67d4239677c"
+  },
+  {
+    "id": "ANCIENT_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7705c6d796c2dcd37c105ed3bb80daf98e94213868c1516f6b932e17ecd4f08c"
+  },
+  {
+    "id": "ANCIENT_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9f263eef94f48620edc7fd48934bbdf5536a02f6756ab3416232fd024853a70c"
+  },
+  {
+    "id": "ANCIENT_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "836cf64a87b773231754e1d48ac9a46b524a38b91243a81199c5eafb4677535c"
+  },
+  {
+    "id": "ANCIENT_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_1_0",
+    "width": 534,
+    "height": 364,
+    "anchorX": 266.86116015902536,
+    "anchorY": 223.05773500132128,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c17ba6800a252d2e0b1713ebadc2f37f8927b673f06704c9bae85c82c74c16f2"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_1_1",
+    "width": 534,
+    "height": 412,
+    "anchorX": 266.86116015902536,
+    "anchorY": 271.38118343217764,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ec9bb9b71c2fd3eeec04c2d39655acfeb6358833fcba36c5569a5886ca7a6f53"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_2_0",
+    "width": 534,
+    "height": 409,
+    "anchorX": 266.86116015902536,
+    "anchorY": 268.52025864717746,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b1d6614b07184e82c0c71c098d8de6d772e725f96481749edfd3dfe10717d965"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_2_1",
+    "width": 534,
+    "height": 458,
+    "anchorX": 266.86116015902536,
+    "anchorY": 316.84370707803384,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "583da3a8df8a48cf49625c27bf4eebc078ff0b62c1838ce4436ed86a087c1002"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_3_0",
+    "width": 534,
+    "height": 455,
+    "anchorX": 266.86116015902536,
+    "anchorY": 313.98280098115737,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "08d7164651cb002f6e27463c8a4dec4387fad88db203a2f3148f2904b8ae364e"
+  },
+  {
+    "id": "ANCIENT_ZONE_C_3_1",
+    "width": 534,
+    "height": 503,
+    "anchorX": 266.86116015902536,
+    "anchorY": 362.3062681001373,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "04c8f62127bc0e10fb3ac027e14e2bb37cda70bfad3c4d10f6227985806560ea"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c0a2324130d03774262ab2963e2f357cde2a7b14f427baffaf26455ef7b8acdb"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c0a2324130d03774262ab2963e2f357cde2a7b14f427baffaf26455ef7b8acdb"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7fbe44ad1ea439ff89fc6fe737ea4185f4c59e612b0f549c83177eeec58ba7d5"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7fbe44ad1ea439ff89fc6fe737ea4185f4c59e612b0f549c83177eeec58ba7d5"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d465550ace40c34d09781a51c2b10c3cd380cc74c0505bb114f79b0d10bb335f"
+  },
+  {
+    "id": "ANCIENT_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d465550ace40c34d09781a51c2b10c3cd380cc74c0505bb114f79b0d10bb335f"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_1_0",
+    "width": 534,
+    "height": 319,
+    "anchorX": 266.86116015902536,
+    "anchorY": 177.59520201140325,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "07b98132c7313ceef6c6453b54949cc33199412dbb3ea015fef227389c40f11a"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_1_1",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 225.91865978632143,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7622dd890f5acd33b79c943d5e0ed79f8c4d8ca76e90957c203953877b58eada"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_2_0",
+    "width": 534,
+    "height": 364,
+    "anchorX": 266.86116015902536,
+    "anchorY": 223.05773500132128,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e555047f0b2f37af7870ec24a903336453e3a16da2e551863064baf1305bd024"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_2_1",
+    "width": 534,
+    "height": 412,
+    "anchorX": 266.86116015902536,
+    "anchorY": 271.38118343217764,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "201dcdb583f95281567af26cd50782a7d22cc38551a978b43275a41f876bba5c"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_3_0",
+    "width": 534,
+    "height": 409,
+    "anchorX": 266.86116015902536,
+    "anchorY": 268.52025864717746,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "883914548f8b5ed6d30a5adcb56fb729a7e5792e6f99fbc44080cc7d6fd8af26"
+  },
+  {
+    "id": "ANCIENT_ZONE_R_3_1",
+    "width": 534,
+    "height": 458,
+    "anchorX": 266.86116015902536,
+    "anchorY": 316.84370707803384,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d1f5c124bf90592220a0305ca731581c5cabbf2de906a86aab01e1ac76ac21d8"
+  },
+  {
+    "id": "ARC_DE_TRIOMPHE",
+    "width": 985,
+    "height": 893,
+    "anchorX": 492.1411589383222,
+    "anchorY": 638.970060947503,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "277a1247ef2f341823d545b1eed45fafde9cfeadd952650dc2f690e7dc6a26e3"
+  },
+  {
+    "id": "BIG_BEN",
+    "width": 985,
+    "height": 1119,
+    "anchorX": 492.1411589383222,
+    "anchorY": 865.7235180739906,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "01752d5d593bc988b6365d8836fd1088899d1c4854080d3be36a73727dda64e5"
+  },
+  {
+    "id": "BUS_STOP",
+    "width": 534,
+    "height": 287,
+    "anchorX": 266.86116015902536,
+    "anchorY": 146.37773477415092,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1af46605ef27fd59fd4b4bf8448634f5a02abf979a3f148cb728a5e02f281422"
+  },
+  {
+    "id": "CAR_0_0",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.59715640536325,
+    "anchorY": 74.12202413813006,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "0b8e83a7c44a92e62572fe47e7dc20a8f489591835f670026ca9720f3db6fc59"
+  },
+  {
+    "id": "CAR_0_1",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.597160220060516,
+    "anchorY": 74.12202318445574,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "c9e0650666977b077fc0a1fd981705c00fa5aca8b79d55e883c02585bdae8907"
+  },
+  {
+    "id": "CAR_0_2",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "1dc7f24cc42908327803ad7a63104177fac38846216d551028d61af64ba28299"
+  },
+  {
+    "id": "CAR_0_3",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "0da9542be5f061718d974f276b6072e46198ba59db2fb4d01ed92286752fe6b6"
+  },
+  {
+    "id": "CAR_1_0",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.59715640536325,
+    "anchorY": 74.12202413813006,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "9eebc7e317a26527cff644ccf5af975750fa43f3a83cef64332d3b6c7530dbf0"
+  },
+  {
+    "id": "CAR_1_1",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.597160220060516,
+    "anchorY": 74.12202318445574,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "2a82353e5610f77822c143aaffb365ef04de6205c7bfbf2d42169e1d37f91aeb"
+  },
+  {
+    "id": "CAR_1_2",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "ed25c76d1adc65ea29f2a6099f0d34fc8e67eeebaf7e67b72b776714fa807f1e"
+  },
+  {
+    "id": "CAR_1_3",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "dc9ff4e07327286d6d4aa0d8d44a4ee3976e085d0c456b389fa97e301c7a8730"
+  },
+  {
+    "id": "CAR_2_0",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.59715640536325,
+    "anchorY": 74.12202413813006,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "574eed5ab0655f285fca12a9f4084f488120867930a08594d33ac93be8f4107c"
+  },
+  {
+    "id": "CAR_2_1",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.597160220060516,
+    "anchorY": 74.12202318445574,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "65800c073c434759a592eb84d595b40de8f0937ba39e5069f7d0002ae4b4ae50"
+  },
+  {
+    "id": "CAR_2_2",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "ee75820502f7a7f44768b612be356e89e56d6ebc369409b09f247f1be53fd621"
+  },
+  {
+    "id": "CAR_2_3",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "6ca582f53d87a3002ad7a01285ed7dffd91e4aa0d22bcb101ca1e0dd09a0e261"
+  },
+  {
+    "id": "CAR_3_0",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.59715640536325,
+    "anchorY": 74.12202413813006,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "45f8403d4b07fe054de7b40e5329ff26bd115fd6bfbb484ed6b817c2ae9b2846"
+  },
+  {
+    "id": "CAR_3_1",
+    "width": 128,
+    "height": 111,
+    "anchorX": 63.597160220060516,
+    "anchorY": 74.12202318445574,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "297e4ade09ade157e28b005c90a51fbe33adae4d0588b7c50a19b4f626c5da70"
+  },
+  {
+    "id": "CAR_3_2",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "a4cdf50e9181159f2fbd59d022af9fdbf6c557b6e8bba156a21735d79fe56ea8"
+  },
+  {
+    "id": "CAR_3_3",
+    "width": 128,
+    "height": 106,
+    "anchorX": 63.59716212740914,
+    "anchorY": 69.00202377573382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "67ae955ee6a8f3600965bb1bb32749fe2e4f268c1b3a8d8385b40b0b39e240fa"
+  },
+  {
+    "id": "CAR_4_0",
+    "width": 153,
+    "height": 132,
+    "anchorX": 76.39715373507516,
+    "anchorY": 91.04205954442058,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "3deaca787a1626ad7006b98a13d73fbfac0f0ab90e9ea7ad9f34f36224763fd0"
+  },
+  {
+    "id": "CAR_4_1",
+    "width": 153,
+    "height": 132,
+    "anchorX": 76.39715945712106,
+    "anchorY": 91.0420566833976,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "2aa9bffcc0fea2ac48e66d180660c8377c60e173f5677965060beef4f37e160b"
+  },
+  {
+    "id": "CAR_4_2",
+    "width": 153,
+    "height": 124,
+    "anchorX": 76.39716327181833,
+    "anchorY": 83.36205733189615,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "4f1c6dffaf95228bfdbc32f277f6277967413c18dec72761778ab69fa4d82e8e"
+  },
+  {
+    "id": "CAR_4_3",
+    "width": 153,
+    "height": 124,
+    "anchorX": 76.39716327181833,
+    "anchorY": 83.36205733189615,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "1119b6c49571691156cc12bbcc8b7abf58eaf043e71c7e3cc032750fe180dd54"
+  },
+  {
+    "id": "CAR_5_0",
+    "width": 153,
+    "height": 153,
+    "anchorX": 76.39715373507516,
+    "anchorY": 112.47879319270857,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "c48d2cd368042c447646c0762cbc1749167243c602c925fe6c3aa7800c8e7784"
+  },
+  {
+    "id": "CAR_5_1",
+    "width": 153,
+    "height": 153,
+    "anchorX": 76.39715945712106,
+    "anchorY": 112.47879128535992,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "6dc2a239852f2f3055835cb091a24b2ebd238a87c0fb714f6355c4fc9f6280e6"
+  },
+  {
+    "id": "CAR_5_2",
+    "width": 153,
+    "height": 138,
+    "anchorX": 76.39716327181833,
+    "anchorY": 97.11878972133405,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "ed9f6a25420d24838a09a42eda60b5906d66cccc1d00671daa91316f172ec0d9"
+  },
+  {
+    "id": "CAR_5_3",
+    "width": 153,
+    "height": 138,
+    "anchorX": 76.39716327181833,
+    "anchorY": 97.11879067500837,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "f6d188bcd9c698583d75531cf44b64341ad5ee98a3ff811395b7412d7a4af4a8"
+  },
+  {
+    "id": "CAR_6_0",
+    "width": 174,
+    "height": 152,
+    "anchorX": 86.63715350619333,
+    "anchorY": 107.84042395625517,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "3bc442d50296da49acc8b9b89f2cf912e23d93e56f3f6687c6219b7a77404da0"
+  },
+  {
+    "id": "CAR_6_1",
+    "width": 174,
+    "height": 152,
+    "anchorX": 86.63716113558786,
+    "anchorY": 107.84042109523222,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "184953e1b0f22e41bd19fe678950e6417494b8ffd4ffacb42b84606bc489f254"
+  },
+  {
+    "id": "CAR_6_2",
+    "width": 174,
+    "height": 152,
+    "anchorX": 86.63716495028513,
+    "anchorY": 107.84041918788358,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "5bfee2889adefcab5147753f5fe0bba40ae78807c8664ea102af0919ef9faced"
+  },
+  {
+    "id": "CAR_6_3",
+    "width": 174,
+    "height": 152,
+    "anchorX": 86.63716685763376,
+    "anchorY": 107.84041918788358,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "0f0019737d26bf62c3961fbf003955b33905649525692006e0dbcf071e1e7ee5"
+  },
+  {
+    "id": "CLINIC",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 226.14818186283102,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "93281999229e70abd83a098cfe9715d363a7e98b8ccc07b552ca6692886bdaaf"
+  },
+  {
+    "id": "COLOSSEUM",
+    "width": 985,
+    "height": 644,
+    "anchorX": 492.1411589383222,
+    "anchorY": 390.6272575167932,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4691d58c4c021e88f87c9e4bded7560ed0d6067de26bad80590a1d93bb087643"
+  },
+  {
+    "id": "EUROPE_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ae7ef4da1401d2b690ae4a9752b139408ebfb0b7bc17994fa3114314dbcc6801"
+  },
+  {
+    "id": "EUROPE_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5c0cfcc1d14c7015bf09b683e59784202696d90f6e6526f6842248fe33e32379"
+  },
+  {
+    "id": "EUROPE_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "85fa3adf03a449e3ef3e5f42f45f20cab52876ef4103a996ee690fa0fa2b839d"
+  },
+  {
+    "id": "EUROPE_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "80e0e7deecd0a9404d2fdfde1e5f1472d50f726488252a7a982805f9b00c0f9b"
+  },
+  {
+    "id": "EUROPE_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "EUROPE_ZONE_C_1_0",
+    "width": 534,
+    "height": 464,
+    "anchorX": 266.86116015902536,
+    "anchorY": 323.1738197203743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "da902aae538c09036d868106884e72222a99ca88c83455b1d42bb87fe88584d3"
+  },
+  {
+    "id": "EUROPE_ZONE_C_1_1",
+    "width": 534,
+    "height": 464,
+    "anchorX": 266.86116015902536,
+    "anchorY": 323.1738197203743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5392eb1869ce6c8f5061bea0d39d89f6723de2fa7bc3b97eb4f7f49734103145"
+  },
+  {
+    "id": "EUROPE_ZONE_C_2_0",
+    "width": 534,
+    "height": 510,
+    "anchorX": 266.86116015902536,
+    "anchorY": 368.63634336623056,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ac0103355ba5787200aee8aaa276c2d63c3dc4ff4e648b11d9f7ab8ccd5b7e7e"
+  },
+  {
+    "id": "EUROPE_ZONE_C_2_1",
+    "width": 534,
+    "height": 510,
+    "anchorX": 266.86116015902536,
+    "anchorY": 368.63634336623056,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "185baa52fcecd5fee6ba5378af487c59e53541aa4fccac675ee1915e68d8b917"
+  },
+  {
+    "id": "EUROPE_ZONE_C_3_0",
+    "width": 534,
+    "height": 600,
+    "anchorX": 266.86116015902536,
+    "anchorY": 459.5614280341902,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "067517c4183eaf3fc554b64d6fc1afb5137c086ec9604b072963ceb8fe129ae0"
+  },
+  {
+    "id": "EUROPE_ZONE_C_3_1",
+    "width": 534,
+    "height": 600,
+    "anchorX": 266.86116015902536,
+    "anchorY": 459.5614280341902,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "6a01270718659368fc6349bbe6efa02a8d1b1f7df9cc7b3b132d17bbcfc8294e"
+  },
+  {
+    "id": "EUROPE_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "6a9d03de4e0fa63195aca602358f11a56bde7701c46b6bac7bd5e782039cc4dc"
+  },
+  {
+    "id": "EUROPE_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3e97ba7189fcc4a27c54e212ec15072b77d929d15fa95ecdede6de1a0f6294bb"
+  },
+  {
+    "id": "EUROPE_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0b778adf1214651c726537d14b52d593b9a07321bfded004818a4f33e0827dc0"
+  },
+  {
+    "id": "EUROPE_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "6f0886ec0d3cc9336462ee9a8ad85c788d8286593ada604fd3345f2d126fbe6d"
+  },
+  {
+    "id": "EUROPE_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c94960252515783d7b27b188e8a3839176049bfead2b46fb8d3bb9ac9dbff872"
+  },
+  {
+    "id": "EUROPE_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5bc627ba39cd7d1893461097dac8d351f8333b7d0dee4d53429ddef6d08dc3fe"
+  },
+  {
+    "id": "EUROPE_ZONE_R_1_0",
+    "width": 534,
+    "height": 419,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.7112960745181,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f7e670631b278ed30c9c864a3aff61b06d937969e1cf5faccf756a8b34ed886d"
+  },
+  {
+    "id": "EUROPE_ZONE_R_1_1",
+    "width": 534,
+    "height": 419,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.7112960745181,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "dd11ebcd2e28e65db6a8726a5d2b02797949ce819103cb84b44fe7749a9b4342"
+  },
+  {
+    "id": "EUROPE_ZONE_R_2_0",
+    "width": 534,
+    "height": 464,
+    "anchorX": 266.86116015902536,
+    "anchorY": 323.1738197203743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "8ca5b723ac6cc2ffa5a171e63887ed9ac5a1918fc26ed051aef22519c278d287"
+  },
+  {
+    "id": "EUROPE_ZONE_R_2_1",
+    "width": 534,
+    "height": 464,
+    "anchorX": 266.86116015902536,
+    "anchorY": 323.1738197203743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "95d934a8fb4377362715ece48036414ad15ac92e4f0c76c22b3ca5914c376141"
+  },
+  {
+    "id": "EUROPE_ZONE_R_3_0",
+    "width": 534,
+    "height": 555,
+    "anchorX": 266.86116015902536,
+    "anchorY": 414.0988857002104,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "40700d318cbd5a658a397d5cf17e53461333e721b30f81560f0312de8c39f010"
+  },
+  {
+    "id": "EUROPE_ZONE_R_3_1",
+    "width": 534,
+    "height": 555,
+    "anchorX": 266.86116015902536,
+    "anchorY": 414.0988857002104,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "07e20c6ab516d07dd086e8e74905fc1bcb331a1eb3281c8d233261dca8c48e53"
+  },
+  {
+    "id": "FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7b9ba6c0a568f9b0ab6d1d1124587e8fc529086ce43c4d6fc3bd0251c59bc562"
+  },
+  {
+    "id": "FIRE",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 226.14818186283102,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3fad88a349d2a7984604c4e669b84fd50aac5e95092d3b3b5ce1255e5b88b5e2"
+  },
+  {
+    "id": "FUTURE_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2aadfc1786d8e53c6cb790cfd5b2331ef791704c599225b084f274ed5ea8d9c6"
+  },
+  {
+    "id": "FUTURE_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9b1192d62304886c35dbb888126ef427de000e8c30c3767ebeda998cd47a007e"
+  },
+  {
+    "id": "FUTURE_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "28cadcc39cc7f9e7ba050ed50207923d104e2fe2165aee1493d77663306b2267"
+  },
+  {
+    "id": "FUTURE_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f2505a3acec93c2638c109afc87a7956114af3ac6285a768dd9300d39327eb33"
+  },
+  {
+    "id": "FUTURE_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "FUTURE_ZONE_C_1_0",
+    "width": 534,
+    "height": 408,
+    "anchorX": 266.86116015902536,
+    "anchorY": 267.56738123034745,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "299fd80dd25bb00b9ec3f5cd814130936521cbb32dbcc571b0a5bfe72e3495b9"
+  },
+  {
+    "id": "FUTURE_ZONE_C_1_1",
+    "width": 534,
+    "height": 443,
+    "anchorX": 266.86116015902536,
+    "anchorY": 302.0397183688268,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c47b7af6fb01a7068318517fd10003e0a70b2378cf44998ac6f7f30506ba8369"
+  },
+  {
+    "id": "FUTURE_ZONE_C_2_0",
+    "width": 534,
+    "height": 499,
+    "anchorX": 266.86116015902536,
+    "anchorY": 358.49244721018357,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "980902de52b1e68a6e398f3eda3b9f1e2cc2d0fd33f143d3d58eb42bcee33bd2"
+  },
+  {
+    "id": "FUTURE_ZONE_C_2_1",
+    "width": 534,
+    "height": 534,
+    "anchorX": 266.86116015902536,
+    "anchorY": 392.9647843486629,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a56b6d5a4f098feb65dd7d667698cc91eb4dbdb2d256d5a0e022c12364be67e6"
+  },
+  {
+    "id": "FUTURE_ZONE_C_3_0",
+    "width": 534,
+    "height": 636,
+    "anchorX": 266.86116015902536,
+    "anchorY": 494.88005552399954,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "73bb43955e97338dab8475e447f1cd511f1e8559e02c6814cd05a20a9adf4323"
+  },
+  {
+    "id": "FUTURE_ZONE_C_3_1",
+    "width": 534,
+    "height": 670,
+    "anchorX": 266.86116015902536,
+    "anchorY": 529.3523552862316,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "735b8f3ab86c8221713bce0731698f924de489246145d3acdf6d8d26f0a22f51"
+  },
+  {
+    "id": "FUTURE_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "adbe0ecc68172b3bee7964b1c6b28f65b312afd4898193942d7e3fcc7fd8121d"
+  },
+  {
+    "id": "FUTURE_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "adbe0ecc68172b3bee7964b1c6b28f65b312afd4898193942d7e3fcc7fd8121d"
+  },
+  {
+    "id": "FUTURE_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d41f2dc4e62e793a5d39309acf3d045274df003c794d62e5ff5f97c0f335b5af"
+  },
+  {
+    "id": "FUTURE_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d41f2dc4e62e793a5d39309acf3d045274df003c794d62e5ff5f97c0f335b5af"
+  },
+  {
+    "id": "FUTURE_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0b9c478ed5ce8837e8cd36660e378e7527942a4d8f59ddab26b23fce00b96ee1"
+  },
+  {
+    "id": "FUTURE_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0b9c478ed5ce8837e8cd36660e378e7527942a4d8f59ddab26b23fce00b96ee1"
+  },
+  {
+    "id": "FUTURE_ZONE_R_1_0",
+    "width": 534,
+    "height": 363,
+    "anchorX": 266.86116015902536,
+    "anchorY": 222.1048575844913,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2f0557a9dacdb5d5b659fb1a8f4e768e06120607eb3a956ed1a984472e0a65bf"
+  },
+  {
+    "id": "FUTURE_ZONE_R_1_1",
+    "width": 534,
+    "height": 398,
+    "anchorX": 266.86116015902536,
+    "anchorY": 256.57717603484696,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7c2ead847e6145adeaacb1ed72758e40f63840bc99315b0434c27315951338d8"
+  },
+  {
+    "id": "FUTURE_ZONE_R_2_0",
+    "width": 534,
+    "height": 454,
+    "anchorX": 266.86116015902536,
+    "anchorY": 313.0299048762037,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e92187950ef3ce12f4c2fa736fc4019c4dbb4f14e32b92929851c58f6fcb29f5"
+  },
+  {
+    "id": "FUTURE_ZONE_R_2_1",
+    "width": 534,
+    "height": 488,
+    "anchorX": 266.86116015902536,
+    "anchorY": 347.502242014683,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "325d3696533fd4673479c031d186e51fe126465f858bfcbc56b37f589e308927"
+  },
+  {
+    "id": "FUTURE_ZONE_R_3_0",
+    "width": 534,
+    "height": 590,
+    "anchorX": 266.86116015902536,
+    "anchorY": 449.4175318781433,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f17ce8f66f054f64f58f896a04e17426d558ed118a11fde5feb4afa34dd41ea8"
+  },
+  {
+    "id": "FUTURE_ZONE_R_3_1",
+    "width": 534,
+    "height": 625,
+    "anchorX": 266.86116015902536,
+    "anchorY": 483.8898316403753,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b81c8f610978750cafb8c4714dcfcde6032ebe4d1fa256edf0d6a167e18e9524"
+  },
+  {
+    "id": "GRITTY_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "07823e5791886651a7ac717f4ad4cbc468b3350bec083f6bd1f82c3a9988adf1"
+  },
+  {
+    "id": "GRITTY_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0a186a29f83480a981232d093c82324b00a1e2e114c071a9b4aa0d7dfa00fa7a"
+  },
+  {
+    "id": "GRITTY_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f771409847d00763f721354373213fd115133cb44856e545a274e69ee67b9ec0"
+  },
+  {
+    "id": "GRITTY_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ae97eba207274c9fa614cf183113c5d9f971a25b2090f54f0fe72b842b847586"
+  },
+  {
+    "id": "GRITTY_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "GRITTY_ZONE_C_1_0",
+    "width": 534,
+    "height": 416,
+    "anchorX": 266.86116015902536,
+    "anchorY": 274.8186991307484,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "799ad2f02c61627d0c2433aaff5aa2092e96b123b79882357b0a8b30cd4b20bb"
+  },
+  {
+    "id": "GRITTY_ZONE_C_1_1",
+    "width": 534,
+    "height": 416,
+    "anchorX": 266.86116015902536,
+    "anchorY": 274.8186991307484,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "8fdccf779a8b5d0b00ed76c681d46af09378fec865ff544adde092af4f820d49"
+  },
+  {
+    "id": "GRITTY_ZONE_C_2_0",
+    "width": 534,
+    "height": 461,
+    "anchorX": 266.86116015902536,
+    "anchorY": 320.28122277660464,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b8626d406978dd1be3b3b227c1849cdf9eaf4eb7192ca72e4836d58e2f6088e7"
+  },
+  {
+    "id": "GRITTY_ZONE_C_2_1",
+    "width": 534,
+    "height": 461,
+    "anchorX": 266.86116015902536,
+    "anchorY": 320.28122277660464,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "6c934281eb2db9c377ebf674652ca0f02652bc3d4f4d7a56807b439908dae6f1"
+  },
+  {
+    "id": "GRITTY_ZONE_C_3_0",
+    "width": 534,
+    "height": 552,
+    "anchorX": 266.86116015902536,
+    "anchorY": 411.20630744456435,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9c1de37a9238099ba817ae1d460495ec8727dc585c03e9ae2114b2be5369557e"
+  },
+  {
+    "id": "GRITTY_ZONE_C_3_1",
+    "width": 534,
+    "height": 552,
+    "anchorX": 266.86116015902536,
+    "anchorY": 411.20630744456435,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7b1f896a423a97fe2070105fbe086785bf233978a664bd9b65f4460841d59f6e"
+  },
+  {
+    "id": "GRITTY_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e34731b1ac8ff7c9b416f531dc3625bd18425ea4d13bc2932105c7cf598e15ce"
+  },
+  {
+    "id": "GRITTY_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "13b4ccadb1e41f8283b867246bcd1a5575f09551612d41868c541592ff2962f6"
+  },
+  {
+    "id": "GRITTY_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1d8f57b47f66d12d7e3ee4e929e682ffb74cc37174e1fdf9a35cdb15beca7627"
+  },
+  {
+    "id": "GRITTY_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d2342b851e662684d5c13bf76909d7445ff7b387221481264399d0255922222a"
+  },
+  {
+    "id": "GRITTY_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f770656d89364197f558b4b2ac3a42ec466bb47c7333b0142977df3eb69738f7"
+  },
+  {
+    "id": "GRITTY_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e22320efa6fbbf232b3184f154c2788ecbd2cde6fd6268ed6e266d5ff82c59d0"
+  },
+  {
+    "id": "GRITTY_ZONE_R_1_0",
+    "width": 534,
+    "height": 370,
+    "anchorX": 266.86116015902536,
+    "anchorY": 229.35617548489222,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5036e08c4264a8a3bc35b82918660e6a7c476d4fb781ff79d95a8d8b0db0cf7d"
+  },
+  {
+    "id": "GRITTY_ZONE_R_1_1",
+    "width": 534,
+    "height": 370,
+    "anchorX": 266.86116015902536,
+    "anchorY": 229.35617548489222,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5b6e1a121d4fe0fff506f7ce3b3ef06b9c0b0045bba966b4d60fec030616c1a7"
+  },
+  {
+    "id": "GRITTY_ZONE_R_2_0",
+    "width": 534,
+    "height": 416,
+    "anchorX": 266.86116015902536,
+    "anchorY": 274.8186991307484,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9e3c778478383cfaf1d2ad252fdc8d12337df1944feaffbe525b4de8b7128c92"
+  },
+  {
+    "id": "GRITTY_ZONE_R_2_1",
+    "width": 534,
+    "height": 416,
+    "anchorX": 266.86116015902536,
+    "anchorY": 274.8186991307484,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3c70310ca06c57d063447f2cc5c5a6b67fdcf2cb0dee19f12dc760e9c6e3bbd0"
+  },
+  {
+    "id": "GRITTY_ZONE_R_3_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 365.7437651105845,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "dee53bcd46353769f0dba4d46e9cbf8bdb9c515f9d2154cdbcb4b80f5825a321"
+  },
+  {
+    "id": "GRITTY_ZONE_R_3_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 365.7437651105845,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "bb7f11409a1ba3cb5a88b47193bf09ca8cf1e834c0f8c3cadd5f191e5b2366f2"
+  },
+  {
+    "id": "GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "88988be008135ca38dd1ce70275223ce83c28f221f508cfd3a55770a03304e17"
+  },
+  {
+    "id": "HOSPITAL",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 326.4792701405933,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9e7298de051f462dee77ad2dab5235db9e4d244b1807f23b1e51eb6381948be5"
+  },
+  {
+    "id": "INCINERATOR",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "JAPAN_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "95fc250ed8caeddb1dc4f173de6c4dc8e5292ace509f8ebb4cf26f1d5527ef75"
+  },
+  {
+    "id": "JAPAN_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1ca35dea975cd4da47bb74135b33ce9ec744a39ecf11ddc9fd4a03cb63066696"
+  },
+  {
+    "id": "JAPAN_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c3747d87f39cc4a54f5cb832628e5893e1994af6af275ec9123949f16efd76f3"
+  },
+  {
+    "id": "JAPAN_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e0ffb59b510a64722aeeae38139f481e6fe00e468ffde39f2fa0117a048c2f8f"
+  },
+  {
+    "id": "JAPAN_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "JAPAN_ZONE_C_1_0",
+    "width": 534,
+    "height": 410,
+    "anchorX": 266.86116015902536,
+    "anchorY": 269.274960879982,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "df603f09846bcaa451caea1a32444f0c8753b4fd662bf287edbfe02e90844917"
+  },
+  {
+    "id": "JAPAN_ZONE_C_1_1",
+    "width": 534,
+    "height": 410,
+    "anchorX": 266.86116015902536,
+    "anchorY": 269.274960879982,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "985f5a322ad9e362b4a274ff9cc3ef694c8f28da15038950860a2ab8e0143e15"
+  },
+  {
+    "id": "JAPAN_ZONE_C_2_0",
+    "width": 534,
+    "height": 456,
+    "anchorX": 266.86116015902536,
+    "anchorY": 314.7374845258382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "bbfff9465b623682265bdaf67335bbfe43fbb742cadbfb3faf2726fa316f47be"
+  },
+  {
+    "id": "JAPAN_ZONE_C_2_1",
+    "width": 534,
+    "height": 456,
+    "anchorX": 266.86116015902536,
+    "anchorY": 314.7374845258382,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "36784b34de41365d060515098315e0ff289ddebcb4f6c949c78c5a2773486cd5"
+  },
+  {
+    "id": "JAPAN_ZONE_C_3_0",
+    "width": 534,
+    "height": 547,
+    "anchorX": 266.86116015902536,
+    "anchorY": 405.6625505056743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "8bff442021c8837d5074469195e6f944c888c3cb0a258d1c92e209df23f521cf"
+  },
+  {
+    "id": "JAPAN_ZONE_C_3_1",
+    "width": 534,
+    "height": 547,
+    "anchorX": 266.86116015902536,
+    "anchorY": 405.6625505056743,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a0175e380300f9a21776522211d468c44d13a8a20122f988a8ebde6ed7b8620f"
+  },
+  {
+    "id": "JAPAN_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d6a0aa8a454a1010a6c0e880fca9c2d642e630de5381c9d4bc4ed7a0b8006ee2"
+  },
+  {
+    "id": "JAPAN_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7481dac9a2f65ecbde835a30276b9af7faf639f8b246b27eefa188e42b161ab9"
+  },
+  {
+    "id": "JAPAN_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4b619f98d9a50804c08723914b5dbdd5e93862d45914654e5181ca9b69137680"
+  },
+  {
+    "id": "JAPAN_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0617adeb0507dca4b53e093a58e9cc7d575f9d5edb266a039ac4e9359f81517e"
+  },
+  {
+    "id": "JAPAN_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "02b12fa57a6adde5a7d2c9438a4d4cb203028002b322efcc0cbf552946bcdb3c"
+  },
+  {
+    "id": "JAPAN_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "224c10bfe8884652894eaf6b37ede265d636426ad5b46bffedda983d4feb44f3"
+  },
+  {
+    "id": "JAPAN_ZONE_R_1_0",
+    "width": 534,
+    "height": 365,
+    "anchorX": 266.86116015902536,
+    "anchorY": 223.81242789006401,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4064ba5e8bcbb9bcaff8af48e1a274439ee784f4d15b431bca09f557a0eabee7"
+  },
+  {
+    "id": "JAPAN_ZONE_R_1_1",
+    "width": 534,
+    "height": 365,
+    "anchorX": 266.86116015902536,
+    "anchorY": 223.81242789006401,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f469342462235448a50ce83330a09c09f39a9fbb2031b29b69b79bdcc20ee455"
+  },
+  {
+    "id": "JAPAN_ZONE_R_2_0",
+    "width": 534,
+    "height": 410,
+    "anchorX": 266.86116015902536,
+    "anchorY": 269.274960879982,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e45b75e097443316cb843553f9617b70fa8dcb5139e5bdc12e903fc4ef6270c0"
+  },
+  {
+    "id": "JAPAN_ZONE_R_2_1",
+    "width": 534,
+    "height": 410,
+    "anchorX": 266.86116015902536,
+    "anchorY": 269.274960879982,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "bbe107f80894aa3aa2bafe301a9f2c6d972b1b6ab48c76a8ce02040877f01fa1"
+  },
+  {
+    "id": "JAPAN_ZONE_R_3_0",
+    "width": 534,
+    "height": 501,
+    "anchorX": 266.86116015902536,
+    "anchorY": 360.2000268598181,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9608cee711487ee18c999fdd93bb283b6f6c25a279ed42d8c0fa51d24679da7f"
+  },
+  {
+    "id": "JAPAN_ZONE_R_3_1",
+    "width": 534,
+    "height": 501,
+    "anchorX": 266.86116015902536,
+    "anchorY": 360.2000268598181,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "fa7a34e96dd5600cce2b6a77854e548e20ec575a2eaaf6ad5b690a0f25fb5eb9"
+  },
+  {
+    "id": "LANDFILL",
+    "width": 534,
+    "height": 316,
+    "anchorX": 266.86116015902536,
+    "anchorY": 174.74353297886793,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7649ec43f0e2e666a338aa9072d31432db671151c96f177a80774a1d455b2889"
+  },
+  {
+    "id": "LEANING_TOWER",
+    "width": 985,
+    "height": 946,
+    "anchorX": 492.1411589383222,
+    "anchorY": 691.9382720613398,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5b6e751410e60544c32a15e07d0c565bd9685968f07b176e09c76e594373d589"
+  },
+  {
+    "id": "PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4d81689c201c93311c1599ae5b00128263fd3141fce0d8c4a8d9265322c65fb3"
+  },
+  {
+    "id": "PERSON_0_0_0",
+    "width": 56,
+    "height": 91,
+    "anchorX": 28.754532694730933,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "f2c86be15005310c551949ac87dc047e4f37b3a2c936304c3660bf5b7a5bc8a2"
+  },
+  {
+    "id": "PERSON_0_0_1",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.27741324893015,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "6857ea341640c192bc04e3e6d637a64346aad2e3c004e02fcbe47efc1c01f0bf"
+  },
+  {
+    "id": "PERSON_0_1_0",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.286361098203834,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "e2ebb22e24d0c7fa55a4572982a4c22fd6c9feb30c4a78d9fd05e5a82e218dc7"
+  },
+  {
+    "id": "PERSON_0_1_1",
+    "width": 56,
+    "height": 91,
+    "anchorX": 26.72243916979807,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "9a845660326f14076037cbb41f7bd38bad3c4570886b016756b2f3ac4199f853"
+  },
+  {
+    "id": "PERSON_0_2_0",
+    "width": 56,
+    "height": 88,
+    "anchorX": 26.735995173368625,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "eec4af9304f78fee68e9f2e797257644794f64e80e29732c1219a22004f05d4b"
+  },
+  {
+    "id": "PERSON_0_2_1",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.29621970644968,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "eec56c3e5319afbf7fd0efb21b86cbb0ca29d621a7bddda50f8f2f5d272284fb"
+  },
+  {
+    "id": "PERSON_0_3_0",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.28727233401316,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "7fe35fb270dfd1a0d7cb33f83c98e31eb855a60280f39e8b0633515d3a544419"
+  },
+  {
+    "id": "PERSON_0_3_1",
+    "width": 56,
+    "height": 88,
+    "anchorX": 28.76808917513865,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "7e5fec1f927eca0fea9a1edfd5455d6e3dad3b4aeec32152878a090b7bc4b4e3"
+  },
+  {
+    "id": "PERSON_1_0_0",
+    "width": 58,
+    "height": 93,
+    "anchorX": 28.754532694730933,
+    "anchorY": 78.24901907746225,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "612973c57f6c7598cc5d297e3843de261323dc34bc2f7e381f9440a982a493e8"
+  },
+  {
+    "id": "PERSON_1_0_1",
+    "width": 59,
+    "height": 98,
+    "anchorX": 29.27741324893015,
+    "anchorY": 78.24901907746225,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "5fe8f03388af36f595c7f0d68ba92a1daaa55195d215505c50ae1600d638d77d"
+  },
+  {
+    "id": "PERSON_1_1_0",
+    "width": 59,
+    "height": 98,
+    "anchorX": 29.286361098203834,
+    "anchorY": 78.26257484261421,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "6fe0b1a24fc901c90fc867433fe420d52997df00856380f478334fb6e2275766"
+  },
+  {
+    "id": "PERSON_1_1_1",
+    "width": 58,
+    "height": 93,
+    "anchorX": 28.26916110507029,
+    "anchorY": 78.26257484261421,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "b6063cd2452d9b96cd5856df807e4e7a9d5ff1f251d4edb67ac5b61c4c1fe07c"
+  },
+  {
+    "id": "PERSON_1_2_0",
+    "width": 58,
+    "height": 92,
+    "anchorX": 28.26916110507029,
+    "anchorY": 78.25163905922798,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "823f1b0f3e4cc4561a3dc3bae8b328d64ce72275314511f9e2a6fbbe49541778"
+  },
+  {
+    "id": "PERSON_1_2_1",
+    "width": 59,
+    "height": 97,
+    "anchorX": 29.29621970644968,
+    "anchorY": 78.25163905922798,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "74ed7edb2551cd32343e27c5f71c5c23ea75ebf0bf5ca080a3b36fbbc6b64251"
+  },
+  {
+    "id": "PERSON_1_3_0",
+    "width": 59,
+    "height": 97,
+    "anchorX": 29.28727233401316,
+    "anchorY": 78.238083294076,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "a653f9f5079d5f0a10d50ebd35e5b9c1f207bd48deada54f755c666f507e76f4"
+  },
+  {
+    "id": "PERSON_1_3_1",
+    "width": 58,
+    "height": 92,
+    "anchorX": 28.76808917513865,
+    "anchorY": 78.238083294076,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "f22d0c4bf99251013d4fda848ba19d790fbce2f474e738f87cc9b2e1283ee626"
+  },
+  {
+    "id": "PERSON_2_0_0",
+    "width": 59,
+    "height": 91,
+    "anchorX": 28.754532694730933,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "cb18ade284e663fdf82252bd7da2cb5d2eace2e2d2d370663dc1256cd687dceb"
+  },
+  {
+    "id": "PERSON_2_0_1",
+    "width": 60,
+    "height": 95,
+    "anchorX": 29.27741324893015,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "aebc5ee0b0271aa2d7322073dc210dd43178ac6b95fa76da843d91f6222455bc"
+  },
+  {
+    "id": "PERSON_2_1_0",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.286361098203834,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "43ccfc88086d91bfadef45ea35f574e1ca285cac1f2f60b0f2312cb270b536fd"
+  },
+  {
+    "id": "PERSON_2_1_1",
+    "width": 56,
+    "height": 91,
+    "anchorX": 26.72243916979807,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "be67a00496f816a4bc4ac71800cdfe74dc317cbc9bdf73b769a4875631aaff55"
+  },
+  {
+    "id": "PERSON_2_2_0",
+    "width": 59,
+    "height": 88,
+    "anchorX": 30.06116044512766,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "8c0866b798fdd35c12c0f5f20816ec2dd748b49d94d4a99a381e875ecadd8d17"
+  },
+  {
+    "id": "PERSON_2_2_1",
+    "width": 60,
+    "height": 93,
+    "anchorX": 30.06116044512766,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "79704d4628e19fa2fb15377564ecf06748412a9a152ee1c407ecc43bbd97b697"
+  },
+  {
+    "id": "PERSON_2_3_0",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.28727233401316,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "a83c9f8fc00b6a6b018cffdcb621d8bd8cd6ab38295822f8965f556d41f2f217"
+  },
+  {
+    "id": "PERSON_2_3_1",
+    "width": 56,
+    "height": 88,
+    "anchorX": 28.76808917513865,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "eb6d4bce92506de189f431c5d5bf0f3f35eeb203c30b2ebb77fef7f3f6bf494a"
+  },
+  {
+    "id": "PERSON_3_0_0",
+    "width": 56,
+    "height": 91,
+    "anchorX": 28.754532694730933,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "7ba7f2b6d5d5f1b2e2a32932253cd17166ed3a3b11a5b9836c190d4af3f0feee"
+  },
+  {
+    "id": "PERSON_3_0_1",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.27741324893015,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "5bb8db092f1a2f718cdacf90d1326d595947b2f4cb1665fb3dad9b50866e63ce"
+  },
+  {
+    "id": "PERSON_3_1_0",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.286361098203834,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "b7bd67e1ebdd6d99c4baeb0c61ab3e5ed5019c7865a408aad7fed28e4b9c3bfc"
+  },
+  {
+    "id": "PERSON_3_1_1",
+    "width": 56,
+    "height": 91,
+    "anchorX": 26.72243916979807,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "49c4508ddea2ccc18381dc2f8615687e247fa170304712175c8649c8710e0a68"
+  },
+  {
+    "id": "PERSON_3_2_0",
+    "width": 56,
+    "height": 88,
+    "anchorX": 26.735995173368625,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "6363aba8576cfea68ee91b6b0ee413da6274006a5a394800b0b34fdc70a27948"
+  },
+  {
+    "id": "PERSON_3_2_1",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.29621970644968,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "881af21369da76d45c4d8c26e48d27b2f624c29acbf1343aabde0b0629f5ab9c"
+  },
+  {
+    "id": "PERSON_3_3_0",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.28727233401316,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "b4f4efa2df826d6356b7320878d22dae726c90708689a3e080148fe115316bf6"
+  },
+  {
+    "id": "PERSON_3_3_1",
+    "width": 56,
+    "height": 88,
+    "anchorX": 28.76808917513865,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "4552aba84d45109923b5cb2d5aac459035d7f9dac6e240717662c6b125340d80"
+  },
+  {
+    "id": "PERSON_4_0_0",
+    "width": 59,
+    "height": 91,
+    "anchorX": 28.754532694730933,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "e23721b9c9ccb27c383ac44451af6c715b5695534bd91d931248aa1e73aa551f"
+  },
+  {
+    "id": "PERSON_4_0_1",
+    "width": 60,
+    "height": 95,
+    "anchorX": 29.27741324893015,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "a0c954461a73f878345e5d9fbc7d345e09b542d41b500e6c6da976982c5dc6a5"
+  },
+  {
+    "id": "PERSON_4_1_0",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.286361098203834,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "4fb140ea9f21a3a7906a572911cb03905e1ab312e035359d46fca7efcdde8964"
+  },
+  {
+    "id": "PERSON_4_1_1",
+    "width": 56,
+    "height": 91,
+    "anchorX": 26.72243916979807,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "443d87b11d1642aa37cf07f3c53c7da9ec1b567cee2f326e0b08cb6df964a0ca"
+  },
+  {
+    "id": "PERSON_4_2_0",
+    "width": 59,
+    "height": 88,
+    "anchorX": 30.06116044512766,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "0d3732f4b5610a44025a61756e994b5829321a2a6645d87c2e4d1967f72d76cf"
+  },
+  {
+    "id": "PERSON_4_2_1",
+    "width": 60,
+    "height": 93,
+    "anchorX": 30.06116044512766,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "b043ddfb0459f03c5769d7f41a265861c0edf1172a5d39057f0f7d15ce744276"
+  },
+  {
+    "id": "PERSON_4_3_0",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.28727233401316,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "1202c9a634959dbe56796bd2b2682b946037a714fdc6e8bb00248ad005e472fc"
+  },
+  {
+    "id": "PERSON_4_3_1",
+    "width": 56,
+    "height": 88,
+    "anchorX": 28.76808917513865,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "cab1f01b1fa0de5e317e7f605ef7bac7fff8bb7296ebb6056fac0470c2f518fa"
+  },
+  {
+    "id": "PERSON_5_0_0",
+    "width": 56,
+    "height": 91,
+    "anchorX": 28.754532694730933,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "632ac3bd8934c73d06cad5bf6b9729cb88ca6f0724147bfdc29bb926b3508acd"
+  },
+  {
+    "id": "PERSON_5_0_1",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.27741324893015,
+    "anchorY": 75.9625747880029,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "EAST",
+    "forwardScreen": [
+      2,
+      1
+    ],
+    "sha256": "ae2af9b0f25ed782cc5d4ee15d42ef472b2e028273ae976b261a2c626eabec56"
+  },
+  {
+    "id": "PERSON_5_1_0",
+    "width": 59,
+    "height": 95,
+    "anchorX": 29.286361098203834,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "19da72675579b51b47a03a7260edffe8e9b014d689d7df7a2adb888e1d9b0ddd"
+  },
+  {
+    "id": "PERSON_5_1_1",
+    "width": 56,
+    "height": 91,
+    "anchorX": 26.72243916979807,
+    "anchorY": 75.97921115961546,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "SOUTH",
+    "forwardScreen": [
+      -2,
+      1
+    ],
+    "sha256": "73f09a1226b0a605d8161a826fe0f56a82fea1806a479f0532bf84481cd0fc51"
+  },
+  {
+    "id": "PERSON_5_2_0",
+    "width": 56,
+    "height": 88,
+    "anchorX": 26.735995173368625,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "ccd5077f19e0eabc289af9615d6a7dea48dd073f1879f9f069094404a1f5d340"
+  },
+  {
+    "id": "PERSON_5_2_1",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.29621970644968,
+    "anchorY": 74.17528135385983,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "WEST",
+    "forwardScreen": [
+      -2,
+      -1
+    ],
+    "sha256": "93b71c65b82fd9f09f5b41964765edd0cf8104ae5f6da9524c2068afbd75a025"
+  },
+  {
+    "id": "PERSON_5_3_0",
+    "width": 59,
+    "height": 93,
+    "anchorX": 29.28727233401316,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "52f2ab7b155e1023e9d73124ac1c1899937e68bf3a205e66449dd366c8fe3f62"
+  },
+  {
+    "id": "PERSON_5_3_1",
+    "width": 56,
+    "height": 88,
+    "anchorX": 28.76808917513865,
+    "anchorY": 74.1586449822473,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "facing": "NORTH",
+    "forwardScreen": [
+      2,
+      -1
+    ],
+    "sha256": "eb8283cea035445c05aca6b2d91c5a3e370003930c042a2f338ebd38d963d324"
+  },
+  {
+    "id": "POLICE",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 226.14818186283102,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "fa5da2b99195ee90d6372f7cbfaaedd10b5d663bebe2b50932d70627721ef8a6"
+  },
+  {
+    "id": "POWER_COAL",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "32664d2307e85890e2629d4de3293527794b78537fe8e22570c481404de1a7b5"
+  },
+  {
+    "id": "POWER_LINE",
+    "width": 534,
+    "height": 500,
+    "anchorX": 266.86116015902536,
+    "anchorY": 359.4550745732586,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "aeb67eedb126774a6413b994fb1cef73f689d7f7e9de0bbbfb468b17fc6e8fdb"
+  },
+  {
+    "id": "POWER_SOLAR",
+    "width": 534,
+    "height": 294,
+    "anchorX": 266.86116015902536,
+    "anchorY": 152.97146531539997,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9343fb39d672515359b9908186850f88a7cdb4fe7127f9c55bf5635070d155b8"
+  },
+  {
+    "id": "POWER_WIND",
+    "width": 534,
+    "height": 600,
+    "anchorX": 266.86116015902536,
+    "anchorY": 458.6001917821101,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7b499a69ba352bcec1419a6bb3d663749aba581e68ddaf8ea9ec974c041a13fb"
+  },
+  {
+    "id": "PRIME_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f6f7b425330e9921b635fee3faf6a6b29258293ec7740d99b76d02fc49d1ffa3"
+  },
+  {
+    "id": "PRIME_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "99e3e19714babe724fa78f8da93978ad0609ac1b57d03daf6458badcd1381e5f"
+  },
+  {
+    "id": "PRIME_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f0263731084123bc64c48f272e6943693aad9f3d1e627b66d4f73b7dfaca0e63"
+  },
+  {
+    "id": "PRIME_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "40ec6062a328a7238755457af3f936165eb8f847e7cef1d5b295f9c3d591c861"
+  },
+  {
+    "id": "PRIME_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "PRIME_ZONE_C_1_0",
+    "width": 534,
+    "height": 535,
+    "anchorX": 266.86116015902536,
+    "anchorY": 394.53201030972065,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "62d73afdc9c6520b3c2db8fba30aceaf394622d992bfc1e9a3a7e17ed34b131e"
+  },
+  {
+    "id": "PRIME_ZONE_C_1_1",
+    "width": 534,
+    "height": 535,
+    "anchorX": 266.86116015902536,
+    "anchorY": 394.53201030972065,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "961dbe4f5770d2318dacb907d700a4a61ade4022c7be716bf73856545bb903e0"
+  },
+  {
+    "id": "PRIME_ZONE_C_2_0",
+    "width": 534,
+    "height": 672,
+    "anchorX": 266.86116015902536,
+    "anchorY": 530.9195812472892,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a8b3baddb95fcf196f71ac59e5905bd43eeb475f0ab74bd564bd58e84ce58306"
+  },
+  {
+    "id": "PRIME_ZONE_C_2_1",
+    "width": 534,
+    "height": 672,
+    "anchorX": 266.86116015902536,
+    "anchorY": 530.9195812472892,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "563c86f4a8eec806e399979cc13454c51eb3ad945f3d43138128454c7467d864"
+  },
+  {
+    "id": "PRIME_ZONE_C_3_0",
+    "width": 534,
+    "height": 854,
+    "anchorX": 266.86116015902536,
+    "anchorY": 712.7697132069615,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3007e4d88d2b54216352757915df7a8fbd77e377618121c2732f19261273e09e"
+  },
+  {
+    "id": "PRIME_ZONE_C_3_1",
+    "width": 534,
+    "height": 854,
+    "anchorX": 266.86116015902536,
+    "anchorY": 712.7697132069615,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3d27c3a3d806993bf2636d9e31e4a011d764d9141f3ac99ae1e0779917a1c42c"
+  },
+  {
+    "id": "PRIME_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "fa5b01d6a08c6812ad392401dee95c51e2a72f6a475b8e528e0dc00f8d5b0d61"
+  },
+  {
+    "id": "PRIME_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "fa5b01d6a08c6812ad392401dee95c51e2a72f6a475b8e528e0dc00f8d5b0d61"
+  },
+  {
+    "id": "PRIME_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a34c02d526989980601b9e58cc881fe3bbfd306d20d6bd97e9f1ca11f6f6aac6"
+  },
+  {
+    "id": "PRIME_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a34c02d526989980601b9e58cc881fe3bbfd306d20d6bd97e9f1ca11f6f6aac6"
+  },
+  {
+    "id": "PRIME_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "01dafecc59c89102ede9e43495a50e9d827635758856e7d731d1f92d1dddfad1"
+  },
+  {
+    "id": "PRIME_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "01dafecc59c89102ede9e43495a50e9d827635758856e7d731d1f92d1dddfad1"
+  },
+  {
+    "id": "PRIME_ZONE_R_1_0",
+    "width": 534,
+    "height": 490,
+    "anchorX": 266.86116015902536,
+    "anchorY": 349.0694866638644,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5160fcb6b56b986c242241da69e7eed12114a9c4d5c3e7031b64688bc1935997"
+  },
+  {
+    "id": "PRIME_ZONE_R_1_1",
+    "width": 534,
+    "height": 490,
+    "anchorX": 266.86116015902536,
+    "anchorY": 349.0694866638644,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "11740c3022cfb583d2157496065c37032fbbbe4d846e03bf4850e10583c60759"
+  },
+  {
+    "id": "PRIME_ZONE_R_2_0",
+    "width": 534,
+    "height": 626,
+    "anchorX": 266.86116015902536,
+    "anchorY": 485.45705760143306,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "692cef1ce5f9f53940603010f3096103b69ba4b9078b3866542df52d9e1b5a20"
+  },
+  {
+    "id": "PRIME_ZONE_R_2_1",
+    "width": 534,
+    "height": 626,
+    "anchorX": 266.86116015902536,
+    "anchorY": 485.45705760143306,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9c8686571a850db03c302b98a91123d16eb592cdc7ca75985b8f31d6459aeb26"
+  },
+  {
+    "id": "PRIME_ZONE_R_3_0",
+    "width": 534,
+    "height": 808,
+    "anchorX": 266.86116015902536,
+    "anchorY": 667.3071895611051,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "eb15d3eb8a2592cf0ee579564e1d69b0b220e665106b1f4e84328405679f1ce5"
+  },
+  {
+    "id": "PRIME_ZONE_R_3_1",
+    "width": 534,
+    "height": 808,
+    "anchorX": 266.86116015902536,
+    "anchorY": 667.3071895611051,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ee523743321995d7fca97f2096c4e46c038ee85cd1d0d597d06985499ea47a16"
+  },
+  {
+    "id": "PYRAMID",
+    "width": 985,
+    "height": 715,
+    "anchorX": 492.1411589383222,
+    "anchorY": 461.1180139105472,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d2743d643b828f618ed3c02bf2e00bc3b366ccc45885666f27497fa416948616"
+  },
+  {
+    "id": "RECYCLING",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "RURAL_FARM",
+    "width": 534,
+    "height": 292,
+    "anchorX": 266.86116015902536,
+    "anchorY": 150.91259831433638,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0d490d1fc2f9c108a3d2ffa7a0c9a1abfe771ec26cee70814c5ebd3d59114e3d"
+  },
+  {
+    "id": "RURAL_GROVE",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c00bb5a7e7f21d69cb006d58cb22b3ce502f8461fa761d20c5b8ecc17508c0b1"
+  },
+  {
+    "id": "RURAL_PARK",
+    "width": 534,
+    "height": 428,
+    "anchorX": 266.86116015902536,
+    "anchorY": 286.88725140815825,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "d366a552db8629faa7582fa715e7abf50138dbc393aface277472afc7df52dba"
+  },
+  {
+    "id": "RURAL_SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5efad2b8972e31cd92d476c385f0f506ad134f18f2b1a5fad365966010de2e4d"
+  },
+  {
+    "id": "RURAL_WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "RURAL_ZONE_C_1_0",
+    "width": 534,
+    "height": 418,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.0910292503536,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b14ad9aae835f033be546d44929285636b2a7d9e90e2fe12a0062e94943fd680"
+  },
+  {
+    "id": "RURAL_ZONE_C_1_1",
+    "width": 534,
+    "height": 418,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.0910292503536,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "fa084e53721fdf33222bc8a45a274b16752c4a81ad2ffb6270b299288bf4beab"
+  },
+  {
+    "id": "RURAL_ZONE_C_2_0",
+    "width": 534,
+    "height": 463,
+    "anchorX": 266.86116015902536,
+    "anchorY": 322.55357158433344,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5e0e379f7d43060dc2bd0ba7038d0af3c681531f889d97f7a5902271eb67396b"
+  },
+  {
+    "id": "RURAL_ZONE_C_2_1",
+    "width": 534,
+    "height": 463,
+    "anchorX": 266.86116015902536,
+    "anchorY": 322.55357158433344,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "6626413a4dca53222f9ab5377ff2b3b1dfd34e0a17af5c4d99ca345caeed117a"
+  },
+  {
+    "id": "RURAL_ZONE_C_3_0",
+    "width": 534,
+    "height": 509,
+    "anchorX": 266.86116015902536,
+    "anchorY": 368.01609523018965,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0a342c6b983976683f8e5d1a778a5f8784046689ac9c06e43dce850f5b26c677"
+  },
+  {
+    "id": "RURAL_ZONE_C_3_1",
+    "width": 534,
+    "height": 509,
+    "anchorX": 266.86116015902536,
+    "anchorY": 368.01609523018965,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7ca3911028a9eef687f895ce523aa1e8162efa206f92a173db2a1019903d9f8d"
+  },
+  {
+    "id": "RURAL_ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2443406232fbc5090c7251d40fa00cd1b79cd83e538c15e008a133fb312705bd"
+  },
+  {
+    "id": "RURAL_ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ea1fd3f26067adbbb0cf3c765a1efb3f43b544b465970014176a1560adb9ce5c"
+  },
+  {
+    "id": "RURAL_ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2207a4101ecb080f0a0c504bbee22fa67cfe3aa815dfc50c381528d03549f34d"
+  },
+  {
+    "id": "RURAL_ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "50fbe7578f87209d86bc2f499657f8343785b2dfbd5c8cb903b99d53e168fbf4"
+  },
+  {
+    "id": "RURAL_ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "a32593ae652b7c18caa5d6539c9132a642c5d389f46266a8dce1a945fb0467c6"
+  },
+  {
+    "id": "RURAL_ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "67daf909706228fc500c786d09ea2e21dd93d872af02cc5df9e1d6e3c8a99ac6"
+  },
+  {
+    "id": "RURAL_ZONE_R_1_0",
+    "width": 534,
+    "height": 373,
+    "anchorX": 266.86116015902536,
+    "anchorY": 231.62850560449738,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "69362278234f5fbbaab77552f70c11447d2ae43e9e7b3d42382fe9c8eb4a8bf6"
+  },
+  {
+    "id": "RURAL_ZONE_R_1_1",
+    "width": 534,
+    "height": 373,
+    "anchorX": 266.86116015902536,
+    "anchorY": 231.62850560449738,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b92c99812865917bee17f106a83e0ba5ff225691779eb1f87aa93c22916ce522"
+  },
+  {
+    "id": "RURAL_ZONE_R_2_0",
+    "width": 534,
+    "height": 418,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.0910292503536,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "3716d23ed073a57f7ead8f2c6f52ad00f3fa97b2fa0b6fce34734bc68f2beb03"
+  },
+  {
+    "id": "RURAL_ZONE_R_2_1",
+    "width": 534,
+    "height": 418,
+    "anchorX": 266.86116015902536,
+    "anchorY": 277.0910292503536,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "b94dfeb8548ab370217d765b9994ed9a24c5f61ea65e7651c1833e3b4008b82d"
+  },
+  {
+    "id": "RURAL_ZONE_R_3_0",
+    "width": 534,
+    "height": 463,
+    "anchorX": 266.86116015902536,
+    "anchorY": 322.55357158433344,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "cc29112339327ab53b3ad374bbb3dcacba0743ffbce8ae28118750772f298103"
+  },
+  {
+    "id": "RURAL_ZONE_R_3_1",
+    "width": 534,
+    "height": 463,
+    "anchorX": 266.86116015902536,
+    "anchorY": 322.55357158433344,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "db2389cb59c48033a78a1ef6d2342acbeabf6a1ba6f7684f6f03ee86127c3be0"
+  },
+  {
+    "id": "SAILBOAT",
+    "width": 324,
+    "height": 387,
+    "anchorX": 156.78115832797064,
+    "anchorY": 306.488912794708,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "cd423ab1ace851bc84c1fb44026285594885210c2a084ed9d33da848da6ccdc8"
+  },
+  {
+    "id": "SCHOOL",
+    "width": 534,
+    "height": 401,
+    "anchorX": 266.86116015902536,
+    "anchorY": 260.07716843684216,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e9b387fbfacf28b5fd7b97da7082b55e9ca03da09005a21bf146545abe5f275d"
+  },
+  {
+    "id": "SEAPORT",
+    "width": 534,
+    "height": 355,
+    "anchorX": 266.86116015902536,
+    "anchorY": 214.04324578528946,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "34f15ec50003782902a43b053186ab7d1e65129999792b2c6b26edaa7c0194cd"
+  },
+  {
+    "id": "SEWAGE_PLANT",
+    "width": 534,
+    "height": 293,
+    "anchorX": 266.86116015902536,
+    "anchorY": 151.58997722899807,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "8189f1f7f19345b858c355105cc969c2a394da9565c1eb4108c052c80fcb3323"
+  },
+  {
+    "id": "STATUE_OF_LIBERTY",
+    "width": 985,
+    "height": 1094,
+    "anchorX": 492.1411589383222,
+    "anchorY": 840.1327273652197,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "316282a6293e503c4fe692925ebb31d7f53d4f01f115354e803069b9f9229902"
+  },
+  {
+    "id": "SUBWAY_STATION",
+    "width": 534,
+    "height": 287,
+    "anchorX": 266.86116015902536,
+    "anchorY": 146.37773477415092,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1af46605ef27fd59fd4b4bf8448634f5a02abf979a3f148cb728a5e02f281422"
+  },
+  {
+    "id": "TAJ_MAHAL",
+    "width": 985,
+    "height": 840,
+    "anchorX": 492.1411589383222,
+    "anchorY": 586.4596888118155,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "50f1db1ab0e9c9dffd8a2c969b266ffa766149031ed5f33fcdb4f54882ec5e6c"
+  },
+  {
+    "id": "TOKYO_TOWER",
+    "width": 985,
+    "height": 1123,
+    "anchorX": 492.1411589383222,
+    "anchorY": 869.2298921947028,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2691aa61c5c87dee41a3011322f2c38c53132a7de916a0ef9b659c84f6cf188a"
+  },
+  {
+    "id": "WATER_PLANT",
+    "width": 534,
+    "height": 293,
+    "anchorX": 266.86116015902536,
+    "anchorY": 151.58997722899807,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "8189f1f7f19345b858c355105cc969c2a394da9565c1eb4108c052c80fcb3323"
+  },
+  {
+    "id": "WATER_TOWER",
+    "width": 534,
+    "height": 467,
+    "anchorX": 266.86116015902536,
+    "anchorY": 325.73065532999505,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "81da763ebbe8874a8a2d4809eb38ba24c7924abcc6a3af2673f3af7520c21511"
+  },
+  {
+    "id": "ZONE_C_1_0",
+    "width": 534,
+    "height": 478,
+    "anchorX": 266.86116015902536,
+    "anchorY": 336.5979621650388,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9d5bb6d1e975d06af5ac30cf6468153d84d5e58dd11e1075607a7d48457a2c73"
+  },
+  {
+    "id": "ZONE_C_1_1",
+    "width": 534,
+    "height": 438,
+    "anchorX": 266.86116015902536,
+    "anchorY": 296.96374355450945,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "624aad9948cef1d12daa3622fe194b03fe4ef637eab1dba186915b37d159a620"
+  },
+  {
+    "id": "ZONE_C_1_2",
+    "width": 534,
+    "height": 414,
+    "anchorX": 266.86116015902536,
+    "anchorY": 273.320257884238,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "59d3d248cc8c1f547a05d37c74f2d60b159513e315960ba913f15eaf120975bf"
+  },
+  {
+    "id": "ZONE_C_1_3",
+    "width": 534,
+    "height": 478,
+    "anchorX": 266.86116015902536,
+    "anchorY": 336.5979621650388,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1b3f3ae48664fa9ac15c6658cfa1225fb4355aa84fd2e39e378d9b4145752f37"
+  },
+  {
+    "id": "ZONE_C_1_4",
+    "width": 534,
+    "height": 438,
+    "anchorX": 266.86116015902536,
+    "anchorY": 296.96374355450945,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ab9b0ad697f010fe7c0649660ba371a771b3c2b63d77ec6ce72ee6a97e03c1be"
+  },
+  {
+    "id": "ZONE_C_1_5",
+    "width": 534,
+    "height": 414,
+    "anchorX": 266.86116015902536,
+    "anchorY": 273.320257884238,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7eee83537d53387dd555ed7999d4333f4535bfa5444b1bd64cfe3ace3bbb6bcc"
+  },
+  {
+    "id": "ZONE_C_2_0",
+    "width": 534,
+    "height": 572,
+    "anchorX": 266.86116015902536,
+    "anchorY": 430.6583720255375,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "625a7abf02ca2c16c6f0a36ab9bcf3b40ce466b5d02e45436f42077457d33a7c"
+  },
+  {
+    "id": "ZONE_C_2_1",
+    "width": 534,
+    "height": 532,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.02413472688454,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "1b861882db63a5648f728318ab9c5c3d41132dcb80ecc8dce10c0a084c176e98"
+  },
+  {
+    "id": "ZONE_C_2_2",
+    "width": 534,
+    "height": 508,
+    "anchorX": 266.86116015902536,
+    "anchorY": 367.3806677447368,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "938765412873f0acfd9f00954eb4931179188d24a3683012f0d7c6be121f6b6d"
+  },
+  {
+    "id": "ZONE_C_2_3",
+    "width": 534,
+    "height": 572,
+    "anchorX": 266.86116015902536,
+    "anchorY": 430.6583720255375,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2ab18a356a7cbbd79e54dc7dee429a1b6d86e7094e0ba188bee2eb00cb30880a"
+  },
+  {
+    "id": "ZONE_C_2_4",
+    "width": 534,
+    "height": 532,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.02413472688454,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5e6c5da1ce0615d2fc22d08c401ba9f74c3047a7eff10191743fabebde5ac2d6"
+  },
+  {
+    "id": "ZONE_C_2_5",
+    "width": 534,
+    "height": 508,
+    "anchorX": 266.86116015902536,
+    "anchorY": 367.3806677447368,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f05e77971f63b85eb3cae734d5b8338ad98f1680de3291c233826f0df2f7d8f8"
+  },
+  {
+    "id": "ZONE_C_3_0",
+    "width": 534,
+    "height": 713,
+    "anchorX": 266.86116015902536,
+    "anchorY": 571.7489961603475,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f938ef618c257d05b40be7254ff831391cbe778ff51dc0a624e3c6aab9dbd335"
+  },
+  {
+    "id": "ZONE_C_3_1",
+    "width": 534,
+    "height": 673,
+    "anchorX": 266.86116015902536,
+    "anchorY": 532.1147588616946,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "25ca173d14bd461e20b5530c62fc05d21eb3f1f1c5507e9a782e402937a7a9be"
+  },
+  {
+    "id": "ZONE_C_3_2",
+    "width": 534,
+    "height": 649,
+    "anchorX": 266.86116015902536,
+    "anchorY": 508.4712545032994,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ee4ae33b64ad993d57e8c85f127a42d1a8c9e7173db12aefa4718f03178bda5b"
+  },
+  {
+    "id": "ZONE_C_3_3",
+    "width": 534,
+    "height": 713,
+    "anchorX": 266.86116015902536,
+    "anchorY": 571.7489961603475,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "bebde39574ef632be95fc9e54b100524e580c074f51da5b3cf51df5f591ee63d"
+  },
+  {
+    "id": "ZONE_C_3_4",
+    "width": 534,
+    "height": 673,
+    "anchorX": 266.86116015902536,
+    "anchorY": 532.1147588616946,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "48e5b8165a74206490c04cba99baf4e2227f13da5fd932ed63dc159a499680d0"
+  },
+  {
+    "id": "ZONE_C_3_5",
+    "width": 534,
+    "height": 649,
+    "anchorX": 266.86116015902536,
+    "anchorY": 508.4712545032994,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "015cefbfacee5b40ebd62d26bc20d75e629634d39cf212eccb33165924e37342"
+  },
+  {
+    "id": "ZONE_I_1_0",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_1_1",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_1_2",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_1_3",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_1_4",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_1_5",
+    "width": 534,
+    "height": 482,
+    "anchorX": 266.86116015902536,
+    "anchorY": 341.4057420442874,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f31555b8fd45268ba740171dcc3b75bf0e36f2053c7da3b0f3d5078c9c45cb71"
+  },
+  {
+    "id": "ZONE_I_2_0",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_2_1",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_2_2",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_2_3",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_2_4",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_2_5",
+    "width": 534,
+    "height": 507,
+    "anchorX": 266.86116015902536,
+    "anchorY": 366.4885117777126,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c5256bc5fc2372b9c7e98623f39c688f3ccbae8ca683328cd38f31b743d11830"
+  },
+  {
+    "id": "ZONE_I_3_0",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_I_3_1",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_I_3_2",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_I_3_3",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_I_3_4",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_I_3_5",
+    "width": 534,
+    "height": 533,
+    "anchorX": 266.86116015902536,
+    "anchorY": 391.5713001992614,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0f3a7190fbea2d3a8056140c83b8103b95c176766e1213616b763c4e2108e3ac"
+  },
+  {
+    "id": "ZONE_R_1_0",
+    "width": 534,
+    "height": 430,
+    "anchorX": 266.86116015902536,
+    "anchorY": 289.5677665788512,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "04eacc929532eb01ca2d0206eb774088fc51608702a56557b24aaa76f4bbbe2c"
+  },
+  {
+    "id": "ZONE_R_1_1",
+    "width": 534,
+    "height": 391,
+    "anchorX": 266.86116015902536,
+    "anchorY": 249.9335386242601,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "0cc7b56ca33259d8a244cecf5da385a0cce46e39d93c3c07fdc0fab32e85fae3"
+  },
+  {
+    "id": "ZONE_R_1_2",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 226.29005295398866,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "2b18b73b6e079033ce466926f5a91647b44b3d6c5ca8e7a7ab319f273f2b7700"
+  },
+  {
+    "id": "ZONE_R_1_3",
+    "width": 534,
+    "height": 430,
+    "anchorX": 266.86116015902536,
+    "anchorY": 289.5677665788512,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ea069fc8835bbf87e59156140f7525a977943172f6d8f24fd730b67359554408"
+  },
+  {
+    "id": "ZONE_R_1_4",
+    "width": 534,
+    "height": 391,
+    "anchorX": 266.86116015902536,
+    "anchorY": 249.9335386242601,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "5c5276c1c34a59eec29e6ef295a97cd4929edd2035c437f4da43c56385a427f7"
+  },
+  {
+    "id": "ZONE_R_1_5",
+    "width": 534,
+    "height": 367,
+    "anchorX": 266.86116015902536,
+    "anchorY": 226.29005295398866,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "cf2e54a697dcd7038a609b4f51581f11430f399c2dee3276f4d026eea41b0a6a"
+  },
+  {
+    "id": "ZONE_R_2_0",
+    "width": 534,
+    "height": 525,
+    "anchorX": 266.86116015902536,
+    "anchorY": 383.62817643934994,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4da014d2c8161a901a728190c9026e100388839d150704ae5f7546a2e1d860ab"
+  },
+  {
+    "id": "ZONE_R_2_1",
+    "width": 534,
+    "height": 485,
+    "anchorX": 266.86116015902536,
+    "anchorY": 343.99395782882067,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "55a13457977819dd74f7cbfe85580fcb4e275648e57e6615930c265d57fc3da8"
+  },
+  {
+    "id": "ZONE_R_2_2",
+    "width": 534,
+    "height": 461,
+    "anchorX": 266.86116015902536,
+    "anchorY": 320.3504721585493,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "c19e2ab85f26c32e251633cfa539dabde09e559fa129d1d757e521df4288c305"
+  },
+  {
+    "id": "ZONE_R_2_3",
+    "width": 534,
+    "height": 525,
+    "anchorX": 266.86116015902536,
+    "anchorY": 383.62817643934994,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "7117b896148de4144d924753a9b35e97be1bd0f18f78f3dc5eec5858248efd5b"
+  },
+  {
+    "id": "ZONE_R_2_4",
+    "width": 534,
+    "height": 485,
+    "anchorX": 266.86116015902536,
+    "anchorY": 343.99395782882067,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "e5a201abc53d553e9acaada2c381a989e50b7f5e147267772f17d1d7ceed7030"
+  },
+  {
+    "id": "ZONE_R_2_5",
+    "width": 534,
+    "height": 461,
+    "anchorX": 266.86116015902536,
+    "anchorY": 320.3504721585493,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "f7b48a50e4971752030650bfddd48d4e40c9e1c11cc84f3f6b9250700b5be83d"
+  },
+  {
+    "id": "ZONE_R_3_0",
+    "width": 534,
+    "height": 666,
+    "anchorX": 266.86116015902536,
+    "anchorY": 524.7188005741599,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "4a73b3ba091aa275c839988e037e8955edf886907a63502f7df1fc6e2b1bbe6a"
+  },
+  {
+    "id": "ZONE_R_3_1",
+    "width": 534,
+    "height": 626,
+    "anchorX": 266.86116015902536,
+    "anchorY": 485.08452589925975,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "9e520677a2325f97fd91e5f41f82a727d78a1aaf01776366ff25b39a931bb48c"
+  },
+  {
+    "id": "ZONE_R_3_2",
+    "width": 534,
+    "height": 602,
+    "anchorX": 266.86116015902536,
+    "anchorY": 461.44105891711183,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "df566071c0afb7a583f3a4256c55ebf5ae590dc1f8f8dc62dab3c24bd544f007"
+  },
+  {
+    "id": "ZONE_R_3_3",
+    "width": 534,
+    "height": 666,
+    "anchorX": 266.86116015902536,
+    "anchorY": 524.7188005741599,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "545bccc0e4207a2da2c5ca71f98101ca348c33b4fbf02b45c582cc2872ca696f"
+  },
+  {
+    "id": "ZONE_R_3_4",
+    "width": 534,
+    "height": 626,
+    "anchorX": 266.86116015902536,
+    "anchorY": 485.08452589925975,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "ef4f593edb801cac3c2bdd2858d03c8611c7abf0916a4d6967f3b48fd6306bec"
+  },
+  {
+    "id": "ZONE_R_3_5",
+    "width": 534,
+    "height": 602,
+    "anchorX": 266.86116015902536,
+    "anchorY": 461.44105891711183,
+    "tilePixels": 512,
+    "finish": "felt",
+    "generation": "felt-city-v2",
+    "sha256": "bbaa4cbe90fa81cb677be8cc32aa57ed279c7ce0aadbd8fb9fd05bdf900e76ad"
+  }
+]

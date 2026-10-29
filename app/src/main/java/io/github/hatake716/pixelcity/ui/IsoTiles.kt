@@ -4,7 +4,7 @@ import io.github.hatake716.pixelcity.game.Terrain
 import kotlin.math.abs
 
 /**
- * 地面のタイル。64×32 の菱形。
+ * 地面のタイル。512×256 の菱形。
  *
  * 菱形は手で書くと1行ずつ幅がずれて壊れやすいので、**菱形の式から生成する**。
  * どの行も必ず正しい幅になり、外側は透明、内側だけが塗られることが保証される。
@@ -40,41 +40,23 @@ object IsoTiles {
     }
 
     /** 草地。草むらの粒と、ところどころの濃い茂み。 */
-    val GRASS = diamond { x, y, edge ->
-        val n = noise(x, y, 1) % 100
-        // 草の房を、少し大きめの塊で散らす
-        val clump = noise(x / 3, y / 2, 5) % 100
+    val GRASS = diamond { x, y, _ ->
+        val clump = noise(x / 16, y / 10, 5) % 100
         when {
-            edge > 0.96f -> Palette.GRASS_EDGE
-            clump < 12 && n < 60 -> Palette.GRASS_DARK
-            n < 14 -> Palette.GRASS_LIT
-            n < 30 -> Palette.GRASS_DARK
+            clump < 4 && (x % 16 in 5..8) && (y % 10 in 3..5) -> Palette.GRASS_LIT
             else -> Palette.GRASS
         }
     }
 
-    /** 水面。横長の波と、ちらつく反射。 */
-    val WATER = diamond { x, y, edge ->
-        val wave = ((x / 3) + (y * 2)) % 11
-        val sparkle = noise(x, y, 9) % 100
+    val WATER = diamond { x, y, _ ->
         when {
-            edge > 0.96f -> Palette.WATER_DARK
-            sparkle < 4 && wave < 4 -> Palette.WATER_FOAM
-            wave < 3 -> Palette.WATER_LIT
-            wave < 7 -> Palette.WATER
-            else -> Palette.WATER_DARK
+            y % 58 in 0..2 && (x + y * 3) % 153 < 35 -> Palette.WATER_LIT
+            else -> Palette.WATER
         }
     }
 
-    /** 砂浜。粒の粗い砂。 */
-    val SHORE = diamond { x, y, edge ->
-        val n = noise(x, y, 7) % 100
-        when {
-            edge > 0.94f -> Palette.SAND_DARK
-            n < 16 -> Palette.SAND_LIT
-            n < 34 -> Palette.SAND_DARK
-            else -> Palette.SAND
-        }
+    val SHORE = diamond { x, y, _ ->
+        if (noise(x / 5, y / 3, 7) % 100 < 5) Palette.SAND else Palette.SAND_LIT
     }
 
     // --- 道路 ---
@@ -83,30 +65,21 @@ object IsoTiles {
      * 道路。[alongX] と [alongY] で、どちらの向きに車線を引くかを決める。
      * 交差点は両方 true。
      */
-    private fun road(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
-        if (edge > 0.93f) return@diamond Palette.KERB
-
+    private fun road(alongX: Boolean, alongY: Boolean, broad: Boolean = false): Sprite = diamond { x, y, _ ->
         val cx = (x + 0.5f) - W / 2f
         val cy = (y + 0.5f) - H / 2f
-        // 菱形の2つの軸方向の座標（-1..1）
-        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f   // x方向（右下）
-        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f   // y方向（左下）
-
-        // 中央線。交差点では中心を空ける。
-        val onXLine = alongX && abs(v) < 0.07f && (!alongY || abs(u) > 0.32f)
-        val onYLine = alongY && abs(u) < 0.07f && (!alongX || abs(v) > 0.32f)
-        val dashX = ((u * 7f).toInt() and 1) == 0
-        val dashY = ((v * 7f).toInt() and 1) == 0
-
-        // 舗装のざらつき
-        val grain = noise(x, y, 3) % 100
-
+        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
+        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
+        val width = if (broad) .36f else .29f
+        val across = minOf(if(alongX) abs(v) else 1f, if(alongY) abs(u) else 1f)
+        val crossing = alongX && alongY
         when {
-            onXLine && dashX -> Palette.ROAD_LINE
-            onYLine && dashY -> Palette.ROAD_LINE
-            edge > 0.78f -> Palette.ROAD_DARK
-            grain < 10 -> Palette.ROAD_LIT
-            grain < 22 -> Palette.ROAD_DARK
+            across > width + .025f -> Palette.SAND_LIT
+            across > width -> Palette.STONE_DARK
+            crossing && ((abs(u) in .34f.. .43f && abs(v) < .26f && ((v + .5f) * 44).toInt()%2==0) ||
+                (abs(v) in .34f.. .43f && abs(u) < .26f && ((u + .5f) * 44).toInt()%2==0)) -> Palette.WHITE
+            broad && !crossing && across < .025f -> Palette.TREE
+            !crossing && across < .009f && (((if(alongX)u else v)+.5f)*18).toInt()%2==0 -> Palette.ROAD_LINE
             else -> Palette.ROAD
         }
     }
@@ -125,31 +98,14 @@ object IsoTiles {
     /**
      * 大通り。道路より広く、中央分離帯がある。
      */
-    private fun avenue(alongX: Boolean, alongY: Boolean): Sprite = diamond { x, y, edge ->
-        if (edge > 0.95f) return@diamond Palette.KERB
-        val cx = (x + 0.5f) - W / 2f
-        val cy = (y + 0.5f) - H / 2f
-        val u = (cx / (W / 2f) + cy / (H / 2f)) / 2f
-        val v = (cy / (H / 2f) - cx / (W / 2f)) / 2f
-        val across = if (alongX) v else u
-        val grain = noise(x, y, 5) % 100
-        when {
-            // 中央分離帯（緑）
-            abs(across) < 0.06f -> Palette.GRASS_DARK
-            abs(across) < 0.09f -> Palette.KERB
-            // 車線の白線
-            abs(abs(across) - 0.22f) < 0.02f -> Palette.ROAD_LINE
-            edge > 0.82f -> Palette.ROAD_DARK
-            grain < 10 -> Palette.ROAD_LIT
-            else -> Palette.ROAD
-        }
+    val AVENUE_X = road(alongX = true, alongY = false, broad = true)
+    val AVENUE_Y = road(alongX = false, alongY = true, broad = true)
+    val AVENUE_CROSS = road(alongX = true, alongY = true, broad = true)
+    fun avenueFor(alongX: Boolean, alongY: Boolean): Sprite = when {
+        alongX && alongY -> AVENUE_CROSS
+        alongY -> AVENUE_Y
+        else -> AVENUE_X
     }
-
-    val AVENUE_X = avenue(alongX = true, alongY = false)
-    val AVENUE_Y = avenue(alongX = false, alongY = true)
-
-    fun avenueFor(alongX: Boolean, alongY: Boolean): Sprite =
-        if (alongY && !alongX) AVENUE_Y else AVENUE_X
 
     /**
      * 高速道路。高架にはせず、中央に柵のある広い舗装で表す。

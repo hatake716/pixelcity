@@ -1,176 +1,132 @@
 package io.github.hatake716.pixelcity.audio
 
-/**
- * 背景で流す曲。効果音と同じく、式から組み立てる。
- *
- * 街づくりは何時間も続く遊びなので、曲は
- *  - 主張しすぎない（聞き流せる和音の進行）
- *  - 繰り返しても角が立たない（8小節で無理なく戻る）
- *  - 街の様子で変わる（同じ曲を延々と聞かせない）
- * ことを狙っている。
- *
- * 曲は3つ。街の大きさと、うまくいっているかで選ぶ。
- */
-enum class Bgm(val label: String) {
-    /** 始まりの街。のんびりした明るい曲。 */
-    DAWN("あさ"),
+import io.github.hatake716.pixelcity.game.Campaign
+import java.util.concurrent.CancellationException
 
-    /** 育ってきた街。動きのある曲。 */
-    CITY("まち"),
+/** Original 32-bar A–A′–B–A″ arrangements for a warm, thoughtful city simulation. */
+enum class Bgm(val label: String, val bpm: Int) {
+    DAWN("市庁舎の朝", 96),
+    CITY("並木通りの午後", 108),
+    GARDEN("風の通る田園", 84),
+    INDUSTRY("明日をつくる街", 112),
+    TROUBLE("灯りの残る執務室", 78);
 
-    /** 苦しいとき。短調で、沈んだ曲。 */
-    TROUBLE("くるしいとき"),
-    ;
+    val durationSeconds: Float get() = 32 * 4 * 60f / bpm
 
-    /**
-     * 1周ぶんの波形。そのまま繰り返して流す。
-     *
-     * 繋ぎ目で音が途切れないよう、最後の音は小節に収め、
-     * 残響を次の周へまたがせない。
-     */
-    fun render(): ShortArray = when (this) {
-        DAWN -> song(
-            bpm = 96f,
-            // ハ長調。C - Am - F - G の、よくある進行。
-            chords = arrayOf(
-                intArrayOf(Waves.C3, Waves.E3, Waves.G3),
-                intArrayOf(Waves.A3 - 12, Waves.C3, Waves.E3),
-                intArrayOf(Waves.F3, Waves.A3, Waves.C4),
-                intArrayOf(Waves.G3, Waves.B3, Waves.D4),
-            ),
-            melody = intArrayOf(
-                Waves.E5, Waves.REST, Waves.G5, Waves.REST,
-                Waves.E5, Waves.D5, Waves.C5, Waves.REST,
-                Waves.A4, Waves.REST, Waves.C5, Waves.REST,
-                Waves.E5, Waves.REST, Waves.D5, Waves.REST,
-                Waves.F5, Waves.REST, Waves.E5, Waves.D5,
-                Waves.C5, Waves.REST, Waves.A4, Waves.REST,
-                Waves.G4, Waves.B4, Waves.D5, Waves.REST,
-                Waves.C5, Waves.REST, Waves.REST, Waves.REST,
-            ),
-            duty = 0.25f,
-            drums = false,
-        )
+    // Scores use MIDI pitches; no transcriptions or recordings from other games.
+    private data class Bar(val bass: Int, val chord: IntArray, val lead: IntArray)
+    private fun bar(bass: Int, vararg notes: Int): Bar =
+        Bar(bass, notes.take(4).toIntArray(), notes.drop(4).toIntArray())
 
-        CITY -> song(
-            bpm = 112f,
-            // ト長調。動きを出すため、少し速く、打楽器を入れる。
-            chords = arrayOf(
-                intArrayOf(Waves.G3, Waves.B3, Waves.D4),
-                intArrayOf(Waves.D3, Waves.F3 + 1, Waves.A3),
-                intArrayOf(Waves.E3, Waves.G3, Waves.B3),
-                intArrayOf(Waves.C4, Waves.E4, Waves.G4),
-            ),
-            melody = intArrayOf(
-                Waves.D5, Waves.G5, Waves.REST, Waves.G5,
-                Waves.F5 + 1, Waves.REST, Waves.D5, Waves.REST,
-                Waves.A4, Waves.D5, Waves.REST, Waves.D5,
-                Waves.C5, Waves.REST, Waves.A4, Waves.REST,
-                Waves.B4, Waves.E5, Waves.REST, Waves.E5,
-                Waves.D5, Waves.REST, Waves.B4, Waves.REST,
-                Waves.C5, Waves.E5, Waves.G5, Waves.REST,
-                Waves.G5, Waves.REST, Waves.REST, Waves.REST,
-            ),
-            duty = 0.5f,
-            drums = true,
-        )
+    fun render(): ShortArray {
+        val verse = when (this) {
+            DAWN -> arrayOf(
+                bar(48, 64,67,71,74, 76,74,71), bar(45, 60,64,67,71, 72,76),
+                bar(50, 65,69,72,76, 77,76,72), bar(43, 65,69,71,76, 74,71),
+                bar(41, 64,67,69,72, 72,69,67), bar(40, 62,67,71,74, 71,74),
+                bar(50, 60,65,69,76, 77,74,72), bar(43, 62,65,69,71, 71,69,74))
+            CITY -> arrayOf(
+                bar(41, 57,60,64,67, 76,72,74), bar(43, 59,62,65,69, 77,74),
+                bar(40, 55,59,62,66, 74,71,69), bar(45, 55,60,64,71, 72,76),
+                bar(50, 60,65,69,72, 77,76,72), bar(43, 59,65,69,76, 74,77),
+                bar(48, 59,64,67,74, 76,74,71), bar(48, 58,64,67,69, 72,69))
+            GARDEN -> arrayOf(
+                bar(50, 66,69,73,76, 78,76,73), bar(47, 62,66,69,73, 74,78),
+                bar(43, 59,62,66,69, 78,76,74), bar(45, 61,64,67,71, 76,73),
+                bar(54, 61,64,69,73, 73,69,71), bar(47, 62,66,69,73, 74,73),
+                bar(40, 59,62,66,69, 71,74,78), bar(45, 59,62,64,69, 76,74))
+            INDUSTRY -> arrayOf(
+                bar(45, 60,64,67,71, 72,71,67), bar(41, 57,60,64,67, 69,72),
+                bar(48, 59,62,64,67, 71,74,76), bar(43, 59,62,67,69, 74,71),
+                bar(50, 60,64,65,69, 77,76,72), bar(45, 60,64,67,71, 76,72),
+                bar(41, 57,60,64,67, 69,67,72), bar(40, 59,62,64,68, 71,68))
+            TROUBLE -> arrayOf(
+                bar(50, 60,64,65,69, 69,72), bar(46, 57,60,62,65, 65,69),
+                bar(43, 58,62,65,69, 70,69), bar(45, 55,61,64,70, 73,70),
+                bar(50, 60,64,65,69, 72,69), bar(41, 57,60,64,67, 67,64),
+                bar(43, 58,62,65,69, 65,69), bar(45, 55,61,64,70, 70,73))
+        }
+        val bridge = when (this) {
+            GARDEN -> arrayOf(
+                bar(43, 59,62,66,69, 74,78), bar(45, 61,64,67,71, 76,73),
+                bar(54, 61,64,69,73, 73,76), bar(47, 57,62,66,69, 74,71))
+            TROUBLE -> arrayOf(
+                bar(46, 57,60,62,65, 74,72), bar(48, 58,62,65,69, 74,77),
+                bar(41, 57,60,64,67, 76,72), bar(45, 55,61,64,70, 70,69))
+            else -> arrayOf(
+                bar(46, 57,60,62,65, 74,72), bar(43, 58,62,65,69, 77,74),
+                bar(44, 60,63,67,70, 75,79), bar(43, 59,62,65,69, 77,74))
+        }
+        val beat = 60f / bpm
+        val track = Waves.Track(Waves.frames(durationSeconds))
+        val leadVoice = when (this) {
+            GARDEN -> Instruments.Voice.FLUTE
+            INDUSTRY -> Instruments.Voice.MALLET
+            TROUBLE -> Instruments.Voice.FELT
+            else -> Instruments.Voice.KEYS
+        }
+        fun note(at: Float, length: Float, midi: Int, voice: Instruments.Voice, amp: Float) =
+            Instruments.note(track, at * beat, length * beat, midi - 69, voice, amp)
+        for (b in 0 until 32) {
+            if (Thread.currentThread().isInterrupted) throw CancellationException()
+            val section = b / 8
+            val score = if (section == 2) bridge[(b % 8) / 2] else verse[b % 8]
+            val at = b * 4f
+            // Warm extended harmony, gently voiced; the bridge opens up into sustained pads.
+            for ((i, pitch) in score.chord.withIndex()) {
+                note(at + i * 0.035f, 3.85f, pitch, Instruments.Voice.PAD, 0.018f)
+                note(at + 0.08f + i * 0.045f, 1.8f, pitch, Instruments.Voice.KEYS, 0.033f)
+                if (this != TROUBLE) note(at + 2.55f + i * 0.025f, 1.25f, pitch,
+                    Instruments.Voice.KEYS, if (section == 2) 0.020f else 0.032f)
+            }
+            note(at, 1.7f, score.bass, Instruments.Voice.BASS, 0.14f)
+            note(at + 2f, 1.65f, score.bass + if (b % 2 == 0) 7 else 12,
+                Instruments.Voice.BASS, 0.10f)
+            if (this == CITY || this == INDUSTRY) note(at + 3.5f, 0.42f,
+                score.bass + 2, Instruments.Voice.BASS, 0.07f)
 
-        TROUBLE -> song(
-            bpm = 84f,
-            // イ短調。重く、ゆっくり。
-            chords = arrayOf(
-                intArrayOf(Waves.A3 - 12, Waves.C3, Waves.E3),
-                intArrayOf(Waves.F3 - 12, Waves.A3 - 12, Waves.C3),
-                intArrayOf(Waves.D3 - 12, Waves.F3, Waves.A3),
-                intArrayOf(Waves.E3 - 12, Waves.G3, Waves.B3),
-            ),
-            melody = intArrayOf(
-                Waves.A4, Waves.REST, Waves.REST, Waves.REST,
-                Waves.C5, Waves.REST, Waves.B4, Waves.REST,
-                Waves.A4, Waves.REST, Waves.REST, Waves.REST,
-                Waves.F4, Waves.REST, Waves.G4, Waves.REST,
-                Waves.A4, Waves.REST, Waves.C5, Waves.REST,
-                Waves.D5, Waves.REST, Waves.C5, Waves.REST,
-                Waves.B4, Waves.REST, Waves.A4, Waves.REST,
-                Waves.A4, Waves.REST, Waves.REST, Waves.REST,
-            ),
-            duty = 0.5f,
-            drums = false,
-        )
+            // Original short phrases leave rests; A′/A″ answer with a different ordering.
+            if (b % 4 != 3 || section == 3) {
+                val phrase = if (section == 1) score.lead.reversedArray() else score.lead
+                for ((i, pitch) in phrase.withIndex()) {
+                    val onset = at + floatArrayOf(0.5f, 1.75f, 3f)[i]
+                    note(onset, if (i == phrase.lastIndex) 1.15f else 0.9f, pitch,
+                        leadVoice, if (section == 2) 0.075f else 0.10f)
+                }
+            }
+            if (section == 1 || section == 3) {
+                note(at + 3.35f, 0.55f, score.chord[(b + 1) % 4] + 12,
+                    Instruments.Voice.MALLET, 0.030f)
+            }
+            if (this == INDUSTRY) {
+                for (k in 0..7) note(at + k * 0.5f, 0.4f,
+                    score.chord[(k + b) % 4], Instruments.Voice.MALLET, 0.025f)
+            }
+            // Brushes and a small kick, with a tiny swing on the offbeats.
+            if (this != TROUBLE) {
+                val gentle = if (this == GARDEN) 0.55f else 1f
+                Instruments.kick(track, at * beat, 0.13f * gentle)
+                if (section != 2) Instruments.kick(track, (at + 2.5f) * beat, 0.085f * gentle)
+                for (k in 0..7) {
+                    val swing = if (k % 2 == 1 && this != INDUSTRY) 0.06f else 0f
+                    Instruments.texture(track, (at + k * 0.5f + swing) * beat, 0.09f,
+                        (if (k % 2 == 0) 0.055f else 0.035f) * gentle, b * 11 + k, 0.7f)
+                }
+                for (k in listOf(1f, 3f)) Instruments.texture(track, (at + k) * beat,
+                    0.18f, 0.18f * gentle, b + 77, 0.25f, 4.5f)
+            }
+        }
+        return Instruments.finish(track, loop = true, targetRms = if (this == TROUBLE) 0.095f else 0.115f)
     }
 
-    /**
-     * 曲を組み立てる。
-     *
-     * [melody] は16分ではなく8分音符で並べる（1小節8つ）。
-     * [chords] は1小節に1つ。4小節を2回まわして8小節にする。
-     */
-    private fun song(
-        bpm: Float,
-        chords: Array<IntArray>,
-        melody: IntArray,
-        duty: Float,
-        drums: Boolean,
-    ): ShortArray {
-        /** 8分音符1つぶんのフレーム数。 */
-        val step = Waves.frames(30f / bpm)
-        val total = step * melody.size
-        val track = Waves.Track(total)
-
-        // --- 伴奏。小節ごとに和音を刻む ---
-        val perBar = 8
-        for (bar in 0 until melody.size / perBar) {
-            val chord = chords[bar % chords.size]
-            val at = bar * perBar * step
-            // 低音。小節のあたまと、半分のところ。
-            for (half in 0 until 2) {
-                Waves.triangle(
-                    track, at + half * perBar / 2 * step, step * 3,
-                    Waves.freq(chord[0] - 12), amp = 0.17f, decay = 2.6f,
-                )
-            }
-            // 和音。裏拍で軽く刻む。
-            for (k in 0 until perBar) {
-                if (k % 2 == 0) continue
-                for (n in chord) {
-                    Waves.square(
-                        track, at + k * step, (step * 0.9f).toInt(),
-                        Waves.freq(n), amp = 0.045f, duty = 0.25f, decay = 9f,
-                    )
-                }
-            }
+    companion object {
+        /** Financial pressure takes priority; route identity survives scenario completion. */
+        fun forCity(population: Int, funds: Int, monthsInDebt: Int, route: Campaign.Route?): Bgm = when {
+            funds < 0 || monthsInDebt > 0 -> TROUBLE
+            route == Campaign.Route.GARDEN -> GARDEN
+            route == Campaign.Route.INDUSTRIAL -> INDUSTRY
+            route == Campaign.Route.METROPOLIS || population >= 2_000 -> CITY
+            else -> DAWN
         }
-
-        // --- 主旋律 ---
-        for ((i, note) in melody.withIndex()) {
-            if (note == Waves.REST) continue
-            // 次が休符なら音を伸ばす（切れ切れにならないように）
-            var len = 1
-            while (i + len < melody.size && melody[i + len] == Waves.REST) len++
-            Waves.square(
-                track, i * step, (step * len * 0.92f).toInt(),
-                Waves.freq(note), amp = 0.16f, duty = duty, decay = 2.2f, attack = 0.02f,
-            )
-        }
-
-        // --- 打楽器 ---
-        if (drums) {
-            for (k in 0 until melody.size) {
-                val at = k * step
-                when (k % 8) {
-                    0, 4 -> Waves.noise(track, at, step / 2, amp = 0.14f, decay = 30f, smooth = 9)
-                    2, 6 -> Waves.noise(track, at, step / 3, amp = 0.09f, decay = 44f, smooth = 2)
-                }
-            }
-        }
-        // 繰り返しの継ぎ目をなめらかにする。
-        // 頭と尻が急に鳴り出す/切れると、一周ごとにプチッと鳴る。
-        val edge = Waves.frames(0.012f)
-        for (i in 0 until edge) {
-            val k = i.toFloat() / edge
-            track.data[i] *= k
-            track.data[total - 1 - i] *= k
-        }
-        return track.toPcm(gain = 0.85f)
     }
 }

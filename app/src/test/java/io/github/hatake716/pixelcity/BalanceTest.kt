@@ -28,9 +28,9 @@ class BalanceTest {
     private fun layGrid(c: City) {
         for (y in 4..28 step 4) for (x in 2..29) c.build(x, y, TileKind.ROAD)
         for (x in 2..29 step 6) for (y in 4..28) c.build(x, y, TileKind.ROAD)
-        for (i in 0..3) {
-            c.build(3 + i * 7, 2, TileKind.POWER_COAL)
-            c.build(3 + i * 7, 3, TileKind.ROAD)
+        for (i in 0..4) {
+            c.build(3 + i * 5, 2, TileKind.POWER_COAL)
+            c.build(3 + i * 5, 3, TileKind.ROAD)
         }
         // 給水塔を散らして、街全体に水を届ける
         for (y in 6..26 step 10) for (x in 6..26 step 10) {
@@ -69,9 +69,9 @@ class BalanceTest {
             if (c.tileAt(x, y).kind != TileKind.EMPTY) continue
             val k = when {
                 x % 6 == 3 && y % 5 == 1 -> TileKind.PARK
-                (x == 8 && y == 7) || (x == 20 && y == 19) -> TileKind.SCHOOL
-                (x == 8 && y == 19) || (x == 20 && y == 7) -> TileKind.HOSPITAL
-                x == 14 && y == 13 -> TileKind.POLICE
+                (x == 9 && y == 7) || (x == 21 && y == 19) -> TileKind.SCHOOL
+                (x == 9 && y == 19) || (x == 21 && y == 7) -> TileKind.HOSPITAL
+                x == 15 && y == 13 -> TileKind.POLICE
                 y >= 23 -> TileKind.ZONE_I
                 y >= 17 -> TileKind.ZONE_C
                 else -> TileKind.ZONE_R

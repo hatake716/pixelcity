@@ -227,16 +227,16 @@ object Palette {
     /** 索引から実際の色へ。 */
     val COLORS: IntArray = intArrayOf(
         // 地面
-        q(0xFF8CBF4D.toInt()), q(0xFF6FA23C.toInt()),
-        q(0xFF54812C.toInt()), q(0xFF3E6320.toInt()),
+        q(0xFFC0D486.toInt()), q(0xFF9EB878.toInt()),
+        q(0xFF849E65.toInt()), q(0xFF668359.toInt()),
         // 水
-        q(0xFF5FB4E5.toInt()), q(0xFF3D8FD1.toInt()),
-        q(0xFF2A6CAD.toInt()), q(0xFFB8E4F5.toInt()),
+        q(0xFF83D4D0.toInt()), q(0xFF50B4B8.toInt()),
+        q(0xFF379698.toInt()), q(0xFFB8E4F5.toInt()),
         // 砂浜
         q(0xFFEDD9A3.toInt()), q(0xFFD6BC7E.toInt()), q(0xFFB39A60.toInt()),
         // 舗装
-        q(0xFF9A9A94.toInt()), q(0xFF7C7C78.toInt()),
-        q(0xFF5C5C5A.toInt()), q(0xFFE8E4C8.toInt()), q(0xFFAFAFA8.toInt()),
+        q(0xFF9A9A94.toInt()), q(0xFF697981.toInt()),
+        q(0xFF505E65.toInt()), q(0xFFE8E4C8.toInt()), q(0xFFAFAFA8.toInt()),
         // 建物の面（汎用）
         q(0xFFBFBFB6.toInt()), q(0xFF9E9E95.toInt()),
         q(0xFF6E6E68.toInt()), q(0xFF3C3C3A.toInt()),
@@ -247,12 +247,12 @@ object Palette {
         q(0xFF8FA3B8.toInt()), q(0xFF7C93AD.toInt()),
         q(0xFF556A82.toInt()), q(0xFFAEE0F2.toInt()), q(0xFF6C93AD.toInt()),
         // 工業
-        q(0xFF8A6A55.toInt()), q(0xFF9E7C63.toInt()), q(0xFF6B513F.toInt()),
+        q(0xFF8A6A55.toInt()), q(0xFFC57E60.toInt()), q(0xFF9B5D49.toInt()),
         // 窓
         q(0xFFFFE9A0.toInt()), q(0xFF3E4A5A.toInt()),
         // 樹木
-        q(0xFF7ABF4F.toInt()), q(0xFF4E9438.toInt()),
-        q(0xFF356B26.toInt()), q(0xFF6B4A2F.toInt()),
+        q(0xFFACCA6D.toInt()), q(0xFF719F57.toInt()),
+        q(0xFF497959.toInt()), q(0xFF6B4A2F.toInt()),
         // 石・金属
         q(0xFFE8E0CE.toInt()), q(0xFFC9BFA8.toInt()),
         q(0xFF9E937C.toInt()), q(0xFF6E6555.toInt()),
@@ -262,9 +262,9 @@ object Palette {
         q(0xFFEFC050.toInt()), q(0xFFB08A2E.toInt()),
         q(0xFFF4F4F0.toInt()), q(0xFF1A1A20.toInt()),
         // 画面まわり
-        q(0xFF2A3550.toInt()), q(0xFF3C4A68.toInt()),
-        q(0xFF8FA8D8.toInt()), q(0xFFF4F4F0.toInt()),
-        q(0xFF9AA6BE.toInt()), q(0xFFEFC050.toInt()),
+        q(0xFF352E29.toInt()), q(0xFF50483F.toInt()),
+        q(0xFF8D7C69.toInt()), q(0xFFFFF6E7.toInt()),
+        q(0xFFD4C4AF.toInt()), q(0xFFE1BD8F.toInt()),
         q(0xFF7EB8E8.toInt()), q(0xFF3A6EA8.toInt()),
         // 田園: こげ茶の瓦、生成りの漆喰
         q(0xFF8A6A4A.toInt()), q(0xFF5E4630.toInt()),

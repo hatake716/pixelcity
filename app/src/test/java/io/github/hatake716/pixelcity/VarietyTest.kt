@@ -22,8 +22,7 @@ class VarietyTest {
     /**
      * 絵ができあがるまで待つ。
      *
-     * 本番では別の糸で作り、できるまでは「間に合わせの箱」を返す。
-     * 試験でそれを比べると、どれも同じ箱に見えてしまう。
+     * 実際の描画結果がキャッシュに入ったことを確認して比較する。
      */
     private fun build(kind: TileKind, stage: Int, v: Int): Sprite {
         IsoBuildings.zoneBuilding(kind, stage, v)      // 作り始めさせる

@@ -17,33 +17,33 @@ enum class Ordinance(
     val costPerCitizen: Float,
 ) {
     ENERGY_SAVING(
-        label = "しょうエネ じょうれい",
-        detail = "でんりょくの しょうひを 15% へらす",
+        label = "省エネ条例",
+        detail = "電力消費を15%削減",
         costPerCitizen = 0.05f,
     ),
     RECYCLING(
-        label = "リサイクル じょうれい",
-        detail = "ゴミを 25% へらす",
+        label = "リサイクル条例",
+        detail = "廃棄物を25%削減",
         costPerCitizen = 0.05f,
     ),
     PATROL(
-        label = "ぼうはん パトロール",
-        detail = "はんざいを 20% へらす",
+        label = "防犯巡回",
+        detail = "犯罪を20%削減",
         costPerCitizen = 0.08f,
     ),
     FREE_CLINIC(
-        label = "むりょう しんりょう",
-        detail = "けんこうを あげ、かんせんを 20% へらす",
+        label = "無料診療",
+        detail = "健康を改善し、感染を20%削減",
         costPerCitizen = 0.10f,
     ),
     EDUCATION(
-        label = "きょういく しんこう",
-        detail = "きょういくを あげる",
+        label = "教育振興",
+        detail = "教育水準を改善",
         costPerCitizen = 0.08f,
     ),
     TRANSIT_SUBSIDY(
-        label = "こうきょうこうつう ほじょ",
-        detail = "こうつうりょうを 15% へらす",
+        label = "公共交通補助",
+        detail = "交通量を15%削減",
         costPerCitizen = 0.06f,
     ),
 }

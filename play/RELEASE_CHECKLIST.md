@@ -1,47 +1,34 @@
 # リリース手順
 
-## ビルド前
+## コードと検証
 
-- [ ] `docs/SPEC.md` と実装が食い違っていないか
-- [ ] `versionCode` を +1、`versionName` を更新（`app/build.gradle.kts`）
-- [ ] `./gradlew :app:testDebugUnitTest` が通る
-- [ ] `./gradlew :app:lintDebug` に新しい警告がない
+- [ ] 現行仕様・掲載文・バージョン番号を最終実装に合わせる。
+- [ ] `./gradlew testDebugUnitTest lintDebug assembleDebug`。
+- [ ] 保存を消してよいエミュレータを明示し、`ANDROID_SERIAL=<emulator> ./gradlew connectedDebugAndroidTest`。
+- [ ] 4都市、自由建設、調査、予算、ピンチ、保存再開を目視・操作確認する。
+- [ ] チュートリアル全手順、地図重ね表示、配色、音、ランドマーク、破綻後の再開始を確認する。
+- [ ] 既存端末に導入する場合は、署名互換とデータ維持を確かめて更新する。
 
-## ビルド
-
-```bash
-./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:bundleRelease
-```
-
-`keystore.properties`（gitignore 済み）を置くと release が署名される。
-未設定なら `app-release-unsigned.apk` が出る。
-
-## 動作確認（エミュレータまたは実機）
-
-release ビルドは minify 済みなので、**必ず release で確認する**。
-ProGuard でフォントの読み込みが壊れていないか、ここでしか分からない。
-
-- [ ] タイトルが表示される（日本語が崩れていない）
-- [ ] チュートリアルを最後まで進められる
-- [ ] チュートリアル完走後、人口が増えて黒字で回る
-- [ ] チュートリアルを飛ばして自由に建設できる
-- [ ] 保存して再起動すると、街と人口が戻る
-- [ ] 人口2000でモニュメントが解禁され、建てられる
-- [ ] 破綻するとゲームオーバーになり、もう一度 はじめられる
-- [ ] ライセンス画面に OFL 全文が出る
-
-## Play Console
-
-- [ ] データ安全性フォーム: 収集なし・共有なし・通信なし
-- [ ] 掲載文に「シムシティ」「ゲームボーイ」を書いていない（`play/STORE_LISTING.md` 参照）
-- [ ] スクリーンショット6点
-- [ ] 内部テストで1回配信してから製品版へ
-
-## タグとリリース
+## 配布用ビルド
 
 ```bash
-git tag -a vX.Y.Z -m "PIXELCITY vX.Y.Z"
-git push origin vX.Y.Z
-gh release create vX.Y.Z --title "PIXELCITY vX.Y.Z" --notes-file <ノート> \
-  app/build/outputs/apk/release/app-release-unsigned.apk LICENSE
+./gradlew assembleRelease bundleRelease
 ```
+
+`keystore.properties`をローカルに設定したときだけrelease署名を行う。署名情報はGitへ追加しない。
+設定のない場合の `app-release-unsigned.apk` はそのまま配布・インストールするAPKではない。
+
+- [ ] 署名済みAPK：`apksigner verify --verbose <signed.apk>` で検証し、インストールと起動を確認。
+- [ ] AAB：Play向けの署名と内容を確認。AABを端末へ直接インストールしない。
+- [ ] R8適用後のreleaseビルドでフォント・保存・描画・音を確認。
+- [ ] 最終APK/AABのSHA-256、versionCode、versionName、applicationIdを記録。
+
+## 外部配布
+
+GitHub公開、端末配布、Playへのアップロード・審査・製品公開はそれぞれ別の操作。
+依頼された範囲に応じて実行し、実際に完了した段階を記録する。
+
+- [ ] 最終差分・リモート・既存の未コミット変更を確認し、対象ファイルだけをコミット。
+- [ ] リリースには検証した署名済みAPKを添付。未署名APKを利用者向けに配布しない。
+- [ ] Play掲載文、実画面のスクリーンショット、プライバシー説明、データ安全性回答を確認。
+- [ ] Play用AAB準備、Consoleアップロード、審査申請、公開の結果を別々に報告。

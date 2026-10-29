@@ -14,7 +14,7 @@ import kotlin.random.Random
  * タイトルの背景に使えば「行き着く先」がそのまま見え、
  * 「おてほんからはじめる」で選べば、その街の続きから遊べる。
  *
- * 3種類とも、そのまま黒字で回るように作ってある。
+ * 4種類とも、そのまま黒字で回るように作ってある。
  */
 object ShowcaseCity {
 
@@ -24,33 +24,81 @@ object ShowcaseCity {
         val summary: String,
         val seed: Long,
     ) {
+        HARBOUR(
+            label = "木漏れ日の港町",
+            summary = "色とりどりの家、水辺のカフェ、緑の広場。市長として暮らしを育てる街。",
+            seed = 20260912L,
+        ),
         /** 大都市。人口と密度が最大級で、財政と人口のつりあいが取れている。 */
         METROPOLIS(
-            label = "だいとし",
-            summary = "じんこうと みつどが さいだいきゅう。ざいせいとの つりあいが とれた まち。",
+            label = "大都市",
+            summary = "人口と密度が最大級。財政との均衡が取れた街。",
             seed = 20260911L,
         ),
 
         /** 田園都市。農業と環境への配慮が行き届いている。 */
         GARDEN(
-            label = "でんえんとし",
-            summary = "のうちと みどりが ゆたか。たいようこう・ふうりょく・てつどうで かんきょうに やさしい まち。",
+            label = "田園都市",
+            summary = "農地と緑が豊か。太陽光・風力・鉄道で環境に優しい街。",
             seed = 31415926L,
         ),
 
         /** 工業都市。工業が中心で、財政が最も健全。 */
         INDUSTRIAL(
-            label = "こうぎょうとし",
-            summary = "こうぎょうが ちゅうしん。ざいせいが もっとも けんぜんな まち。",
+            label = "工業都市",
+            summary = "工業が中心。財政が最も健全な街。",
             seed = 27182818L,
         ),
     }
 
     /** 見本を組み立てる。同じ [kind] からは必ず同じ街ができる。 */
     fun build(kind: Kind = Kind.METROPOLIS): City = when (kind) {
+        Kind.HARBOUR -> harbour()
         Kind.METROPOLIS -> metropolis()
         Kind.GARDEN -> garden()
         Kind.INDUSTRIAL -> industrial()
+    }
+
+    /** A playable coastal neighbourhood, built from the same zoning and service systems. */
+    private fun harbour(): City {
+        val city = City(60, 60)
+        for(y in 0 until 60) for(x in 0 until 60) {
+            val t = city.tileAt(x,y)
+            t.terrain = if (y > 43 || (x < 7 && y > 27)) Terrain.WATER else Terrain.LAND
+        }
+        markShores(city)
+        for(y in 6..42) for(x in 8..52) {
+            val k = when {
+                x % 3 == 2 || y % 4 == 2 -> if(y == 30 || x == 26) TileKind.AVENUE else TileKind.ROAD
+                y < 12 -> TileKind.ZONE_I
+                (x + y) % 13 == 0 -> TileKind.PARK
+                y > 34 || (x in 24..30 && y in 20..29) -> TileKind.ZONE_C
+                else -> TileKind.ZONE_R
+            }
+            place(city,x,y,k)
+            if(k.isZone) city.tileAt(x,y).stage = if(y > 34) 2 else if((x*3+y)%7==0)3 else 2
+        }
+        for(x in 8..52) { place(city,x,4,TileKind.ROAD); place(city,x,5,TileKind.ROAD) }
+        for(x in 9..51 step 3) place(city,x,3,TileKind.POWER_SOLAR)
+        for(x in 12..39 step 9) place(city,x,2,TileKind.POWER_SOLAR)
+        for(y in 9..41 step 8) for(x in 12..48 step 12) {
+            place(city,x,y,TileKind.WATER_TOWER)
+            place(city,x+1,y,TileKind.PARK)
+        }
+        for(y in listOf(17,29,37))for(x in listOf(15,39)) {
+            place(city,x,y,TileKind.SCHOOL)
+            place(city,x+1,y,TileKind.CLINIC)
+            place(city,x,y+4,TileKind.POLICE)
+        }
+        for(x in 12..48 step 6)place(city,x,7,TileKind.RECYCLING)
+        for(x in 15..45 step 6)place(city,x,30,TileKind.BUS_STOP)
+        for(x in 9..51)place(city,x,43,TileKind.PARK)
+        place(city,42,43,TileKind.SEAPORT)
+        place(city,24,37,TileKind.FIRE)
+        place(city,33,33,TileKind.HOSPITAL)
+        monuments(city,listOf(Monument.BIG_BEN to (29 to 34)))
+        city.disasterLevel = City.DisasterLevel.LOW
+        return finish(city, funds=100_000, month=120, taxRate=7, style=City.Style.EUROPE)
     }
 
     // ------------------------------------------------------------------
@@ -151,7 +199,7 @@ object ShowcaseCity {
         city.month = month
         city.taxRate = taxRate
         city.recomputeDerivedState()
-        for (t in city.tiles) t.powered = true
+        city.refreshBudgetForecast()
         return city
     }
 

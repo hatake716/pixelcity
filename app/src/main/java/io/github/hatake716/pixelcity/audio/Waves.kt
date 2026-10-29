@@ -11,18 +11,16 @@ import kotlin.math.sin
  * 絵と同じ考え方で、音も外部の素材を持たずコードで組み立てる。
  * 録音物・third-party の音源は一切使っていないので、配信時の権利の心配がない。
  *
- * 16ビット機の音源をまねて、次の波だけで作る。
+ * 基本波形。楽器の倍音合成と空間処理は [Instruments] が受け持つ。
  *  - 矩形波（[square]）: 主旋律と効果音。デューティ比で音色が変わる
  *  - 三角波（[triangle]）: 低音。柔らかく、輪郭がぼやける
  *  - 雑音（[noise]）: 打楽器と、壊す音
  *
- * すべて 22.05kHz・モノラル・16bit の PCM で返す。
- * 当時の機械に近い粗さで、データも小さくて済む。
+ * すべて 32kHz・モノラル・16bit の PCM で返す。
  */
 object Waves {
 
-    /** 標本化周波数。当時の機械に近い粗さ。 */
-    const val RATE = 22_050
+    const val RATE = 32_000
 
     /** 音の名前から周波数へ。A4 = 440Hz を基準に、12平均律で並べる。 */
     fun freq(semitonesFromA4: Int): Float =
@@ -80,7 +78,8 @@ object Waves {
                 if (a > peak) peak = a
             }
             // 振り切れるときだけ、全体を下げる
-            val norm = if (peak > 1f) 1f / peak else 1f
+            // gain を含めてリミットする。増幅後のクリッピングを避ける。
+            val norm = if (peak * gain > 0.94f) 0.94f / (peak * gain) else 1f
             val g = gain * norm
             return ShortArray(frames) { i ->
                 (data[i] * g * 32_000f).roundToInt().coerceIn(-32_767, 32_767).toShort()

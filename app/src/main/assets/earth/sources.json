@@ -1,0 +1,60 @@
+{
+  "sources": [
+    {
+      "file": "blue-marble-july.jpg",
+      "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-base/july/world.200407.3x5400x2700.jpg",
+      "sourcePage": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/",
+      "credit": "NASA Earth Observatory / Reto Stöckli; Blue Marble Next Generation, July 2004",
+      "sha256": "f55226d46d27e05511f2118dc6aa24f5dbf9b6b2cddc87cc6e0e7dd067c00b11",
+      "bytes": 1617810
+    },
+    {
+      "file": "elevation.tif",
+      "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/topography/gebco_08_rev_elev_5400x2700.tif",
+      "sourcePage": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/topography-bathymetry-maps/",
+      "credit": "NASA Earth Observatory / Jesse Allen; GEBCO / British Oceanographic Data Centre",
+      "sha256": "1a4d9f6774d80b19eb0c37efd8fb3b9a36a974417c24a52e559c6645accb5965",
+      "bytes": 14596566
+    },
+    {
+      "file": "bathymetry.tif",
+      "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bathymetry/gebco_08_rev_bath_5400x2700.tif",
+      "sourcePage": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/topography-bathymetry-maps/",
+      "credit": "NASA Earth Observatory / Jesse Allen; GEBCO / British Oceanographic Data Centre",
+      "sha256": "af0469a359f086ec667934829a22ae3e673babc59edd98c9be12e188e151dc52",
+      "bytes": 14596566
+    }
+  ],
+  "terms": [
+    "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+    "https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use"
+  ],
+  "usage": "NASA image-use guidelines; GEBCO grid public domain. Credit retained. No endorsement. Not for navigation.",
+  "modifications": "Reprojected and resampled to game tiles; terrain categories derived for gameplay; relief exaggerated for visibility; water and atmosphere rendered independently.",
+  "derived": {
+    "size": 512,
+    "projection": "Longitude / sine latitude (equal area)",
+    "startX": 121,
+    "startY": 102,
+    "landHeightRangeMeters": [
+      0,
+      6400
+    ],
+    "oceanDepthRangeMeters": [
+      -8000,
+      0
+    ],
+    "verticalExaggeration": 65,
+    "classification": "Heuristic gameplay biomes from height and photographed color; not scientific land cover",
+    "generated": [
+      {
+        "file": "app/src/main/resources/earth/terrain.bin.gz",
+        "sha256": "ea4d44ad0a4a90d20599471d4834fa060c776ec515009a159afc45a232d1d25c"
+      },
+      {
+        "file": "app/src/main/assets/earth/blue-marble.jpg",
+        "sha256": "1b1751d32db343d2e3d9b9302ae10a6db271a7cc60cb73624afd2d12c2f80fd6"
+      }
+    ]
+  }
+}

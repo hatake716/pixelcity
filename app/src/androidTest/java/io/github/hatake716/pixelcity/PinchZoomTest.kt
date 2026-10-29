@@ -154,4 +154,29 @@ class PinchZoomTest {
         assertEquals("zoom went past the widest step", minZoom, view.zoom, 0.0001f)
         assertTrue("the two ends are the same", minZoom < maxZoom)
     }
+
+    private fun tileUnder(px: Float,py: Float): Pair<Float,Float> {
+        val m=GameView::class.java.getDeclaredMethod("mapCoordsFree",Float::class.javaPrimitiveType,Float::class.javaPrimitiveType).apply { isAccessible=true }
+        @Suppress("UNCHECKED_CAST")
+        return m.invoke(view,px/2,py/2) as Pair<Float,Float>
+    }
+    @Test fun symmetricPinchKeepsTheExactTileUnderTheCentroid() {
+        val before=tileUnder(540f,1100f)
+        pinch(200f,310.35f)
+        val after=tileUnder(540f,1100f)
+        assertEquals(before.first,after.first,.0001f);assertEquals(before.second,after.second,.0001f)
+    }
+    @Test fun tinyPinchMovesContinuouslyBelowTheOldRoundingThreshold() {
+        val before=view.zoom
+        val after=pinch(200f,200.1f)
+        assertTrue(after>before);assertEquals(before*1.0005f,after,.000001f)
+    }
+    @Test fun simultaneousPinchAndTranslationKeepsContentUnderMovingCentroid() {
+        view.onTouchEvent(oneFingerEvent(MotionEvent.ACTION_DOWN,440f,1100f))
+        view.onTouchEvent(twoFingerEvent(MotionEvent.ACTION_POINTER_DOWN or (1 shl 8),440f,1100f,640f,1100f))
+        val before=tileUnder(540f,1100f)
+        view.onTouchEvent(twoFingerEvent(MotionEvent.ACTION_MOVE,470f,1140f,730f,1140f))
+        val after=tileUnder(600f,1140f)
+        assertEquals(before.first,after.first,.0001f);assertEquals(before.second,after.second,.0001f)
+    }
 }

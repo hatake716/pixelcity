@@ -16,7 +16,7 @@ import org.junit.Test
  */
 class BuildingPreviewTest {
 
-    private fun png(w: Int, h: Int, argb: IntArray): ByteArray {
+    internal fun png(w: Int, h: Int, argb: IntArray): ByteArray {
         val raw = ByteArray(h * (1 + w * 4))
         var p = 0
         for (y in 0 until h) {

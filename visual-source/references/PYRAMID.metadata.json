@@ -1,0 +1,108 @@
+{
+  "batchcomplete": "",
+  "query": {
+    "pages": {
+      "145531342": {
+        "pageid": 145531342,
+        "ns": 6,
+        "title": "File:Great Pyramid (Pyramid of Cheops Khufu), Giza, GG, EGY (40936205113).jpg",
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Great_Pyramid_%28Pyramid_of_Cheops_Khufu%29%2C_Giza%2C_GG%2C_EGY_%2840936205113%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Great_Pyramid_(Pyramid_of_Cheops_Khufu),_Giza,_GG,_EGY_(40936205113).jpg",
+            "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=145531342",
+            "extmetadata": {
+              "DateTime": {
+                "value": "2024-02-19 00:23:49",
+                "source": "mediawiki-metadata",
+                "hidden": ""
+              },
+              "ObjectName": {
+                "value": "Great Pyramid (Pyramid of Cheops Khufu), Giza, GG, EGY (40936205113)",
+                "source": "mediawiki-metadata"
+              },
+              "CommonsMetadataExtension": {
+                "value": 1.2,
+                "source": "extension",
+                "hidden": ""
+              },
+              "Categories": {
+                "value": "CC-Zero|Great Pyramid of Giza|Files with coordinates missing SDC location of creation|Flickr images reviewed by FlickreviewR 2",
+                "source": "commons-categories",
+                "hidden": ""
+              },
+              "Assessments": {
+                "value": "",
+                "source": "commons-categories",
+                "hidden": ""
+              },
+              "GPSLatitude": {
+                "value": "29.980587",
+                "source": "commons-desc-page"
+              },
+              "GPSLongitude": {
+                "value": "31.134996",
+                "source": "commons-desc-page"
+              },
+              "GPSMapDatum": {
+                "value": "WGS-84",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "ImageDescription": {
+                "value": "These are the famous Pyramids at Giza, located outside the former Ancient Egyptian cities of Memphis and Heliopolis, located south and north of modern-day Cairo, respectively. The earliest pyramids were located at Saqqara, to the south, which included the stepped pyramid, the bent pyramid, and the red pyramid, which were the earliest attempts at pyramids by the Ancient Egyptian Old Kingdom during the 2600s BC. The pyramids at Giza were constructed starting around 2580 BC with the Pyramid of Cheops (Khufu), the tallest of the pyramids, also known as the Great Pyramid. The second tallest is the Pyramid of Khafre (Cheprhen), which maintains part of its limestone facing near the top and was constructed starting around 2558 BC. The smallest of the pyramids is the Pyramid of Menkaure, built starting around 2510 BC. The pyramids are part of a larger complex of tombs, temples, and other structures, which includes the Great Sphinx. The Pyramids of Cheops and Menkaure also include three smaller pyramids for the queens of the pharaohs that built the pyramids. Considered one of the seven wonders of the ancient world, the Pyramid of Cheops remained the tallest man-made structure until Lincoln Cathedral was constructed in England during the Middle Ages. Though the tombs were raided of their valuables during ancient times, the pyramids have remained due to their sheer size, despite being used as a source of stone during the Ptolemaic, Roman, and Medieval periods, with the last stones finally being taken during the 19th Century. The pyramids also survived several attempts by the Sultans during the Medieval period, notably al-Malek al-Aziz Othman ben Yusuf during the 1100s AD, to demolish them due to their association with the ancient pagan religion, seen as being an affront to their faith, which they survived due to the sheer size of the task making it futile. Today, the pyramids have been stabilized and attract thousands of visitors every year, and remain the most iconic and recognizable world heritage site and ancient structures in the country and the most recognizable structures on the continent of Africa.",
+                "source": "commons-desc-page"
+              },
+              "DateTimeOriginal": {
+                "value": "2019-05-12 08:55",
+                "source": "commons-desc-page"
+              },
+              "Credit": {
+                "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/photos/warrenlemay/40936205113/\">Great Pyramid (Pyramid of Cheops/Khufu), Giza, GG, EGY</a>",
+                "source": "commons-desc-page"
+              },
+              "Artist": {
+                "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/59081381@N03\">Warren LeMay</a> from Chicago, IL, United States",
+                "source": "commons-desc-page"
+              },
+              "LicenseShortName": {
+                "value": "CC0",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "UsageTerms": {
+                "value": "Creative Commons Zero, Public Domain Dedication",
+                "source": "commons-desc-page"
+              },
+              "AttributionRequired": {
+                "value": "false",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "LicenseUrl": {
+                "value": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+                "source": "commons-desc-page"
+              },
+              "Copyrighted": {
+                "value": "True",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "Restrictions": {
+                "value": "",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "License": {
+                "value": "cc0",
+                "source": "commons-templates",
+                "hidden": ""
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

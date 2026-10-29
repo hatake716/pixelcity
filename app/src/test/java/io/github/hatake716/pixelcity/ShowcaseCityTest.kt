@@ -29,8 +29,8 @@ class ShowcaseCityTest {
     private fun avgPollution(c: City) = c.tiles.sumOf { it.pollution } / c.tiles.size
 
     @Test
-    fun `there are three showcases`() {
-        assertEquals(3, ShowcaseCity.Kind.entries.size)
+    fun `there are four playable showcases`() {
+        assertEquals(4, ShowcaseCity.Kind.entries.size)
         for (k in ShowcaseCity.Kind.entries) {
             assertTrue("${k.name} has no label", k.label.isNotBlank())
             assertTrue("${k.name} has no summary", k.summary.isNotBlank())

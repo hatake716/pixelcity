@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PIXELCITY</string>
+    <string name="planet_coordinate">X %1$d / Y %2$d · %3$s ▾</string>
+    <string name="planet_terrain">地形：%1$s ▾</string>
+    <string name="globe_coordinate">X %1$d / Y %2$d・%3$s</string>
+    <string name="globe_terrain">地形：%1$s</string>
 </resources>
